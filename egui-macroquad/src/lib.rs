@@ -161,4 +161,3 @@ impl mq::EventHandler for Egui {
         self.0.key_up_event(keycode, keymods);
     }
 }
-

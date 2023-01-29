@@ -1,10 +1,9 @@
-pub const WHITE: (u8, u8, u8) = (255, 255, 255);
-
-pub trait Color {
+pub trait Color: Copy {
     fn rgb(&self) -> (u8, u8, u8);
     fn rgba(&self) -> (u8, u8, u8, u8);
     fn rgb_f32(&self) -> (f32, f32, f32);
     fn rgba_f32(&self) -> (f32, f32, f32, f32);
+    fn from_rgb(r: u8, g: u8, b: u8) -> Self;
 }
 
 impl Color for [u8; 3] {
@@ -26,8 +25,11 @@ impl Color for [u8; 3] {
             self[0] as f32 / 255.,
             self[1] as f32 / 255.,
             self[2] as f32 / 255.,
-            1.
+            1.,
         )
+    }
+    fn from_rgb(r: u8, g: u8, b: u8) -> Self {
+        [r, g, b]
     }
 }
 
@@ -50,8 +52,11 @@ impl Color for (u8, u8, u8) {
             self.0 as f32 / 255.,
             self.1 as f32 / 255.,
             self.2 as f32 / 255.,
-            1.
+            1.,
         )
+    }
+    fn from_rgb(r: u8, g: u8, b: u8) -> Self {
+        (r, g, b)
     }
 }
 
@@ -77,6 +82,9 @@ impl Color for [u8; 4] {
             self[3] as f32 / 255.,
         )
     }
+    fn from_rgb(r: u8, g: u8, b: u8) -> Self {
+        [r, g, b, 255]
+    }
 }
 
 impl Color for (u8, u8, u8, u8) {
@@ -100,5 +108,8 @@ impl Color for (u8, u8, u8, u8) {
             self.2 as f32 / 255.,
             self.3 as f32 / 255.,
         )
+    }
+    fn from_rgb(r: u8, g: u8, b: u8) -> Self {
+        (r, g, b, 255)
     }
 }
