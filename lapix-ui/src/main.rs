@@ -1,63 +1,10 @@
-use lapix_core::{Bitmap, Event, State, Tool};
+use lapix_core::{Bitmap, Event, Tool};
 use macroquad::prelude::*;
 
-const WINDOW_W: i32 = 1000;
-const WINDOW_H: i32 = 600;
-const CANVAS_W: u16 = 64;
-const CANVAS_H: u16 = 64;
-const CANVAS_SCALE: f32 = 8.;
-const LEFT_TOOLBAR_W: u16 = 300;
+mod wrapped_image;
+mod ui_state;
 
-// Center on the space after the toolbar
-const CANVAS_X: f32 = LEFT_TOOLBAR_W as f32 + ((WINDOW_W as u16 - LEFT_TOOLBAR_W) / 2) as f32
-    - (CANVAS_W as f32 * CANVAS_SCALE / 2.);
-const CANVAS_Y: f32 = (WINDOW_H / 2) as f32 - (CANVAS_H as f32 * CANVAS_SCALE / 2.);
-
-struct WrappedImage(pub Image);
-
-impl Bitmap for WrappedImage {
-    type Color = [u8; 4];
-
-    fn new(width: u16, height: u16, color: Self::Color) -> Self {
-        let bytes = vec![0; width as usize * height as usize * 4];
-        let mut img = Self(Image {
-            bytes,
-            width,
-            height,
-        });
-
-        for i in 0..width {
-            for j in 0..height {
-                img.set_pixel(i, j, color);
-            }
-        }
-
-        img
-    }
-
-    fn width(&self) -> u16 {
-        self.0.width() as u16
-    }
-    fn height(&self) -> u16 {
-        self.0.height() as u16
-    }
-    fn pixel(&self, x: u16, y: u16) -> Self::Color {
-        let base_idx = y * 4 * self.width() + x * 4;
-        [
-            self.0.bytes[base_idx as usize],
-            self.0.bytes[(base_idx + 1) as usize],
-            self.0.bytes[(base_idx + 2) as usize],
-            self.0.bytes[(base_idx + 3) as usize],
-        ]
-    }
-    fn set_pixel(&mut self, x: u16, y: u16, color: Self::Color) {
-        let base_idx = y * 4 * self.width() + x * 4;
-        self.0.bytes[base_idx as usize] = color[0];
-        self.0.bytes[(base_idx + 1) as usize] = color[1];
-        self.0.bytes[(base_idx + 2) as usize] = color[2];
-        self.0.bytes[(base_idx + 3) as usize] = color[3];
-    }
-}
+use ui_state::{UiState, WINDOW_W, WINDOW_H, Direction};
 
 fn window_conf() -> Conf {
     Conf {
@@ -69,13 +16,43 @@ fn window_conf() -> Conf {
     }
 }
 
-fn draw_canvas(texture: Texture2D) {
+fn draw_canvas_bg(w: f32, h: f32, state: &UiState) {
+    let scale = state.zoom();
+
+    let x = state.canvas_pos().x - state.camera().x;
+    let y = state.canvas_pos().y - state.camera().y;
+    let w = w * scale;
+    let h = h * scale;
+
+    let side = 4. * scale;
+
+    // TODO: optimize this by storing a rendered texture that contains all
+    // BG rectangles
+    let bg1 = Color::new(0.875, 0.875, 0.875, 1.);
+    let bg2 = Color::new(0.75, 0.75, 0.75, 1.);
+    for i in 0..(w / side + 1.) as usize {
+        for j in 0..(h / side + 1.) as usize {
+            let cur_w = i as f32 * side;
+            let cur_h = j as f32 * side;
+            let next_w = (i + 1) as f32 * side;
+            let next_h = (j + 1) as f32 * side;
+            let x = x + i as f32 * side;
+            let y = y + j as f32 * side;
+            let w = if next_w <= w { side } else { w - cur_w };
+            let h = if next_h <= h { side } else { h - cur_h };
+            let color = if (i + j) % 2 == 0 { bg1 } else { bg2 };
+            draw_rectangle(x, y, w, h, color);
+        }
+    }
+}
+
+fn draw_canvas(texture: Texture2D, state: &UiState) {
     let w = texture.width();
     let h = texture.height();
 
-    let scale = CANVAS_SCALE;
-    let pos_x = CANVAS_X;
-    let pos_y = CANVAS_Y;
+    let x = state.canvas_pos().x - state.camera().x;
+    let y = state.canvas_pos().y - state.camera().y;
+    let scale = state.zoom();
 
     let params = DrawTextureParams {
         dest_size: Some(Vec2 {
@@ -85,7 +62,7 @@ fn draw_canvas(texture: Texture2D) {
         ..Default::default()
     };
 
-    draw_texture_ex(texture, pos_x, pos_y, WHITE, params);
+    draw_texture_ex(texture, x, y, WHITE, params);
 }
 
 fn draw_texture(texture: Texture2D, x: f32, y: f32, scale: f32) {
@@ -103,20 +80,15 @@ fn draw_texture(texture: Texture2D, x: f32, y: f32, scale: f32) {
     draw_texture_ex(texture, x, y, WHITE, params);
 }
 
-fn screen_to_canvas(x: f32, y: f32) -> (i16, i16) {
-    (
-        ((x - CANVAS_X) / CANVAS_SCALE) as i16,
-        ((y - CANVAS_Y) / CANVAS_SCALE) as i16,
-    )
-}
+fn screen_to_canvas(x: f32, y: f32, state: &UiState) -> (i16, i16) {
+    let canvas_x = state.canvas_pos().x - state.camera().x;
+    let canvas_y = state.canvas_pos().y - state.camera().y;
+    let scale = state.zoom();
 
-fn rgb_f32_to_rgba_u8(color: [f32; 3]) -> [u8; 4] {
-    [
-        (color[0] as f64 * 255_f64).round() as u8,
-        (color[1] as f64 * 255_f64).round() as u8,
-        (color[2] as f64 * 255_f64).round() as u8,
-        255,
-    ]
+    (
+        ((x - canvas_x) / scale) as i16,
+        ((y - canvas_y) / scale) as i16,
+    )
 }
 
 fn rgb_to_rgba_u8(color: [u8; 3]) -> [u8; 4] {
@@ -127,38 +99,51 @@ fn rgba_to_rgb_u8(color: [u8; 4]) -> [u8; 3] {
     [color[0], color[1], color[2]]
 }
 
-fn rgb_to_tuple_u8(color: (u8, u8, u8)) -> [u8; 3] {
-    [color.0, color.1, color.2]
-}
-
 #[macroquad::main(window_conf)]
 async fn main() {
-    let eyedropper_icon = include_bytes!("../res/icon/eyedropper.png");
-    let eyedropper_icon = Texture2D::from_file_with_format(eyedropper_icon, None);
+    let mut state = UiState::default();
+
+    let brush_bytes = include_bytes!("../res/icon/pencil.png");
+    let brush_icon = Texture2D::from_file_with_format(&brush_bytes.clone(), None);
+    let img = Image::from_file_with_format(brush_bytes, None);
+    let egui_brush = egui::ColorImage::from_rgba_unmultiplied([16, 16], &img.bytes);
+
+    let eyedropper_bytes = include_bytes!("../res/icon/eyedropper.png");
+    let eyedropper_icon = Texture2D::from_file_with_format(&eyedropper_bytes.clone(), None);
+    let img = Image::from_file_with_format(eyedropper_bytes, None);
+    let egui_eyedropper = egui::ColorImage::from_rgba_unmultiplied([16, 16], &img.bytes);
 
     let mut brush = [0, 0, 0];
-    let mut state = State::<WrappedImage>::new(CANVAS_W, CANVAS_H);
-    let mut canvas_w_str = state.canvas().width().to_string();
-    let mut canvas_h_str = state.canvas().height().to_string();
+    let mut canvas_w_str = state.canvas_size().x.to_string();
+    let mut canvas_h_str = state.canvas_size().y.to_string();
     let mut drawing = Texture2D::from_image(&state.canvas().inner().0);
     drawing.set_filter(FilterMode::Nearest);
+
+    let mut eyedropper_texture = None;
+    let mut brush_texture = None;
 
     loop {
         clear_background(SKYBLUE);
 
         egui_macroquad::ui(|egui_ctx| {
             egui::Window::new("Canvas").show(egui_ctx, |ui| {
-                let label = ui.label("w:");
-                ui.text_edit_singleline(&mut canvas_w_str)
+                ui.horizontal(|ui| {
+                    let label = ui.label("w:");
+                    ui.add(
+                        egui::widgets::TextEdit::singleline(&mut canvas_w_str).desired_width(30.0),
+                    )
                     .labelled_by(label.id);
-                let label = ui.label("h:");
-                ui.text_edit_singleline(&mut canvas_h_str)
+                    let label = ui.label("h:");
+                    ui.add(
+                        egui::widgets::TextEdit::singleline(&mut canvas_h_str).desired_width(30.0),
+                    )
                     .labelled_by(label.id);
+                });
 
                 let btn = ui.button("New canvas");
                 if btn.clicked() {
                     let w: u16 = canvas_w_str.parse().unwrap();
-                    let h: u16 = canvas_w_str.parse().unwrap();
+                    let h: u16 = canvas_h_str.parse().unwrap();
                     state.execute(Event::ResizeCanvas(w, h));
                     drawing = Texture2D::from_image(&state.canvas().inner().0);
                     drawing.set_filter(FilterMode::Nearest);
@@ -176,27 +161,49 @@ async fn main() {
                     drawing = Texture2D::from_image(&state.canvas().inner().0);
                     drawing.set_filter(FilterMode::Nearest);
                 }
+                let btn = ui.button("Save");
+                if btn.clicked() {
+                    if let Some(path) = rfd::FileDialog::new().save_file() {
+                        state.execute(Event::Save(path));
+                    }
+                }
             });
 
             egui::Window::new("Toolbox").show(egui_ctx, |ui| {
-                let btn = ui.button("Brush");
-                if btn.clicked() {
-                    state.execute(Event::SetTool(Tool::Brush));
-                }
-                let btn = ui.button("Eyedropper");
-                if btn.clicked() {
-                    state.execute(Event::SetTool(Tool::Eyedropper));
-                }
+                ui.horizontal(|ui|{
+                    let texture: &egui::TextureHandle = brush_texture.get_or_insert_with(|| {
+                        ui.ctx()
+                            .load_texture("brush", egui_brush.clone(), Default::default())
+                    });
+                    if ui
+                        .add(egui::ImageButton::new(texture, texture.size_vec2()))
+                        .on_hover_text("brush tool")
+                        .clicked()
+                    {
+                        state.execute(Event::SetTool(Tool::Brush));
+                    }
+                    let texture: &egui::TextureHandle = eyedropper_texture.get_or_insert_with(|| {
+                        ui.ctx()
+                            .load_texture("eyedropper", egui_eyedropper.clone(), Default::default())
+                    });
+                    if ui
+                        .add(egui::ImageButton::new(texture, texture.size_vec2()))
+                        .on_hover_text("eyedropper tool")
+                        .clicked()
+                    {
+                        state.execute(Event::SetTool(Tool::Eyedropper));
+                    }
+                });
             });
 
-            if state.selected_tool() == Tool::Eyedropper {
+            if state.selected_tool() == Tool::Eyedropper || state.selected_tool() == Tool::Brush {
                 egui_ctx.output().cursor_icon = egui::CursorIcon::None;
             }
         });
 
         if is_mouse_button_down(MouseButton::Left) {
             let (x, y) = mouse_position();
-            let (x, y) = screen_to_canvas(x, y);
+            let (x, y) = screen_to_canvas(x, y, &state);
 
             if x >= 0
                 && y >= 0
@@ -224,27 +231,39 @@ async fn main() {
         if is_key_pressed(KeyCode::I) {
             state.execute(Event::SetTool(Tool::Eyedropper));
         }
+        if is_key_pressed(KeyCode::Equal) {
+            state.zoom_in();
+        }
+        if is_key_pressed(KeyCode::Minus) {
+            state.zoom_out();
+        }
 
-        draw_canvas(drawing);
+        if is_key_down(KeyCode::Left) {
+            state.move_camera(Direction::Left);
+        }
+        if is_key_down(KeyCode::Right) {
+            state.move_camera(Direction::Right);
+        }
+        if is_key_down(KeyCode::Up) {
+            state.move_camera(Direction::Up);
+        }
+        if is_key_down(KeyCode::Down) {
+            state.move_camera(Direction::Down);
+        }
+
+        draw_canvas_bg(drawing.width(), drawing.height(), &state);
+        draw_canvas(drawing, &state);
         egui_macroquad::draw();
 
         if state.selected_tool() == Tool::Eyedropper {
             let (x, y) = mouse_position();
             draw_texture(eyedropper_icon, x, y - eyedropper_icon.height(), 1.);
+        } else if state.selected_tool() == Tool::Brush {
+            let (x, y) = mouse_position();
+            draw_texture(brush_icon, x + 1., y - brush_icon.height() + 2., 1.);
         }
 
         next_frame().await
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn color_conversion() {
-        assert_eq!(rgb_f32_to_rgba_u8([1., 1., 1.]), [255, 255, 255, 255]);
-        assert_eq!(rgb_f32_to_rgba_u8([0., 0., 0.]), [0, 0, 0, 255]);
-        assert_eq!(rgb_f32_to_rgba_u8([0.5, 0.5, 0.5]), [128, 128, 128, 255]);
-    }
-}

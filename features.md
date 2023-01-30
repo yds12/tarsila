@@ -5,20 +5,20 @@ quality.
 
 Features (+ means done, (-) means least important):
 
-+ Canvas to edit sprite
-  - Resizable
+- Canvas to edit sprite (+)
+  - Resizable (+)
   - Multiple frames
   - Layers
     - control visibility
     - control editability
     - layer panel allow to change layer position, remove and add layers
     - group/ungroup layers (-)
-  - Transparent or solid background
+  - Transparent (+) or solid background
   - Zoom in and out and predefined zoom levels
   - Pan
   - Background and helpers
     - color
-    - checked
+    - checked (+)
     - grid
       - editable size
     - rulers (-)
@@ -32,9 +32,9 @@ Features (+ means done, (-) means least important):
   - Default palettes
   - Sorting based on multiple possible properties (-)
   - possible to edit a color in the palette based on full color picker
-- Save and load images
+- Save (+) and load images
   - Choose Scaled
-  - Different formats (PNG, JPEG, GIF)
+  - Different formats (PNG (+), JPEG, GIF)
 - Preview
   - Real size
   - Animation
@@ -43,7 +43,7 @@ Features (+ means done, (-) means least important):
   - Try to have good defaults
   - Undo and redo
 - Tools
-  + Brush
+  - Brush (+)
     - Resizable
     - Different shapes (-)
     - Erasing mode
@@ -69,7 +69,7 @@ Features (+ means done, (-) means least important):
     - Move
     - When selection is active, might affect other tools, like bucket
     - create selection based on what's on a layer (-)
-  + Eyedrop to select colors
+  - Eyedrop to select colors (+)
   - Transform
     - Resize
     - Rotate
@@ -78,7 +78,7 @@ Features (+ means done, (-) means least important):
     - add outline
     - change colors (hue, saturation, brightness, contrast, etc)
 - UI
-  + assume we may change GUI, so make everything generic if possible
+  - assume we may change GUI, so make everything generic if possible (+)
   - preferences menu
   - help menu
 

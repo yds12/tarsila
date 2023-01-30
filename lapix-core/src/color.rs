@@ -4,6 +4,7 @@ pub trait Color: Copy {
     fn rgb_f32(&self) -> (f32, f32, f32);
     fn rgba_f32(&self) -> (f32, f32, f32, f32);
     fn from_rgb(r: u8, g: u8, b: u8) -> Self;
+    fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Self;
 }
 
 impl Color for [u8; 3] {
@@ -29,6 +30,9 @@ impl Color for [u8; 3] {
         )
     }
     fn from_rgb(r: u8, g: u8, b: u8) -> Self {
+        [r, g, b]
+    }
+    fn from_rgba(r: u8, g: u8, b: u8, _: u8) -> Self {
         [r, g, b]
     }
 }
@@ -58,6 +62,9 @@ impl Color for (u8, u8, u8) {
     fn from_rgb(r: u8, g: u8, b: u8) -> Self {
         (r, g, b)
     }
+    fn from_rgba(r: u8, g: u8, b: u8, _: u8) -> Self {
+        (r, g, b)
+    }
 }
 
 impl Color for [u8; 4] {
@@ -85,6 +92,9 @@ impl Color for [u8; 4] {
     fn from_rgb(r: u8, g: u8, b: u8) -> Self {
         [r, g, b, 255]
     }
+    fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
+        [r, g, b, a]
+    }
 }
 
 impl Color for (u8, u8, u8, u8) {
@@ -111,5 +121,8 @@ impl Color for (u8, u8, u8, u8) {
     }
     fn from_rgb(r: u8, g: u8, b: u8) -> Self {
         (r, g, b, 255)
+    }
+    fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
+        (r, g, b, a)
     }
 }

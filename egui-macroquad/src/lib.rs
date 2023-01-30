@@ -85,7 +85,7 @@ impl Egui {
         let mut gl = unsafe { get_internal_gl() };
         // Ensure that macroquad's shapes are not goint to be lost, and draw them now
         gl.flush();
-        self.0.draw(&mut gl.quad_context);
+        self.0.draw(gl.quad_context);
     }
 }
 
