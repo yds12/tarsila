@@ -103,15 +103,29 @@ fn rgba_to_rgb_u8(color: [u8; 4]) -> [u8; 3] {
 async fn main() {
     let mut state = UiState::default();
 
-    let brush_bytes = include_bytes!("../res/icon/pencil.png");
-    let brush_icon = Texture2D::from_file_with_format(&brush_bytes.clone(), None);
-    let img = Image::from_file_with_format(brush_bytes, None);
+    let bytes = include_bytes!("../res/icon/pencil.png");
+    let brush_icon = Texture2D::from_file_with_format(&bytes.clone(), None);
+    let img = Image::from_file_with_format(bytes, None);
     let egui_brush = egui::ColorImage::from_rgba_unmultiplied([16, 16], &img.bytes);
+    let mut brush_texture = None;
 
-    let eyedropper_bytes = include_bytes!("../res/icon/eyedropper.png");
-    let eyedropper_icon = Texture2D::from_file_with_format(&eyedropper_bytes.clone(), None);
-    let img = Image::from_file_with_format(eyedropper_bytes, None);
+    let bytes = include_bytes!("../res/icon/eyedropper.png");
+    let eyedropper_icon = Texture2D::from_file_with_format(&bytes.clone(), None);
+    let img = Image::from_file_with_format(bytes, None);
     let egui_eyedropper = egui::ColorImage::from_rgba_unmultiplied([16, 16], &img.bytes);
+    let mut eyedropper_texture = None;
+
+    let bytes = include_bytes!("../res/icon/bucket.png");
+    let bucket_icon = Texture2D::from_file_with_format(&bytes.clone(), None);
+    let img = Image::from_file_with_format(bytes, None);
+    let egui_bucket = egui::ColorImage::from_rgba_unmultiplied([16, 16], &img.bytes);
+    let mut bucket_texture = None;
+
+    let bytes = include_bytes!("../res/icon/eraser.png");
+    let eraser_icon = Texture2D::from_file_with_format(&bytes.clone(), None);
+    let img = Image::from_file_with_format(bytes, None);
+    let egui_eraser = egui::ColorImage::from_rgba_unmultiplied([16, 16], &img.bytes);
+    let mut eraser_texture = None;
 
     let mut brush = [0, 0, 0];
     let mut canvas_w_str = state.canvas_size().x.to_string();
@@ -119,8 +133,6 @@ async fn main() {
     let mut drawing = Texture2D::from_image(&state.canvas().inner().0);
     drawing.set_filter(FilterMode::Nearest);
 
-    let mut eyedropper_texture = None;
-    let mut brush_texture = None;
 
     loop {
         clear_background(SKYBLUE);
@@ -177,7 +189,7 @@ async fn main() {
                     });
                     if ui
                         .add(egui::ImageButton::new(texture, texture.size_vec2()))
-                        .on_hover_text("brush tool")
+                        .on_hover_text("brush tool (B)")
                         .clicked()
                     {
                         state.execute(Event::SetTool(Tool::Brush));
@@ -188,10 +200,32 @@ async fn main() {
                     });
                     if ui
                         .add(egui::ImageButton::new(texture, texture.size_vec2()))
-                        .on_hover_text("eyedropper tool")
+                        .on_hover_text("eyedropper tool (I)")
                         .clicked()
                     {
                         state.execute(Event::SetTool(Tool::Eyedropper));
+                    }
+                    let texture: &egui::TextureHandle = bucket_texture.get_or_insert_with(|| {
+                        ui.ctx()
+                            .load_texture("bucket", egui_bucket.clone(), Default::default())
+                    });
+                    if ui
+                        .add(egui::ImageButton::new(texture, texture.size_vec2()))
+                        .on_hover_text("bucket tool (G)")
+                        .clicked()
+                    {
+                        state.execute(Event::SetTool(Tool::Bucket));
+                    }
+                    let texture: &egui::TextureHandle = eraser_texture.get_or_insert_with(|| {
+                        ui.ctx()
+                            .load_texture("eraser", egui_eraser.clone(), Default::default())
+                    });
+                    if ui
+                        .add(egui::ImageButton::new(texture, texture.size_vec2()))
+                        .on_hover_text("eraser tool (E)")
+                        .clicked()
+                    {
+                        state.execute(Event::SetTool(Tool::Eraser));
                     }
                 });
             });
@@ -215,21 +249,51 @@ async fn main() {
                         state.execute(Event::BrushOnPixel(x as u16, y as u16));
                         drawing.update(&state.canvas().inner().0);
                     }
+                    Tool::Eraser => {
+                        state.execute(Event::Erase(x as u16, y as u16));
+                        drawing.update(&state.canvas().inner().0);
+                    }
+                    _ => ()
+                }
+            }
+        }
+
+        if is_mouse_button_pressed(MouseButton::Left) {
+            let (x, y) = mouse_position();
+            let (x, y) = screen_to_canvas(x, y, &state);
+
+            if x >= 0
+                && y >= 0
+                && (x as u16) < state.canvas().width()
+                && (y as u16) < state.canvas().height()
+            {
+                match state.selected_tool() {
                     Tool::Eyedropper => {
                         let color = state.canvas().inner().pixel(x as u16, y as u16);
                         state.execute(Event::SetMainColor(color));
                         state.execute(Event::SetTool(Tool::Brush));
                     }
-                    _ => todo!(),
+                    Tool::Bucket => {
+                        state.execute(Event::Bucket(x as u16, y as u16));
+                        drawing.update(&state.canvas().inner().0);
+                    }
+                    _ => ()
                 }
             }
         }
 
+        // shortcuts
         if is_key_pressed(KeyCode::B) {
             state.execute(Event::SetTool(Tool::Brush));
         }
         if is_key_pressed(KeyCode::I) {
             state.execute(Event::SetTool(Tool::Eyedropper));
+        }
+        if is_key_pressed(KeyCode::G) {
+            state.execute(Event::SetTool(Tool::Bucket));
+        }
+        if is_key_pressed(KeyCode::E) {
+            state.execute(Event::SetTool(Tool::Eraser));
         }
         if is_key_pressed(KeyCode::Equal) {
             state.zoom_in();
@@ -261,6 +325,12 @@ async fn main() {
         } else if state.selected_tool() == Tool::Brush {
             let (x, y) = mouse_position();
             draw_texture(brush_icon, x + 1., y - brush_icon.height() + 2., 1.);
+        } else if state.selected_tool() == Tool::Bucket {
+            let (x, y) = mouse_position();
+            draw_texture(bucket_icon, x + 1., y - bucket_icon.height() + 2., 1.);
+        } else if state.selected_tool() == Tool::Eraser {
+            let (x, y) = mouse_position();
+            draw_texture(eraser_icon, x + 1., y - eraser_icon.height() + 2., 1.);
         }
 
         next_frame().await

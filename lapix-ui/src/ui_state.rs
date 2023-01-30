@@ -86,6 +86,10 @@ impl UiState {
         (self.inner.canvas().width() as f32,
         self.inner.canvas().height() as f32).into()
     }
+    pub fn canvas_actual_size(&self) -> Size<f32> {
+        (self.inner.canvas().width() as f32 * self.zoom,
+        self.inner.canvas().height() as f32 * self.zoom).into()
+    }
     pub fn main_color(&self) -> [u8; 4] {
         self.inner.main_color()
     }
@@ -114,12 +118,18 @@ impl UiState {
         }
     }
     fn is_camera_off(&self, direction: Direction) -> bool {
-        let buffer = 10.;
+        let buffer = 20.;
+        let canvas_size = self.canvas_actual_size();
+        let canvas_pos = self.canvas_pos;
+        let camera = self.camera;
+        let win_w = WINDOW_W as f32;
+        let win_h = WINDOW_H as f32;
 
         match direction {
-            Direction::Up => self.canvas_pos.y - self.camera.y > WINDOW_H as f32 - buffer,
-            Direction::Down => self.canvas_pos.y - self.camera.y > WINDOW_H as f32 - buffer,
-            _ => false
+            Direction::Up => canvas_pos.y - camera.y > win_h as f32 - buffer,
+            Direction::Down => camera.y > canvas_pos.y + canvas_size.y - buffer,
+            Direction::Left => canvas_pos.x - camera.x > win_w as f32 - buffer,
+            Direction::Right => camera.x > canvas_pos.x + canvas_size.x - buffer,
         }
     }
 }

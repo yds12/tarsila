@@ -1,4 +1,6 @@
-pub trait Color: Copy {
+use std::fmt::Debug;
+
+pub trait Color: Debug + Copy + PartialEq<Self> {
     fn rgb(&self) -> (u8, u8, u8);
     fn rgba(&self) -> (u8, u8, u8, u8);
     fn rgb_f32(&self) -> (f32, f32, f32);

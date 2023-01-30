@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::fmt::Debug;
 
 mod color;
 
@@ -10,7 +11,7 @@ pub struct State<IMG: Bitmap> {
     main_color: IMG::Color,
 }
 
-impl<IMG: Bitmap> State<IMG> {
+impl<IMG: Bitmap + Debug> State<IMG> {
     pub fn new(width: u16, height: u16) -> Self {
         Self {
             canvas: Canvas::new(width, height),
@@ -26,6 +27,8 @@ impl<IMG: Bitmap> State<IMG> {
             Event::SetTool(tool) => self.tool = tool,
             Event::SetMainColor(color) => self.main_color = color,
             Event::Save(path) => self.save_image(path.to_string_lossy().as_ref()),
+            Event::Bucket(x, y) => self.canvas.bucket(x, y, self.main_color),
+            Event::Erase(x, y) => self.canvas.set_pixel(x, y, IMG::Color::from_rgba(0, 0, 0, 0))
         }
     }
     pub fn canvas(&self) -> &Canvas<IMG> {
@@ -57,6 +60,8 @@ pub enum Event<IMG: Bitmap> {
     SetTool(Tool),
     SetMainColor(IMG::Color),
     Save(PathBuf),
+    Bucket(u16, u16),
+    Erase(u16, u16)
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -64,6 +69,7 @@ pub enum Tool {
     Brush,
     Eraser,
     Eyedropper,
+    Bucket
 }
 
 pub trait Bitmap {
@@ -103,6 +109,39 @@ impl<IMG: Bitmap> Canvas<IMG> {
     }
     fn set_pixel(&mut self, x: u16, y: u16, color: IMG::Color) {
         self.inner.set_pixel(x, y, color);
+    }
+    fn bucket(&mut self, x: u16, y: u16, color: IMG::Color) {
+        let old_color = self.inner.pixel(x, y);
+        self.bucket_recursive(x, y, old_color, color);
+    }
+    fn bucket_recursive(&mut self, x: u16, y: u16, old_color: IMG::Color, new_color: IMG::Color) {
+        self.set_pixel(x, y, new_color);
+
+        for (nx, ny) in self.neighbors(x, y) {
+            if self.inner.pixel(nx, ny) == old_color {
+                self.bucket_recursive(nx, ny, old_color, new_color);
+            }
+        }
+    }
+    fn neighbors(&self, x: u16, y: u16) -> Vec<(u16, u16)> {
+        let mut neighbors = Vec::new();
+        let w = self.inner.width();
+        let h = self.inner.height();
+
+        if x + 1 < w {
+            neighbors.push((x + 1, y));
+        }
+        if x > 0 {
+            neighbors.push((x - 1, y));
+        }
+        if y + 1 < h {
+            neighbors.push((x, y + 1));
+        }
+        if y > 0 {
+            neighbors.push((x, y - 1));
+        }
+
+        neighbors
     }
     pub fn inner(&self) -> &IMG {
         &self.inner

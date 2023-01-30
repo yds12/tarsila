@@ -14,8 +14,8 @@ Features (+ means done, (-) means least important):
     - layer panel allow to change layer position, remove and add layers
     - group/ungroup layers (-)
   - Transparent (+) or solid background
-  - Zoom in and out and predefined zoom levels
-  - Pan
+  - Zoom in and out (+) and predefined zoom levels
+  - Pan (+)
   - Background and helpers
     - color
     - checked (+)
@@ -46,10 +46,10 @@ Features (+ means done, (-) means least important):
   - Brush (+)
     - Resizable
     - Different shapes (-)
-    - Erasing mode
+    - Erasing mode (+)
     - Pixel perfect mode
     - Different color on right and left click
-  - Bucket
+  - Bucket (+)
     - adjustable tolerance
     - all areas with same color
     - gradient
