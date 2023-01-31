@@ -1,6 +1,7 @@
 use lapix_core::{Bitmap, Event, Tool};
 use macroquad::prelude::*;
 
+mod shortcut;
 mod ui_state;
 mod wrapped_image;
 
@@ -256,57 +257,20 @@ async fn main() {
             }
         }
 
-        // shortcuts
-        if is_key_pressed(KeyCode::B) {
-            state.execute(Event::SetTool(Tool::Brush));
-        }
-        if is_key_pressed(KeyCode::I) {
-            state.execute(Event::SetTool(Tool::Eyedropper));
-        }
-        if is_key_pressed(KeyCode::G) {
-            state.execute(Event::SetTool(Tool::Bucket));
-        }
-        if is_key_pressed(KeyCode::E) {
-            state.execute(Event::SetTool(Tool::Eraser));
-        }
-        if is_key_pressed(KeyCode::L) {
-            state.execute(Event::SetTool(Tool::Line));
-        }
-        if is_key_pressed(KeyCode::Equal) {
-            state.zoom_in();
-        }
-        if is_key_pressed(KeyCode::Minus) {
-            state.zoom_out();
-        }
-        if is_key_down(KeyCode::Left) {
-            state.move_camera(Direction::Left);
-        }
-        if is_key_down(KeyCode::Right) {
-            state.move_camera(Direction::Right);
-        }
-        if is_key_down(KeyCode::Up) {
-            state.move_camera(Direction::Up);
-        }
-        if is_key_down(KeyCode::Down) {
-            state.move_camera(Direction::Down);
-        }
+        state.process_shortcuts();
 
         state.draw_canvas_bg();
         state.draw_canvas();
         egui_macroquad::draw();
 
-        if state.selected_tool() == Tool::Eyedropper {
-            let (x, y) = mouse_position();
-            draw_texture(eyedropper_icon, x, y - eyedropper_icon.height(), 1.);
-        } else if state.selected_tool() == Tool::Brush {
-            let (x, y) = mouse_position();
-            draw_texture(brush_icon, x + 1., y - brush_icon.height() + 2., 1.);
-        } else if state.selected_tool() == Tool::Bucket {
-            let (x, y) = mouse_position();
-            draw_texture(bucket_icon, x + 1., y - bucket_icon.height() + 2., 1.);
-        } else if state.selected_tool() == Tool::Eraser {
-            let (x, y) = mouse_position();
-            draw_texture(eraser_icon, x + 1., y - eraser_icon.height() + 2., 1.);
+        // custom mouse cursor
+        let (x, y) = mouse_position();
+        match state.selected_tool() {
+            Tool::Eyedropper => draw_texture(eyedropper_icon, x, y - eyedropper_icon.height(), 1.),
+            Tool::Brush => draw_texture(brush_icon, x + 1., y - brush_icon.height() + 2., 1.),
+            Tool::Bucket => draw_texture(bucket_icon, x + 1., y - bucket_icon.height() + 2., 1.),
+            Tool::Eraser => draw_texture(eraser_icon, x + 1., y - eraser_icon.height() + 2., 1.),
+            Tool::Line => draw_texture(line_icon, x + 1., y - line_icon.height() + 2., 1.),
         }
 
         next_frame().await

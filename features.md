@@ -41,7 +41,7 @@ Features (+ means done, (-) means least important):
 - Commands
   - Customizable shortcuts (-)
   - Try to have good defaults
-  - Undo and redo
+  - Undo (+) and redo
 - Tools
   - Brush (+)
     - Resizable

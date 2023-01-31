@@ -1,12 +1,20 @@
 use std::fmt::Debug;
-use std::path::PathBuf;
 
 mod color;
 mod graphics;
+mod event;
 pub mod primitives;
 
 pub use color::Color;
 pub use primitives::*;
+pub use event::Event;
+
+#[derive(Debug, Clone, Copy)]
+pub enum CanvasEffect {
+    None,
+    Update,
+    New,
+}
 
 pub struct State<IMG: Bitmap> {
     canvas: Canvas<IMG>,
@@ -24,7 +32,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             main_color: IMG::Color::from_rgb(0, 0, 0),
         }
     }
-    pub fn execute(&mut self, event: Event<IMG>) {
+    pub fn execute(&mut self, event: Event<IMG>) -> CanvasEffect {
         dbg!(&event);
         match event.clone() {
             Event::ClearCanvas => self.canvas.clear(),
@@ -36,7 +44,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
                 let last_event = self.events.last();
                 let point = match last_event {
                     Some(Event::LineStart(i, j)) => (*i, *j).into(),
-                    _ => panic!("line not started!")
+                    _ => panic!("line not started!"),
                 };
 
                 self.canvas.line(point, (x, y).into(), self.main_color);
@@ -44,7 +52,8 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             Event::BrushStroke(x, y) => {
                 let last_event = self.events.last();
                 if let Some(Event::BrushStroke(x0, y0)) = last_event {
-                    self.canvas.line((*x0, *y0).into(), (x, y).into(), self.main_color);
+                    self.canvas
+                        .line((*x0, *y0).into(), (x, y).into(), self.main_color);
                 }
             }
             Event::SetTool(tool) => self.tool = tool,
@@ -54,10 +63,14 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             Event::Erase(x, y) => self
                 .canvas
                 .set_pixel(x, y, IMG::Color::from_rgba(0, 0, 0, 0)),
-            _ => todo!()
+            Event::Undo => return self.undo(),
+            _ => todo!(),
         }
 
+        let effect = event.canvas_effect();
         self.events.push(event);
+
+        effect
     }
     pub fn canvas(&self) -> &Canvas<IMG> {
         &self.canvas
@@ -78,62 +91,8 @@ impl<IMG: Bitmap + Debug> State<IMG> {
         .expect("Failed to generate image from bytes");
         img.save(path).expect("Failed to save image");
     }
-}
-
-#[derive(Debug)]
-pub enum Event<IMG: Bitmap> {
-    ClearCanvas,
-    ResizeCanvas(u16, u16),
-    BrushStart,
-    BrushStroke(u16, u16),
-    BrushEnd,
-    SetTool(Tool),
-    SetMainColor(IMG::Color),
-    Save(PathBuf),
-    Bucket(u16, u16),
-    Erase(u16, u16),
-    LineStart(u16, u16),
-    LineEnd(u16, u16)
-}
-
-impl<IMG: Bitmap> Clone for Event<IMG> {
-    fn clone(&self) -> Self {
-        match self {
-            Self::ClearCanvas => Self::ClearCanvas,
-            Self::ResizeCanvas(x, y) => Self::ResizeCanvas(*x, *y),
-            Self::BrushStart => Self::BrushStart,
-            Self::BrushStroke(x, y) => Self::BrushStroke(*x, *y),
-            Self::BrushEnd => Self::BrushEnd,
-            Self::SetTool(t) => Self::SetTool(*t),
-            Self::SetMainColor(c) => Self::SetMainColor(*c),
-            Self::Save(path) => Self::Save(path.clone()),
-            Self::Bucket(x, y) => Self::Bucket(*x, *y),
-            Self::Erase(x, y) => Self::Erase(*x, *y),
-            Self::LineStart(x, y) => Self::LineStart(*x, *y),
-            Self::LineEnd(x, y) => Self::LineEnd(*x, *y),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum CanvasEffect {
-    None,
-    Update,
-    New,
-}
-
-impl<IMG: Bitmap> Event<IMG> {
-    pub fn canvas_effect(&self) -> CanvasEffect {
-        match self {
-            Self::ClearCanvas
-            | Self::BrushStart
-            | Self::BrushStroke(_, _)
-            | Self::LineEnd(_, _)
-            | Self::Bucket(_, _)
-            | Self::Erase(_, _) => CanvasEffect::Update,
-            Self::ResizeCanvas(_, _) => CanvasEffect::New,
-            _ => CanvasEffect::None,
-        }
+    fn undo(&mut self) -> CanvasEffect {
+        self.canvas.undo_last()
     }
 }
 
@@ -143,7 +102,7 @@ pub enum Tool {
     Eraser,
     Eyedropper,
     Bucket,
-    Line
+    Line,
 }
 
 pub trait Bitmap {
@@ -157,9 +116,61 @@ pub trait Bitmap {
     fn bytes(&self) -> &[u8];
 }
 
+#[derive(Debug)]
+pub enum CanvasAtomicEdit<IMG: Bitmap> {
+    ChangePixel {
+        position: Position<u16>,
+        old: IMG::Color,
+        new: IMG::Color
+    },
+    ChangeSize {
+        old: Size<u16>,
+        new: Size<u16>
+    }
+}
+
+impl<IMG: Bitmap> CanvasAtomicEdit<IMG> {
+    pub fn undo(&self) -> CanvasAtomicEdit<IMG> {
+        match self {
+            CanvasAtomicEdit::ChangePixel { position, old, new } =>
+                CanvasAtomicEdit::ChangePixel {
+                    position: *position,
+                    old: *new,
+                    new: *old
+                },
+            _ => todo!()
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct CanvasEdit<IMG: Bitmap>(Vec<CanvasAtomicEdit<IMG>>);
+
+impl<IMG: Bitmap> CanvasEdit<IMG> {
+    pub fn set_pixel(x: u16, y: u16, old: IMG::Color, new: IMG::Color) -> Self {
+        Self(vec![
+             CanvasAtomicEdit::ChangePixel {
+                 position: Position::new(x, y),
+                 old,
+                 new
+             }
+        ])
+    }
+
+    pub fn undo(&self) -> CanvasEdit<IMG> {
+        let mut edits = Vec::new();
+        for edit in &self.0 {
+            edits.push(edit.undo());
+        }
+
+        Self(edits)
+    }
+}
+
 pub struct Canvas<IMG: Bitmap> {
     inner: IMG,
     empty_color: IMG::Color,
+    edits: Vec<CanvasEdit<IMG>>
 }
 
 impl<IMG: Bitmap> Canvas<IMG> {
@@ -168,7 +179,31 @@ impl<IMG: Bitmap> Canvas<IMG> {
         Self {
             inner: IMG::new(width, height, empty_color),
             empty_color,
+            edits: Vec::new()
         }
+    }
+    fn undo_edit(&mut self, edit: CanvasAtomicEdit<IMG>) -> CanvasEffect {
+        match edit {
+            CanvasAtomicEdit::ChangePixel { position, old, .. } => {
+                dbg!(position, old);
+                self.inner.set_pixel(position.x, position.y, old);
+
+                CanvasEffect::Update
+            },
+            _ => todo!()
+        }
+    }
+    fn undo_last(&mut self) -> CanvasEffect {
+        let edit = self.edits.pop();
+        let mut effect = CanvasEffect::None;
+
+        if let Some(edit) = edit {
+            for atomic_edit in edit.0 {
+                effect = self.undo_edit(atomic_edit);
+            }
+        }
+
+        effect
     }
     fn clear(&mut self) {
         self.inner = IMG::new(self.width(), self.height(), self.empty_color);
@@ -178,6 +213,9 @@ impl<IMG: Bitmap> Canvas<IMG> {
         self.inner = IMG::new(width, height, self.empty_color);
     }
     fn set_pixel(&mut self, x: u16, y: u16, color: IMG::Color) {
+        let old = self.inner.pixel(x, y);
+        self.edits.push(CanvasEdit::set_pixel(x, y, old, color));
+
         self.inner.set_pixel(x, y, color);
     }
     fn line(&mut self, p1: Point<u16>, p2: Point<u16>, color: IMG::Color) {

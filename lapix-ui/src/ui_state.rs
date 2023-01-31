@@ -1,7 +1,9 @@
+use crate::shortcut::{Effect, Shortcut, Shortcuts, Modifier};
 use crate::wrapped_image::WrappedImage;
-use lapix_core::{Canvas, CanvasEffect, Event, State, Tool};
 use lapix_core::primitives::*;
+use lapix_core::{Canvas, CanvasEffect, Event, State, Tool};
 use macroquad::prelude::*;
+use std::collections::HashMap;
 use std::default::Default;
 
 pub const WINDOW_W: i32 = 1000;
@@ -20,6 +22,13 @@ fn rgba_to_rgb_u8(color: [u8; 4]) -> [u8; 3] {
     [color[0], color[1], color[2]]
 }
 
+#[derive(Debug, Clone)]
+pub enum UiEvent {
+    ZoomIn,
+    ZoomOut,
+    MoveCamera(Direction),
+}
+
 pub struct UiState {
     inner: State<WrappedImage>,
     camera: Position<f32>,
@@ -29,6 +38,7 @@ pub struct UiState {
     canvas_w_str: String,
     canvas_h_str: String,
     brush: [u8; 3],
+    shortcuts: Shortcuts,
 }
 
 impl Default for UiState {
@@ -39,7 +49,7 @@ impl Default for UiState {
         let canvas_w_str = state.canvas().width().to_string();
         let canvas_h_str = state.canvas().height().to_string();
 
-        Self {
+        let mut ui_state = Self {
             inner: state,
             camera: (0., 0.).into(),
             canvas_pos: (CANVAS_X, CANVAS_Y).into(),
@@ -48,11 +58,48 @@ impl Default for UiState {
             canvas_w_str,
             canvas_h_str,
             brush: [0, 0, 0],
-        }
+            shortcuts: Shortcuts::new(),
+        };
+
+        ui_state.register_default_shortcuts();
+
+        ui_state
     }
 }
 
 impl UiState {
+    pub fn register_default_shortcuts(&mut self) {
+        let kv = [
+            (KeyCode::Equal, UiEvent::ZoomIn),
+            (KeyCode::Minus, UiEvent::ZoomOut),
+        ];
+        for (k, v) in kv {
+            self.shortcuts.register_keypress_ui_event(k, v);
+        }
+
+        let kv = [
+            (KeyCode::Up, UiEvent::MoveCamera(Direction::Up)),
+            (KeyCode::Down, UiEvent::MoveCamera(Direction::Down)),
+            (KeyCode::Left, UiEvent::MoveCamera(Direction::Left)),
+            (KeyCode::Right, UiEvent::MoveCamera(Direction::Right)),
+        ];
+        for (k, v) in kv {
+            self.shortcuts.register_keydown_ui_event(k, v);
+        }
+
+        let kv = [
+            (KeyCode::B, Event::SetTool(Tool::Brush)),
+            (KeyCode::E, Event::SetTool(Tool::Eraser)),
+            (KeyCode::G, Event::SetTool(Tool::Bucket)),
+            (KeyCode::I, Event::SetTool(Tool::Eyedropper)),
+            (KeyCode::L, Event::SetTool(Tool::Line)),
+        ];
+        for (k, v) in kv {
+            self.shortcuts.register_keypress_event(k, v);
+        }
+
+        self.shortcuts.register_keypress_mod_event(Modifier::Ctrl, KeyCode::Z, Event::Undo);
+    }
     pub fn camera(&self) -> Position<f32> {
         self.camera
     }
@@ -60,8 +107,7 @@ impl UiState {
         &self.inner.canvas()
     }
     pub fn execute(&mut self, event: Event<WrappedImage>) {
-        let effect = event.canvas_effect();
-        self.inner.execute(event);
+        let effect = self.inner.execute(event);
 
         match effect {
             CanvasEffect::Update => self.drawing.update(&self.canvas().inner().0),
@@ -70,6 +116,13 @@ impl UiState {
                 self.drawing.set_filter(FilterMode::Nearest);
             }
             CanvasEffect::None => (),
+        };
+    }
+    pub fn process_event(&mut self, event: UiEvent) {
+        match event {
+            UiEvent::ZoomIn => self.zoom_in(),
+            UiEvent::ZoomOut => self.zoom_out(),
+            UiEvent::MoveCamera(dir) => self.move_camera(dir),
         }
     }
     pub fn canvas_w_str(&mut self) -> &mut String {
@@ -78,6 +131,16 @@ impl UiState {
     pub fn canvas_h_str(&mut self) -> &mut String {
         &mut self.canvas_h_str
     }
+    pub fn process_shortcuts(&mut self) {
+        let fx = self.shortcuts.process();
+
+        for effect in fx {
+            match effect {
+                Effect::Event(event) => self.execute(event),
+                Effect::UiEvent(event) => self.process_event(event),
+            }
+        }
+    }
     pub fn brush(&mut self) -> &mut [u8; 3] {
         self.brush = rgba_to_rgb_u8(self.main_color());
 
@@ -85,13 +148,6 @@ impl UiState {
     }
     pub fn canvas_pos(&self) -> Position<f32> {
         self.canvas_pos
-    }
-    pub fn canvas_size(&self) -> Size<f32> {
-        (
-            self.inner.canvas().width() as f32,
-            self.inner.canvas().height() as f32,
-        )
-            .into()
     }
     pub fn canvas_actual_size(&self) -> Size<f32> {
         (
