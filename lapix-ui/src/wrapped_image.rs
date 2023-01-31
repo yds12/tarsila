@@ -31,23 +31,26 @@ impl Bitmap for WrappedImage {
         self.0.height() as u16
     }
     fn pixel(&self, x: u16, y: u16) -> Self::Color {
-        let base_idx = y * 4 * self.width() + x * 4;
+        let x = x as usize;
+        let y = y as usize;
+        let base_idx = y * 4 * self.width() as usize + x * 4;
         [
-            self.0.bytes[base_idx as usize],
-            self.0.bytes[(base_idx + 1) as usize],
-            self.0.bytes[(base_idx + 2) as usize],
-            self.0.bytes[(base_idx + 3) as usize],
+            self.0.bytes[base_idx],
+            self.0.bytes[base_idx + 1],
+            self.0.bytes[base_idx + 2],
+            self.0.bytes[base_idx + 3],
         ]
     }
     fn set_pixel(&mut self, x: u16, y: u16, color: Self::Color) {
-        let base_idx = y * 4 * self.width() + x * 4;
-        self.0.bytes[base_idx as usize] = color[0];
-        self.0.bytes[(base_idx + 1) as usize] = color[1];
-        self.0.bytes[(base_idx + 2) as usize] = color[2];
-        self.0.bytes[(base_idx + 3) as usize] = color[3];
+        let x = x as usize;
+        let y = y as usize;
+        let base_idx = y * 4 * self.width() as usize + x * 4;
+        self.0.bytes[base_idx] = color[0];
+        self.0.bytes[base_idx + 1] = color[1];
+        self.0.bytes[base_idx + 2] = color[2];
+        self.0.bytes[base_idx + 3] = color[3];
     }
     fn bytes(&self) -> &[u8] {
         &self.0.bytes
     }
 }
-

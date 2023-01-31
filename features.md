@@ -54,7 +54,7 @@ Features (+ means done, (-) means least important):
     - all areas with same color
     - gradient
   - Shapes
-    - Lines
+    - Lines (+)
     - Rectangles
     - Ovals
       - properties of recently created objects (lines, shapes)

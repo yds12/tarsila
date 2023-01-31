@@ -7,3 +7,6 @@ edition = "2021"
 
 [dependencies]
 image = "0.24.5"
+
+[dev-dependencies]
+test-case = "2.2.2"

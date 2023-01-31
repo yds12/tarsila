@@ -1,6 +1,8 @@
-use std::default::Default;
-use lapix_core::{Canvas, Event, State, Tool};
 use crate::wrapped_image::WrappedImage;
+use lapix_core::{Canvas, CanvasEffect, Event, State, Tool};
+use lapix_core::primitives::*;
+use macroquad::prelude::*;
+use std::default::Default;
 
 pub const WINDOW_W: i32 = 1000;
 pub const WINDOW_H: i32 = 600;
@@ -14,57 +16,38 @@ const CANVAS_X: f32 = LEFT_TOOLBAR_W as f32 + ((WINDOW_W as u16 - LEFT_TOOLBAR_W
     - (CANVAS_W as f32 * CANVAS_SCALE / 2.);
 const CANVAS_Y: f32 = (WINDOW_H / 2) as f32 - (CANVAS_H as f32 * CANVAS_SCALE / 2.);
 
-pub trait Number {}
-impl Number for i8 {}
-impl Number for i16 {}
-impl Number for i32 {}
-impl Number for i64 {}
-impl Number for u8 {}
-impl Number for u16 {}
-impl Number for u32 {}
-impl Number for u64 {}
-impl Number for f32 {}
-impl Number for f64 {}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct Point<T: Number> {
-    pub x: T,
-    pub y: T
-}
-pub type Position<T> = Point<T>;
-pub type Size<T> = Point<T>;
-
-impl<T: Number> From<(T, T)> for Position<T> {
-    fn from(value: (T, T)) -> Self {
-        Self {
-            x: value.0,
-            y: value.1
-        }
-    }
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Direction {
-    Up,
-    Down,
-    Left,
-    Right
+fn rgba_to_rgb_u8(color: [u8; 4]) -> [u8; 3] {
+    [color[0], color[1], color[2]]
 }
 
 pub struct UiState {
     inner: State<WrappedImage>,
     camera: Position<f32>,
     canvas_pos: Position<f32>,
-    zoom: f32
+    zoom: f32,
+    drawing: Texture2D,
+    canvas_w_str: String,
+    canvas_h_str: String,
+    brush: [u8; 3],
 }
 
 impl Default for UiState {
     fn default() -> Self {
+        let state = State::<WrappedImage>::new(CANVAS_W, CANVAS_H);
+        let drawing = Texture2D::from_image(&state.canvas().inner().0);
+        drawing.set_filter(FilterMode::Nearest);
+        let canvas_w_str = state.canvas().width().to_string();
+        let canvas_h_str = state.canvas().height().to_string();
+
         Self {
-            inner: State::<WrappedImage>::new(CANVAS_W, CANVAS_H),
+            inner: state,
             camera: (0., 0.).into(),
             canvas_pos: (CANVAS_X, CANVAS_Y).into(),
-            zoom: 8.
+            zoom: 8.,
+            drawing,
+            canvas_w_str,
+            canvas_h_str,
+            brush: [0, 0, 0],
         }
     }
 }
@@ -77,18 +60,45 @@ impl UiState {
         &self.inner.canvas()
     }
     pub fn execute(&mut self, event: Event<WrappedImage>) {
+        let effect = event.canvas_effect();
         self.inner.execute(event);
+
+        match effect {
+            CanvasEffect::Update => self.drawing.update(&self.canvas().inner().0),
+            CanvasEffect::New => {
+                self.drawing = Texture2D::from_image(&self.canvas().inner().0);
+                self.drawing.set_filter(FilterMode::Nearest);
+            }
+            CanvasEffect::None => (),
+        }
+    }
+    pub fn canvas_w_str(&mut self) -> &mut String {
+        &mut self.canvas_w_str
+    }
+    pub fn canvas_h_str(&mut self) -> &mut String {
+        &mut self.canvas_h_str
+    }
+    pub fn brush(&mut self) -> &mut [u8; 3] {
+        self.brush = rgba_to_rgb_u8(self.main_color());
+
+        &mut self.brush
     }
     pub fn canvas_pos(&self) -> Position<f32> {
         self.canvas_pos
     }
     pub fn canvas_size(&self) -> Size<f32> {
-        (self.inner.canvas().width() as f32,
-        self.inner.canvas().height() as f32).into()
+        (
+            self.inner.canvas().width() as f32,
+            self.inner.canvas().height() as f32,
+        )
+            .into()
     }
     pub fn canvas_actual_size(&self) -> Size<f32> {
-        (self.inner.canvas().width() as f32 * self.zoom,
-        self.inner.canvas().height() as f32 * self.zoom).into()
+        (
+            self.inner.canvas().width() as f32 * self.zoom,
+            self.inner.canvas().height() as f32 * self.zoom,
+        )
+            .into()
     }
     pub fn main_color(&self) -> [u8; 4] {
         self.inner.main_color()
@@ -132,5 +142,62 @@ impl UiState {
             Direction::Right => camera.x > canvas_pos.x + canvas_size.x - buffer,
         }
     }
-}
+    pub fn draw_canvas_bg(&self) {
+        let scale = self.zoom();
 
+        let x = self.canvas_pos().x - self.camera().x;
+        let y = self.canvas_pos().y - self.camera().y;
+        let w = self.drawing.width() * scale;
+        let h = self.drawing.height() * scale;
+
+        let side = 4. * scale;
+
+        // TODO: optimize this by storing a rendered texture that contains all
+        // BG rectangles
+        let bg1 = Color::new(0.875, 0.875, 0.875, 1.);
+        let bg2 = Color::new(0.75, 0.75, 0.75, 1.);
+        for i in 0..(w / side + 1.) as usize {
+            for j in 0..(h / side + 1.) as usize {
+                let cur_w = i as f32 * side;
+                let cur_h = j as f32 * side;
+                let next_w = (i + 1) as f32 * side;
+                let next_h = (j + 1) as f32 * side;
+                let x = x + i as f32 * side;
+                let y = y + j as f32 * side;
+                let w = if next_w <= w { side } else { w - cur_w };
+                let h = if next_h <= h { side } else { h - cur_h };
+                let color = if (i + j) % 2 == 0 { bg1 } else { bg2 };
+                draw_rectangle(x, y, w, h, color);
+            }
+        }
+    }
+    pub fn draw_canvas(&self) {
+        let texture = self.drawing;
+        let w = texture.width();
+        let h = texture.height();
+
+        let x = self.canvas_pos().x - self.camera().x;
+        let y = self.canvas_pos().y - self.camera().y;
+        let scale = self.zoom();
+
+        let params = DrawTextureParams {
+            dest_size: Some(Vec2 {
+                x: w * scale,
+                y: h * scale,
+            }),
+            ..Default::default()
+        };
+
+        draw_texture_ex(texture, x, y, WHITE, params);
+    }
+    pub fn screen_to_canvas(&self, x: f32, y: f32) -> (i16, i16) {
+        let canvas_x = self.canvas_pos().x - self.camera().x;
+        let canvas_y = self.canvas_pos().y - self.camera().y;
+        let scale = self.zoom();
+
+        (
+            ((x - canvas_x) / scale) as i16,
+            ((y - canvas_y) / scale) as i16,
+        )
+    }
+}
