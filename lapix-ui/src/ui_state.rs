@@ -1,10 +1,10 @@
-use crate::keyboard::{Effect, KeyboardManager, Modifier, Shortcut};
+use crate::gui::Gui;
+use crate::keyboard::{Effect, KeyboardManager, Modifier};
 use crate::wrapped_image::WrappedImage;
 use lapix_core::primitives::*;
 use lapix_core::{Canvas, CanvasEffect, Event, State, Tool};
 use macroquad::prelude::*;
 use std::default::Default;
-use std::time::SystemTime;
 
 pub const WINDOW_W: i32 = 1000;
 pub const WINDOW_H: i32 = 600;
@@ -18,10 +18,6 @@ const CANVAS_X: f32 = LEFT_TOOLBAR_W as f32 + ((WINDOW_W as u16 - LEFT_TOOLBAR_W
     - (CANVAS_W as f32 * CANVAS_SCALE / 2.);
 const CANVAS_Y: f32 = (WINDOW_H / 2) as f32 - (CANVAS_H as f32 * CANVAS_SCALE / 2.);
 
-fn rgba_to_rgb_u8(color: [u8; 4]) -> [u8; 3] {
-    [color[0], color[1], color[2]]
-}
-
 #[derive(Debug, Clone)]
 pub enum UiEvent {
     ZoomIn,
@@ -31,15 +27,12 @@ pub enum UiEvent {
 
 pub struct UiState {
     inner: State<WrappedImage>,
+    gui: Gui,
     camera: Position<f32>,
     canvas_pos: Position<f32>,
     zoom: f32,
     drawing: Texture2D,
-    canvas_w_str: String,
-    canvas_h_str: String,
-    brush: [u8; 3],
     shortcuts: KeyboardManager,
-    last_keydown: Option<SystemTime>,
 }
 
 impl Default for UiState {
@@ -47,20 +40,15 @@ impl Default for UiState {
         let state = State::<WrappedImage>::new(CANVAS_W, CANVAS_H);
         let drawing = Texture2D::from_image(&state.canvas().inner().0);
         drawing.set_filter(FilterMode::Nearest);
-        let canvas_w_str = state.canvas().width().to_string();
-        let canvas_h_str = state.canvas().height().to_string();
 
         let mut ui_state = Self {
             inner: state,
+            gui: Gui::new((CANVAS_W, CANVAS_H).into()),
             camera: (0., 0.).into(),
             canvas_pos: (CANVAS_X, CANVAS_Y).into(),
             zoom: 8.,
             drawing,
-            canvas_w_str,
-            canvas_h_str,
-            brush: [0, 0, 0],
             shortcuts: KeyboardManager::new(),
-            last_keydown: None,
         };
         ui_state.register_default_shortcuts();
 
@@ -104,6 +92,19 @@ impl UiState {
         self.shortcuts
             .register_keydown_mod_event(Modifier::Ctrl, KeyCode::Z, Event::Undo);
     }
+    pub fn update(&mut self) {
+        let events = self.gui.update(self.inner.main_color());
+
+        for event in events {
+            self.execute(event);
+        }
+    }
+    pub fn draw(&mut self) {
+        self.draw_canvas_bg();
+        self.draw_canvas();
+        egui_macroquad::draw();
+        self.gui.draw_cursor(self.selected_tool());
+    }
     pub fn camera(&self) -> Position<f32> {
         self.camera
     }
@@ -129,12 +130,6 @@ impl UiState {
             UiEvent::MoveCamera(dir) => self.move_camera(dir),
         }
     }
-    pub fn canvas_w_str(&mut self) -> &mut String {
-        &mut self.canvas_w_str
-    }
-    pub fn canvas_h_str(&mut self) -> &mut String {
-        &mut self.canvas_h_str
-    }
     pub fn process_shortcuts(&mut self) {
         let fx = self.shortcuts.process();
 
@@ -145,11 +140,6 @@ impl UiState {
             }
         }
     }
-    pub fn brush(&mut self) -> &mut [u8; 3] {
-        self.brush = rgba_to_rgb_u8(self.main_color());
-
-        &mut self.brush
-    }
     pub fn canvas_pos(&self) -> Position<f32> {
         self.canvas_pos
     }
@@ -159,9 +149,6 @@ impl UiState {
             self.inner.canvas().height() as f32 * self.zoom,
         )
             .into()
-    }
-    pub fn main_color(&self) -> [u8; 4] {
-        self.inner.main_color()
     }
     pub fn selected_tool(&self) -> Tool {
         self.inner.selected_tool()

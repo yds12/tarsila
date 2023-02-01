@@ -1,6 +1,6 @@
-use crate::ui_state::{UiEvent, UiState};
+use crate::ui_state::UiEvent;
 use crate::wrapped_image::WrappedImage;
-use crate::{Bitmap, Event};
+use crate::Event;
 use macroquad::prelude::*;
 use std::collections::HashMap;
 use std::time::SystemTime;
@@ -56,13 +56,11 @@ impl KeyboardManager {
     }
 
     pub fn register_keypress_event(&mut self, key: KeyCode, event: Event<WrappedImage>) {
-        self.shortcuts
-            .insert(Shortcut::KeyPress(key), Effect::Event(event));
+        self.register(Shortcut::KeyPress(key), Effect::Event(event));
     }
 
     pub fn register_keydown_event(&mut self, key: KeyCode, event: Event<WrappedImage>) {
-        self.shortcuts
-            .insert(Shortcut::KeyDown(key), Effect::Event(event));
+        self.register(Shortcut::KeyDown(key), Effect::Event(event));
     }
 
     pub fn register_keypress_mod_event(
@@ -71,8 +69,7 @@ impl KeyboardManager {
         key: KeyCode,
         event: Event<WrappedImage>,
     ) {
-        self.shortcuts
-            .insert(Shortcut::KeyPressMod(modifier, key), Effect::Event(event));
+        self.register(Shortcut::KeyPressMod(modifier, key), Effect::Event(event));
     }
 
     pub fn register_keydown_mod_event(
@@ -81,18 +78,15 @@ impl KeyboardManager {
         key: KeyCode,
         event: Event<WrappedImage>,
     ) {
-        self.shortcuts
-            .insert(Shortcut::KeyDownMod(modifier, key), Effect::Event(event));
+        self.register(Shortcut::KeyDownMod(modifier, key), Effect::Event(event));
     }
 
     pub fn register_keypress_ui_event(&mut self, key: KeyCode, event: UiEvent) {
-        self.shortcuts
-            .insert(Shortcut::KeyPress(key), Effect::UiEvent(event));
+        self.register(Shortcut::KeyPress(key), Effect::UiEvent(event));
     }
 
     pub fn register_keydown_ui_event(&mut self, key: KeyCode, event: UiEvent) {
-        self.shortcuts
-            .insert(Shortcut::KeyDown(key), Effect::UiEvent(event));
+        self.register(Shortcut::KeyDown(key), Effect::UiEvent(event));
     }
 
     pub fn process(&mut self) -> Vec<Effect> {
@@ -101,9 +95,7 @@ impl KeyboardManager {
         for (shortcut, effect) in &self.shortcuts {
             let execute = match shortcut {
                 Shortcut::KeyPress(key) => is_key_pressed(*key),
-                Shortcut::KeyDown(key) => {
-                    is_key_down(*key) && self.allow_keydown()
-                }
+                Shortcut::KeyDown(key) => is_key_down(*key) && self.allow_keydown(),
                 Shortcut::KeyPressMod(modif, key) => match modif {
                     Modifier::Ctrl => {
                         (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl))
@@ -126,7 +118,6 @@ impl KeyboardManager {
                             && self.allow_keydown()
                     }
                 },
-                _ => false,
             };
 
             if execute {

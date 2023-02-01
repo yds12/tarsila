@@ -75,22 +75,21 @@ impl<IMG: Bitmap + Debug> State<IMG> {
                 self.canvas.finish_tool_action();
 
                 effect
-            },
+            }
             Event::Erase(x, y) => {
                 if self.canvas.inner.pixel(x, y) != IMG::Color::from_rgba(0, 0, 0, 0) {
-                    self
-                    .canvas
-                    .set_pixel(x, y, IMG::Color::from_rgba(0, 0, 0, 0))
+                    self.canvas
+                        .set_pixel(x, y, IMG::Color::from_rgba(0, 0, 0, 0))
                 }
-            },
+            }
             Event::Undo => {
                 // TODO: we should add UNDO to the events list
-                dbg!(t0.elapsed());
+                dbg!(t0.elapsed().unwrap());
                 return self.undo();
             }
             _ => todo!(),
         }
-        dbg!(t0.elapsed());
+        dbg!(t0.elapsed().unwrap());
 
         let effect = event.canvas_effect();
         self.events.push(event);
@@ -121,7 +120,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum Tool {
     Brush,
     Eraser,

@@ -5,7 +5,11 @@ Projects issues and bugs:
 3. When interacting with UI elements, draws on canvas behind
 4. Undo not working with canvas resizes
 5. When line is started outside of canvas, we do not register the line start
-6. Need some way of controlling the repetition of keydown time
+6. Need some way of controlling the repetition of keydown time [DONE]
 7. Eraser: group edits while mouse is pressed, end edit when mouse released [ENH][DONE]
 8. Eraser: similar issue as with brush, non-contiguous strokes
+9. When ending a line outside of canvas, cannot undo
+10. Sometimes when leaving the canvas, tool is not released and continue drawing
+11. Improve the visibility of the tool cursors (e.g. on black) [ENH]
+12. Data about tools is too spread around: Tool enum, data about icons, etc.
 
