@@ -5,7 +5,7 @@ pub fn distance(p1: Point<i32>, p2: Point<i32>) -> f32 {
 }
 
 pub fn line(p1: Point<u16>, p2: Point<u16>) -> Vec<Point<u16>> {
-    let mut line = std::collections::HashSet::new();
+    let mut line = Vec::new();
 
     let p1 = Point::new(p1.x as i32, p1.y as i32);
     let p2 = Point::new(p2.x as i32, p2.y as i32);
@@ -19,10 +19,17 @@ pub fn line(p1: Point<u16>, p2: Point<u16>) -> Vec<Point<u16>> {
     for i in 0..=dist.round() as usize {
         let x = (p1.x as f32 + (i as f32 * dx)).round() as u16;
         let y = (p1.y as f32 + (i as f32 * dy)).round() as u16;
-        line.insert((x, y).into());
+
+        if let Some(Point { x: x0, y: y0 }) = line.last() {
+            if x == *x0 && y == *y0 {
+                continue;
+            }
+        }
+
+        line.push((x, y).into());
     }
 
-    line.into_iter().collect()
+    line
 }
 
 #[cfg(test)]

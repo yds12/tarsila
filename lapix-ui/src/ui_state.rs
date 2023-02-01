@@ -1,10 +1,10 @@
-use crate::shortcut::{Effect, Shortcut, Shortcuts, Modifier};
+use crate::keyboard::{Effect, KeyboardManager, Modifier, Shortcut};
 use crate::wrapped_image::WrappedImage;
 use lapix_core::primitives::*;
 use lapix_core::{Canvas, CanvasEffect, Event, State, Tool};
 use macroquad::prelude::*;
-use std::collections::HashMap;
 use std::default::Default;
+use std::time::SystemTime;
 
 pub const WINDOW_W: i32 = 1000;
 pub const WINDOW_H: i32 = 600;
@@ -38,7 +38,8 @@ pub struct UiState {
     canvas_w_str: String,
     canvas_h_str: String,
     brush: [u8; 3],
-    shortcuts: Shortcuts,
+    shortcuts: KeyboardManager,
+    last_keydown: Option<SystemTime>,
 }
 
 impl Default for UiState {
@@ -58,9 +59,9 @@ impl Default for UiState {
             canvas_w_str,
             canvas_h_str,
             brush: [0, 0, 0],
-            shortcuts: Shortcuts::new(),
+            shortcuts: KeyboardManager::new(),
+            last_keydown: None,
         };
-
         ui_state.register_default_shortcuts();
 
         ui_state
@@ -98,7 +99,10 @@ impl UiState {
             self.shortcuts.register_keypress_event(k, v);
         }
 
-        self.shortcuts.register_keypress_mod_event(Modifier::Ctrl, KeyCode::Z, Event::Undo);
+        self.shortcuts
+            .register_keypress_mod_event(Modifier::Ctrl, KeyCode::Z, Event::Undo);
+        self.shortcuts
+            .register_keydown_mod_event(Modifier::Ctrl, KeyCode::Z, Event::Undo);
     }
     pub fn camera(&self) -> Position<f32> {
         self.camera
@@ -172,7 +176,7 @@ impl UiState {
         self.zoom /= 2.;
     }
     pub fn move_camera(&mut self, direction: Direction) {
-        let speed = 0.5 * self.zoom;
+        let speed = 10.;
 
         if !self.is_camera_off(direction) {
             match direction {

@@ -1,7 +1,7 @@
 use lapix_core::{Bitmap, Event, Tool};
 use macroquad::prelude::*;
 
-mod shortcut;
+mod keyboard;
 mod ui_state;
 mod wrapped_image;
 
@@ -199,6 +199,9 @@ async fn main() {
                     Tool::Brush => {
                         state.execute(Event::BrushStart);
                     }
+                    Tool::Eraser => {
+                        state.execute(Event::EraseStart);
+                    }
                     Tool::Line => {
                         state.execute(Event::LineStart(x as u16, y as u16));
                     }
@@ -248,6 +251,9 @@ async fn main() {
                 match state.selected_tool() {
                     Tool::Brush => {
                         state.execute(Event::BrushEnd);
+                    }
+                    Tool::Eraser => {
+                        state.execute(Event::EraseEnd);
                     }
                     Tool::Line => {
                         state.execute(Event::LineEnd(x as u16, y as u16));
