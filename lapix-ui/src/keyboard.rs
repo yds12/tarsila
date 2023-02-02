@@ -1,11 +1,11 @@
 use crate::ui_state::UiEvent;
 use crate::wrapped_image::WrappedImage;
-use crate::Event;
+use lapix_core::{Direction, Event, Tool};
 use macroquad::prelude::*;
 use std::collections::HashMap;
 use std::time::SystemTime;
 
-const KEYDOWN_INTERVAL: u128 = 100;
+const KEYDOWN_INTERVAL: u128 = 5;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum Shortcut {
@@ -34,10 +34,47 @@ pub struct KeyboardManager {
 
 impl KeyboardManager {
     pub fn new() -> Self {
-        Self {
+        let mut km = Self {
             shortcuts: HashMap::new(),
             last_keydown: None,
+        };
+        km.register_defaults();
+
+        km
+    }
+
+    pub fn register_defaults(&mut self) {
+        let kv = [
+            (KeyCode::Equal, UiEvent::ZoomIn),
+            (KeyCode::Minus, UiEvent::ZoomOut),
+        ];
+        for (k, v) in kv {
+            self.register_keypress_ui_event(k, v);
         }
+
+        let kv = [
+            (KeyCode::Up, UiEvent::MoveCamera(Direction::Up)),
+            (KeyCode::Down, UiEvent::MoveCamera(Direction::Down)),
+            (KeyCode::Left, UiEvent::MoveCamera(Direction::Left)),
+            (KeyCode::Right, UiEvent::MoveCamera(Direction::Right)),
+        ];
+        for (k, v) in kv {
+            self.register_keydown_ui_event(k, v);
+        }
+
+        let kv = [
+            (KeyCode::B, Event::SetTool(Tool::Brush)),
+            (KeyCode::E, Event::SetTool(Tool::Eraser)),
+            (KeyCode::G, Event::SetTool(Tool::Bucket)),
+            (KeyCode::I, Event::SetTool(Tool::Eyedropper)),
+            (KeyCode::L, Event::SetTool(Tool::Line)),
+        ];
+        for (k, v) in kv {
+            self.register_keypress_event(k, v);
+        }
+
+        self.register_keypress_mod_event(Modifier::Ctrl, KeyCode::Z, Event::Undo);
+        //self.register_keydown_mod_event(Modifier::Ctrl, KeyCode::Z, Event::Undo);
     }
 
     pub fn register_keydown(&mut self) {
@@ -89,7 +126,7 @@ impl KeyboardManager {
         self.register(Shortcut::KeyDown(key), Effect::UiEvent(event));
     }
 
-    pub fn process(&mut self) -> Vec<Effect> {
+    pub fn update(&mut self) -> Vec<Effect> {
         let mut fx = Vec::new();
 
         for (shortcut, effect) in &self.shortcuts {
@@ -122,7 +159,7 @@ impl KeyboardManager {
 
             if execute {
                 fx.push(effect.clone());
-                break;
+                //break;
             }
         }
 

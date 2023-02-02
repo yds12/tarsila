@@ -1,5 +1,6 @@
 use crate::gui::Gui;
-use crate::keyboard::{Effect, KeyboardManager, Modifier};
+use crate::keyboard::{Effect, KeyboardManager};
+use crate::mouse;
 use crate::wrapped_image::WrappedImage;
 use lapix_core::primitives::*;
 use lapix_core::{Canvas, CanvasEffect, Event, State, Tool};
@@ -12,6 +13,8 @@ pub const CANVAS_W: u16 = 64;
 pub const CANVAS_H: u16 = 64;
 const CANVAS_SCALE: f32 = 8.;
 const LEFT_TOOLBAR_W: u16 = 300;
+const CAMERA_SPEED: f32 = 12.;
+const BG_COLOR: macroquad::prelude::Color = SKYBLUE;
 
 // Center on the space after the toolbar
 const CANVAS_X: f32 = LEFT_TOOLBAR_W as f32 + ((WINDOW_W as u16 - LEFT_TOOLBAR_W) / 2) as f32
@@ -32,7 +35,7 @@ pub struct UiState {
     canvas_pos: Position<f32>,
     zoom: f32,
     drawing: Texture2D,
-    shortcuts: KeyboardManager,
+    keyboard: KeyboardManager,
 }
 
 impl Default for UiState {
@@ -41,76 +44,45 @@ impl Default for UiState {
         let drawing = Texture2D::from_image(&state.canvas().inner().0);
         drawing.set_filter(FilterMode::Nearest);
 
-        let mut ui_state = Self {
+        Self {
             inner: state,
             gui: Gui::new((CANVAS_W, CANVAS_H).into()),
             camera: (0., 0.).into(),
             canvas_pos: (CANVAS_X, CANVAS_Y).into(),
             zoom: 8.,
             drawing,
-            shortcuts: KeyboardManager::new(),
-        };
-        ui_state.register_default_shortcuts();
-
-        ui_state
+            keyboard: KeyboardManager::new(),
+        }
     }
 }
 
 impl UiState {
-    pub fn register_default_shortcuts(&mut self) {
-        let kv = [
-            (KeyCode::Equal, UiEvent::ZoomIn),
-            (KeyCode::Minus, UiEvent::ZoomOut),
-        ];
-        for (k, v) in kv {
-            self.shortcuts.register_keypress_ui_event(k, v);
-        }
-
-        let kv = [
-            (KeyCode::Up, UiEvent::MoveCamera(Direction::Up)),
-            (KeyCode::Down, UiEvent::MoveCamera(Direction::Down)),
-            (KeyCode::Left, UiEvent::MoveCamera(Direction::Left)),
-            (KeyCode::Right, UiEvent::MoveCamera(Direction::Right)),
-        ];
-        for (k, v) in kv {
-            self.shortcuts.register_keydown_ui_event(k, v);
-        }
-
-        let kv = [
-            (KeyCode::B, Event::SetTool(Tool::Brush)),
-            (KeyCode::E, Event::SetTool(Tool::Eraser)),
-            (KeyCode::G, Event::SetTool(Tool::Bucket)),
-            (KeyCode::I, Event::SetTool(Tool::Eyedropper)),
-            (KeyCode::L, Event::SetTool(Tool::Line)),
-        ];
-        for (k, v) in kv {
-            self.shortcuts.register_keypress_event(k, v);
-        }
-
-        self.shortcuts
-            .register_keypress_mod_event(Modifier::Ctrl, KeyCode::Z, Event::Undo);
-        self.shortcuts
-            .register_keydown_mod_event(Modifier::Ctrl, KeyCode::Z, Event::Undo);
-    }
     pub fn update(&mut self) {
-        let events = self.gui.update(self.inner.main_color());
+        let mut events = self.gui.update(self.inner.main_color());
+        events.append(&mut mouse::update(self));
 
         for event in events {
             self.execute(event);
         }
+
+        let fx = self.keyboard.update();
+
+        for effect in fx {
+            match effect {
+                Effect::Event(event) => self.execute(event),
+                Effect::UiEvent(event) => self.process_event(event),
+            }
+        }
     }
+
     pub fn draw(&mut self) {
+        clear_background(BG_COLOR);
         self.draw_canvas_bg();
         self.draw_canvas();
         egui_macroquad::draw();
         self.gui.draw_cursor(self.selected_tool());
     }
-    pub fn camera(&self) -> Position<f32> {
-        self.camera
-    }
-    pub fn canvas(&self) -> &Canvas<WrappedImage> {
-        &self.inner.canvas()
-    }
+
     pub fn execute(&mut self, event: Event<WrappedImage>) {
         let effect = self.inner.execute(event);
 
@@ -123,6 +95,7 @@ impl UiState {
             CanvasEffect::None => (),
         };
     }
+
     pub fn process_event(&mut self, event: UiEvent) {
         match event {
             UiEvent::ZoomIn => self.zoom_in(),
@@ -130,19 +103,19 @@ impl UiState {
             UiEvent::MoveCamera(dir) => self.move_camera(dir),
         }
     }
-    pub fn process_shortcuts(&mut self) {
-        let fx = self.shortcuts.process();
 
-        for effect in fx {
-            match effect {
-                Effect::Event(event) => self.execute(event),
-                Effect::UiEvent(event) => self.process_event(event),
-            }
-        }
+    pub fn camera(&self) -> Position<f32> {
+        self.camera
     }
+
+    pub fn canvas(&self) -> &Canvas<WrappedImage> {
+        &self.inner.canvas()
+    }
+
     pub fn canvas_pos(&self) -> Position<f32> {
         self.canvas_pos
     }
+
     pub fn canvas_actual_size(&self) -> Size<f32> {
         (
             self.inner.canvas().width() as f32 * self.zoom,
@@ -150,20 +123,25 @@ impl UiState {
         )
             .into()
     }
+
     pub fn selected_tool(&self) -> Tool {
         self.inner.selected_tool()
     }
+
     pub fn zoom(&self) -> f32 {
         self.zoom
     }
+
     pub fn zoom_in(&mut self) {
         self.zoom *= 2.;
     }
+
     pub fn zoom_out(&mut self) {
         self.zoom /= 2.;
     }
+
     pub fn move_camera(&mut self, direction: Direction) {
-        let speed = 10.;
+        let speed = CAMERA_SPEED;
 
         if !self.is_camera_off(direction) {
             match direction {
@@ -174,6 +152,7 @@ impl UiState {
             }
         }
     }
+
     fn is_camera_off(&self, direction: Direction) -> bool {
         let buffer = 20.;
         let canvas_size = self.canvas_actual_size();
@@ -189,6 +168,7 @@ impl UiState {
             Direction::Right => camera.x > canvas_pos.x + canvas_size.x - buffer,
         }
     }
+
     pub fn draw_canvas_bg(&self) {
         let scale = self.zoom();
 
@@ -218,6 +198,7 @@ impl UiState {
             }
         }
     }
+
     pub fn draw_canvas(&self) {
         let texture = self.drawing;
         let w = texture.width();
@@ -237,6 +218,7 @@ impl UiState {
 
         draw_texture_ex(texture, x, y, WHITE, params);
     }
+
     pub fn screen_to_canvas(&self, x: f32, y: f32) -> (i16, i16) {
         let canvas_x = self.canvas_pos().x - self.camera().x;
         let canvas_y = self.canvas_pos().y - self.camera().y;
