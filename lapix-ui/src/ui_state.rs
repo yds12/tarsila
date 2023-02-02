@@ -134,10 +134,14 @@ impl UiState {
 
     pub fn zoom_in(&mut self) {
         self.zoom *= 2.;
+        self.camera.x *= 2.;
+        self.camera.y *= 2.;
     }
 
     pub fn zoom_out(&mut self) {
         self.zoom /= 2.;
+        self.camera.x /= 2.;
+        self.camera.y /= 2.;
     }
 
     pub fn move_camera(&mut self, direction: Direction) {

@@ -14,4 +14,5 @@ Projects issues and bugs:
 12. Data about tools is too spread around: Tool enum, data about icons, etc.
 13. Now that we changed event processing, it's not possible to have 2 events at the same time, that is making it impossible to scroll horizontally and vertically together [DONE]
 14. Change name to Tarsila or Portinari? [ENH]
+15. When zooming out, camera needs to be readjusted [ENH][DONE]
 
