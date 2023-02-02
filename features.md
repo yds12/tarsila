@@ -32,7 +32,7 @@ Features (+ means done, (-) means least important):
   - Default palettes
   - Sorting based on multiple possible properties (-)
   - possible to edit a color in the palette based on full color picker
-- Save (+) and load images
+- Save and load images (+)
   - Choose Scaled
   - Different formats (PNG (+), JPEG, GIF)
 - Preview

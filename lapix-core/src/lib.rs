@@ -32,6 +32,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             main_color: IMG::Color::from_rgb(0, 0, 0),
         }
     }
+
     pub fn execute(&mut self, event: Event<IMG>) -> CanvasEffect {
         if Some(&event) == self.events.last() && !event.repeatable() {
             return CanvasEffect::None;
@@ -69,6 +70,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             Event::SetTool(tool) => self.tool = tool,
             Event::SetMainColor(color) => self.main_color = color,
             Event::Save(path) => self.save_image(path.to_string_lossy().as_ref()),
+            Event::OpenFile(path) => self.open_image(path.to_string_lossy().as_ref()),
             Event::Bucket(x, y) => {
                 self.canvas.start_tool_action();
                 let effect = self.canvas.bucket(x, y, self.main_color);
@@ -96,15 +98,19 @@ impl<IMG: Bitmap + Debug> State<IMG> {
 
         effect
     }
+
     pub fn canvas(&self) -> &Canvas<IMG> {
         &self.canvas
     }
+
     pub fn selected_tool(&self) -> Tool {
         self.tool
     }
+
     pub fn main_color(&self) -> IMG::Color {
         self.main_color
     }
+
     fn save_image(&self, path: &str) {
         let bytes = self.canvas.inner.bytes();
         let img = image::RgbaImage::from_raw(
@@ -115,6 +121,21 @@ impl<IMG: Bitmap + Debug> State<IMG> {
         .expect("Failed to generate image from bytes");
         img.save(path).expect("Failed to save image");
     }
+
+    fn open_image(&mut self, path: &str) {
+        use std::io::Cursor;
+        use image::io::Reader as ImageReader;
+
+        let img = ImageReader::open(path).unwrap().decode().unwrap();
+        let img = img.into_rgba8();
+        self.canvas.resize(img.width() as u16, img.height() as u16);
+
+        for (x, y, pixel) in img.enumerate_pixels() {
+            let color = IMG::Color::from_rgba(pixel.0[0], pixel.0[1], pixel.0[2], pixel.0[3]);
+            self.canvas.set_pixel(x as u16, y as u16, color);
+        }
+    }
+
     fn undo(&mut self) -> CanvasEffect {
         self.canvas.undo_last()
     }

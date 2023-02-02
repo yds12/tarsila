@@ -11,6 +11,7 @@ pub enum Event<IMG: Bitmap> {
     SetTool(Tool),
     SetMainColor(IMG::Color),
     Save(PathBuf),
+    OpenFile(PathBuf),
     Bucket(u16, u16),
     EraseStart,
     EraseEnd,
@@ -33,6 +34,7 @@ impl<IMG: Bitmap> Clone for Event<IMG> {
             Self::SetTool(t) => Self::SetTool(*t),
             Self::SetMainColor(c) => Self::SetMainColor(*c),
             Self::Save(path) => Self::Save(path.clone()),
+            Self::OpenFile(path) => Self::OpenFile(path.clone()),
             Self::Bucket(x, y) => Self::Bucket(*x, *y),
             Self::Erase(x, y) => Self::Erase(*x, *y),
             Self::LineStart(x, y) => Self::LineStart(*x, *y),
@@ -60,6 +62,7 @@ impl<IMG: Bitmap> PartialEq for Event<IMG> {
             (Self::SetTool(t), Self::SetTool(u)) => t == u,
             (Self::SetMainColor(c), Self::SetMainColor(d)) => c == d,
             (Self::Save(p), Self::Save(q)) => p == q,
+            (Self::OpenFile(p), Self::OpenFile(q)) => p == q,
             _ => false,
         }
     }
@@ -74,7 +77,7 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::LineEnd(_, _)
             | Self::Bucket(_, _)
             | Self::Erase(_, _) => CanvasEffect::Update,
-            Self::ResizeCanvas(_, _) => CanvasEffect::New,
+            Self::ResizeCanvas(_, _) | Self::OpenFile(_) => CanvasEffect::New,
             _ => CanvasEffect::None,
         }
     }
@@ -95,7 +98,8 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::Bucket(_, _)
             | Self::Erase(_, _)
             | Self::LineStart(_, _)
-            | Self::LineEnd(_, _) => true,
+            | Self::LineEnd(_, _)
+            | Self::OpenFile(_) => true,
             _ => false,
         }
     }

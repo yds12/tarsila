@@ -2,6 +2,7 @@ use crate::wrapped_image::WrappedImage;
 use lapix_core::{Event, Point, Size, Tool};
 use macroquad::prelude::*;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 const TOOL_BTN_IMG_SIZE: Size<usize> = Size { x: 16, y: 16 };
 const TOOLS: [Tool; 5] = [
@@ -40,6 +41,7 @@ pub struct Gui {
     canvas_w_str: String,
     canvas_h_str: String,
     brush: [u8; 3],
+    last_file: Option<PathBuf>
 }
 
 impl Gui {
@@ -50,6 +52,7 @@ impl Gui {
             canvas_w_str: canvas_size.x.to_string(),
             canvas_h_str: canvas_size.y.to_string(),
             brush: [0, 0, 0],
+            last_file: None
         }
     }
 
@@ -101,8 +104,28 @@ impl Gui {
                 }
                 let btn = ui.button("Save");
                 if btn.clicked() {
-                    if let Some(path) = rfd::FileDialog::new().save_file() {
+                    let mut dialog = rfd::FileDialog::new();
+
+                    if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
+                        dialog = dialog.set_directory(dir);
+                    }
+
+                    if let Some(path) = dialog.save_file() {
+                        self.last_file = Some(path.clone());
                         events.push(Event::Save(path));
+                    }
+                }
+                let btn = ui.button("Open");
+                if btn.clicked() {
+                    let mut dialog = rfd::FileDialog::new();
+
+                    if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
+                        dialog = dialog.set_directory(dir);
+                    }
+
+                    if let Some(path) = dialog.pick_file() {
+                        self.last_file = Some(path.clone());
+                        events.push(Event::OpenFile(path));
                     }
                 }
             });
@@ -123,6 +146,7 @@ impl Gui {
         events
     }
 }
+
 
 pub struct Toolbar(HashMap<Tool, ToolButton>);
 
