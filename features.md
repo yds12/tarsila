@@ -8,7 +8,7 @@ Features (+ means done, (-) means least important):
 - Canvas to edit sprite (+)
   - Resizable (+)
   - Multiple frames
-  - Layers
+  - Layers (+)
     - control visibility
     - control editability
     - layer panel allow to change layer position, remove and add layers

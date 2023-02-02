@@ -34,7 +34,7 @@ pub struct UiState {
     camera: Position<f32>,
     canvas_pos: Position<f32>,
     zoom: f32,
-    drawing: Texture2D,
+    layer_textures: Vec<Texture2D>,
     keyboard: KeyboardManager,
 }
 
@@ -50,13 +50,21 @@ impl Default for UiState {
             camera: (0., 0.).into(),
             canvas_pos: (CANVAS_X, CANVAS_Y).into(),
             zoom: 8.,
-            drawing,
+            layer_textures: vec![drawing],
             keyboard: KeyboardManager::new(),
         }
     }
 }
 
 impl UiState {
+    pub fn drawing_mut(&mut self) -> &mut Texture2D {
+        &mut self.layer_textures[self.inner.active_layer()]
+    }
+
+    pub fn drawing(&self) -> &Texture2D {
+        &self.layer_textures[self.inner.active_layer()]
+    }
+
     pub fn update(&mut self) {
         let mut events = self.gui.update(self.inner.main_color());
         events.append(&mut mouse::update(self));
@@ -86,11 +94,24 @@ impl UiState {
     pub fn execute(&mut self, event: Event<WrappedImage>) {
         let effect = self.inner.execute(event);
 
+        // TODO: resize and new canvas events now need to affect all layers
+
         match effect {
-            CanvasEffect::Update => self.drawing.update(&self.canvas().inner().0),
+            // TODO: Texture2D is copy, so we don't need `drawing_mut` here, but
+            // it would be better.
+            CanvasEffect::Update => self.drawing().update(&self.canvas().inner().0),
             CanvasEffect::New => {
-                self.drawing = Texture2D::from_image(&self.canvas().inner().0);
-                self.drawing.set_filter(FilterMode::Nearest);
+                *self.drawing_mut() = Texture2D::from_image(&self.canvas().inner().0);
+                self.drawing_mut().set_filter(FilterMode::Nearest);
+            }
+            CanvasEffect::Layer => {
+                let num_layers = self.inner.num_layers();
+                if num_layers > self.layer_textures.len() {
+                    let texture = Texture2D::from_image(
+                        &self.inner.layer(num_layers - 1).inner().0);
+                    texture.set_filter(FilterMode::Nearest);
+                    self.layer_textures.push(texture);
+                }
             }
             CanvasEffect::None => (),
         };
@@ -178,8 +199,8 @@ impl UiState {
 
         let x = self.canvas_pos().x - self.camera().x;
         let y = self.canvas_pos().y - self.camera().y;
-        let w = self.drawing.width() * scale;
-        let h = self.drawing.height() * scale;
+        let w = self.drawing().width() * scale;
+        let h = self.drawing().height() * scale;
 
         let side = 4. * scale;
 
@@ -204,23 +225,24 @@ impl UiState {
     }
 
     pub fn draw_canvas(&self) {
-        let texture = self.drawing;
-        let w = texture.width();
-        let h = texture.height();
+        for texture in &self.layer_textures {
+            let w = texture.width();
+            let h = texture.height();
 
-        let x = self.canvas_pos().x - self.camera().x;
-        let y = self.canvas_pos().y - self.camera().y;
-        let scale = self.zoom();
+            let x = self.canvas_pos().x - self.camera().x;
+            let y = self.canvas_pos().y - self.camera().y;
+            let scale = self.zoom();
 
-        let params = DrawTextureParams {
-            dest_size: Some(Vec2 {
-                x: w * scale,
-                y: h * scale,
-            }),
-            ..Default::default()
-        };
+            let params = DrawTextureParams {
+                dest_size: Some(Vec2 {
+                    x: w * scale,
+                    y: h * scale,
+                }),
+                ..Default::default()
+            };
 
-        draw_texture_ex(texture, x, y, WHITE, params);
+            draw_texture_ex(*texture, x, y, WHITE, params);
+        }
     }
 
     pub fn screen_to_canvas(&self, x: f32, y: f32) -> (i16, i16) {

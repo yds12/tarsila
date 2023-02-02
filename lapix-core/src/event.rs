@@ -18,6 +18,9 @@ pub enum Event<IMG: Bitmap> {
     Erase(u16, u16),
     LineStart(u16, u16),
     LineEnd(u16, u16),
+    NewLayerAbove,
+    NewLayerBelow,
+    SwitchLayer(usize),
     Undo,
 }
 
@@ -27,10 +30,13 @@ impl<IMG: Bitmap> Clone for Event<IMG> {
             Self::ClearCanvas => Self::ClearCanvas,
             Self::EraseStart => Self::EraseStart,
             Self::EraseEnd => Self::EraseEnd,
+            Self::NewLayerAbove => Self::NewLayerAbove,
+            Self::NewLayerBelow => Self::NewLayerBelow,
             Self::ResizeCanvas(x, y) => Self::ResizeCanvas(*x, *y),
             Self::BrushStart => Self::BrushStart,
             Self::BrushStroke(x, y) => Self::BrushStroke(*x, *y),
             Self::BrushEnd => Self::BrushEnd,
+            Self::SwitchLayer(i) => Self::SwitchLayer(*i),
             Self::SetTool(t) => Self::SetTool(*t),
             Self::SetMainColor(c) => Self::SetMainColor(*c),
             Self::Save(path) => Self::Save(path.clone()),
@@ -53,6 +59,8 @@ impl<IMG: Bitmap> PartialEq for Event<IMG> {
             (Self::EraseStart, Self::EraseStart) => true,
             (Self::EraseEnd, Self::EraseEnd) => true,
             (Self::Undo, Self::Undo) => true,
+            (Self::NewLayerAbove, Self::NewLayerAbove) => true,
+            (Self::NewLayerBelow, Self::NewLayerBelow) => true,
             (Self::ResizeCanvas(x, y), Self::ResizeCanvas(i, j)) => x == i && y == j,
             (Self::BrushStroke(x, y), Self::BrushStroke(i, j)) => x == i && y == j,
             (Self::Bucket(x, y), Self::Bucket(i, j)) => x == i && y == j,
@@ -63,6 +71,7 @@ impl<IMG: Bitmap> PartialEq for Event<IMG> {
             (Self::SetMainColor(c), Self::SetMainColor(d)) => c == d,
             (Self::Save(p), Self::Save(q)) => p == q,
             (Self::OpenFile(p), Self::OpenFile(q)) => p == q,
+            (Self::SwitchLayer(i), Self::SwitchLayer(j)) => i == j,
             _ => false,
         }
     }
@@ -78,12 +87,15 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::Bucket(_, _)
             | Self::Erase(_, _) => CanvasEffect::Update,
             Self::ResizeCanvas(_, _) | Self::OpenFile(_) => CanvasEffect::New,
+            Self::NewLayerAbove | Self::NewLayerBelow => CanvasEffect::Layer,
             _ => CanvasEffect::None,
         }
     }
     pub fn repeatable(&self) -> bool {
         match self {
-            Self::Undo => true,
+            Self::Undo
+            | Self::NewLayerAbove
+            | Self::NewLayerBelow => true,
             _ => false,
         }
     }
@@ -99,6 +111,9 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::Erase(_, _)
             | Self::LineStart(_, _)
             | Self::LineEnd(_, _)
+            | Self::NewLayerAbove
+            | Self::NewLayerBelow
+            | Self::SwitchLayer(_)
             | Self::OpenFile(_) => true,
             _ => false,
         }
