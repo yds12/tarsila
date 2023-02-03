@@ -93,9 +93,7 @@ impl<IMG: Bitmap> Event<IMG> {
     }
     pub fn repeatable(&self) -> bool {
         match self {
-            Self::Undo
-            | Self::NewLayerAbove
-            | Self::NewLayerBelow => true,
+            Self::Undo | Self::NewLayerAbove | Self::NewLayerBelow => true,
             _ => false,
         }
     }
