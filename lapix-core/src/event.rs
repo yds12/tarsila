@@ -21,6 +21,9 @@ pub enum Event<IMG: Bitmap> {
     NewLayerAbove,
     NewLayerBelow,
     SwitchLayer(usize),
+    ChangeLayerVisibility(usize, bool),
+    ChangeLayerOpacity(usize, u8),
+    DeleteLayer(usize),
     Undo,
 }
 
@@ -37,6 +40,7 @@ impl<IMG: Bitmap> Clone for Event<IMG> {
             Self::BrushStroke(x, y) => Self::BrushStroke(*x, *y),
             Self::BrushEnd => Self::BrushEnd,
             Self::SwitchLayer(i) => Self::SwitchLayer(*i),
+            Self::DeleteLayer(i) => Self::DeleteLayer(*i),
             Self::SetTool(t) => Self::SetTool(*t),
             Self::SetMainColor(c) => Self::SetMainColor(*c),
             Self::Save(path) => Self::Save(path.clone()),
@@ -45,6 +49,8 @@ impl<IMG: Bitmap> Clone for Event<IMG> {
             Self::Erase(x, y) => Self::Erase(*x, *y),
             Self::LineStart(x, y) => Self::LineStart(*x, *y),
             Self::LineEnd(x, y) => Self::LineEnd(*x, *y),
+            Self::ChangeLayerVisibility(i, b) => Self::ChangeLayerVisibility(*i, *b),
+            Self::ChangeLayerOpacity(i, n) => Self::ChangeLayerOpacity(*i, *n),
             Self::Undo => Self::Undo,
         }
     }
@@ -72,6 +78,11 @@ impl<IMG: Bitmap> PartialEq for Event<IMG> {
             (Self::Save(p), Self::Save(q)) => p == q,
             (Self::OpenFile(p), Self::OpenFile(q)) => p == q,
             (Self::SwitchLayer(i), Self::SwitchLayer(j)) => i == j,
+            (Self::DeleteLayer(i), Self::DeleteLayer(j)) => i == j,
+            (Self::ChangeLayerVisibility(i, b), Self::ChangeLayerVisibility(j, p)) => {
+                i == j && b == p
+            }
+            (Self::ChangeLayerOpacity(i, n), Self::ChangeLayerOpacity(j, m)) => i == j && n == m,
             _ => false,
         }
     }
@@ -93,7 +104,7 @@ impl<IMG: Bitmap> Event<IMG> {
     }
     pub fn repeatable(&self) -> bool {
         match self {
-            Self::Undo | Self::NewLayerAbove | Self::NewLayerBelow => true,
+            Self::Undo | Self::NewLayerAbove | Self::NewLayerBelow | Self::DeleteLayer(_) => true,
             _ => false,
         }
     }
@@ -112,6 +123,9 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::NewLayerAbove
             | Self::NewLayerBelow
             | Self::SwitchLayer(_)
+            | Self::ChangeLayerVisibility(_, _)
+            | Self::ChangeLayerOpacity(_, _)
+            | Self::DeleteLayer(_)
             | Self::OpenFile(_) => true,
             _ => false,
         }

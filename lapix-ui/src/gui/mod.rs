@@ -7,6 +7,9 @@ use std::path::PathBuf;
 mod toolbar;
 use toolbar::Toolbar;
 
+mod layers;
+use layers::LayersPanel;
+
 pub struct Resources;
 
 impl Resources {
@@ -19,10 +22,6 @@ impl Resources {
             Tool::Line => include_bytes!("../../res/icon/line.png"),
         }
     }
-}
-
-fn rgb_to_rgba_u8(color: [u8; 3]) -> [u8; 4] {
-    [color[0], color[1], color[2], 255]
 }
 
 fn rgba_to_rgb_u8(color: [u8; 4]) -> [u8; 3] {
@@ -46,22 +45,26 @@ fn draw_texture_helper(texture: Texture2D, x: f32, y: f32, scale: f32) {
 
 pub struct Gui {
     toolbar: Toolbar,
+    layers_panel: LayersPanel,
     cursors: CursorSet,
     canvas_w_str: String,
     canvas_h_str: String,
     brush: [u8; 3],
-    last_file: Option<PathBuf>
+    brush_alpha: String,
+    last_file: Option<PathBuf>,
 }
 
 impl Gui {
     pub fn new(canvas_size: Size<u16>) -> Self {
         Self {
             toolbar: Toolbar::new(),
+            layers_panel: LayersPanel::new(),
             cursors: CursorSet::new(),
             canvas_w_str: canvas_size.x.to_string(),
             canvas_h_str: canvas_size.y.to_string(),
             brush: [0, 0, 0],
-            last_file: None
+            brush_alpha: "255".to_owned(),
+            last_file: None,
         }
     }
 
@@ -70,12 +73,23 @@ impl Gui {
             cursor.draw();
         }
     }
-}
 
-impl Gui {
-    pub fn update(&mut self, main_color: [u8; 4]) -> Vec<Event<WrappedImage>> {
-        let mut events = Vec::new();
+    pub fn sync(
+        &mut self,
+        main_color: [u8; 4],
+        num_layers: usize,
+        active_layer: usize,
+        layers_vis: Vec<bool>,
+        layers_alpha: Vec<u8>,
+    ) {
         self.brush = rgba_to_rgb_u8(main_color);
+        self.brush_alpha = main_color[3].to_string();
+        self.layers_panel
+            .sync(num_layers, active_layer, layers_vis, layers_alpha);
+    }
+
+    pub fn update(&mut self) -> Vec<Event<WrappedImage>> {
+        let mut events = Vec::new();
 
         egui_macroquad::ui(|egui_ctx| {
             let mut canvas_panel_events = self.update_canvas_panel(egui_ctx);
@@ -84,44 +98,59 @@ impl Gui {
             let mut toolbar_events = self.toolbar.update(egui_ctx);
             events.append(&mut toolbar_events);
 
+            let mut layers_events = self.layers_panel.update(egui_ctx);
+            events.append(&mut layers_events);
+
             egui_ctx.output().cursor_icon = egui::CursorIcon::None;
         });
 
         events
     }
 
-    fn update_canvas_panel(&mut self, egui_ctx: &egui::Context)
-    -> Vec<Event<WrappedImage>> {
+    fn update_canvas_panel(&mut self, egui_ctx: &egui::Context) -> Vec<Event<WrappedImage>> {
         let mut events = Vec::new();
 
         egui::Window::new("Canvas").show(egui_ctx, |ui| {
             ui.horizontal(|ui| {
                 let label = ui.label("w:");
                 ui.add(
-                    egui::widgets::TextEdit::singleline(&mut self.canvas_w_str)
-                        .desired_width(30.0),
+                    egui::widgets::TextEdit::singleline(&mut self.canvas_w_str).desired_width(30.0),
                 )
                 .labelled_by(label.id);
                 let label = ui.label("h:");
                 ui.add(
-                    egui::widgets::TextEdit::singleline(&mut self.canvas_h_str)
-                        .desired_width(30.0),
+                    egui::widgets::TextEdit::singleline(&mut self.canvas_h_str).desired_width(30.0),
                 )
                 .labelled_by(label.id);
             });
 
             let btn = ui.button("New canvas");
             if btn.clicked() {
-                let w: u16 = self.canvas_w_str.parse().unwrap();
-                let h: u16 = self.canvas_h_str.parse().unwrap();
-                events.push(Event::ResizeCanvas(w, h));
+                if let (Ok(w), Ok(h)) = (self.canvas_w_str.parse(), self.canvas_h_str.parse()) {
+                    events.push(Event::ResizeCanvas(w, h));
+                }
             }
 
-            let colorpicker = ui.color_edit_button_srgb(&mut self.brush);
-            if colorpicker.changed() {
-                let color = rgb_to_rgba_u8(self.brush);
-                events.push(Event::SetMainColor(color));
-            }
+            ui.horizontal(|ui| {
+                let colorpicker = ui.color_edit_button_srgb(&mut self.brush);
+                let label = ui.label("a:");
+                let text_edit = ui
+                    .add(
+                        egui::widgets::TextEdit::singleline(&mut self.brush_alpha)
+                            .desired_width(30.0),
+                    )
+                    .labelled_by(label.id);
+
+                if colorpicker.changed() || text_edit.changed() {
+                    let color = [
+                        self.brush[0],
+                        self.brush[1],
+                        self.brush[2],
+                        self.brush_alpha.parse().unwrap_or(255),
+                    ];
+                    events.push(Event::SetMainColor(color));
+                }
+            });
 
             let btn = ui.button("Erase canvas");
             if btn.clicked() {
@@ -188,7 +217,7 @@ pub struct ToolCursor {
 impl ToolCursor {
     pub fn new(tool: Tool, offset: Point<f32>) -> Self {
         let bytes = Resources::tool_icon(tool);
-        let texture = Texture2D::from_file_with_format(&bytes, None);
+        let texture = Texture2D::from_file_with_format(bytes, None);
 
         Self { texture, offset }
     }

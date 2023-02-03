@@ -9,9 +9,9 @@ Features (+ means done, (-) means least important):
   - Resizable (+)
   - Multiple frames
   - Layers (+)
-    - control visibility
-    - control editability
-    - layer panel allow to change layer position, remove and add layers
+    - control visibility (+)
+    - control editability (+)
+    - layer panel allow to change layer position, remove and add (+) layers
     - group/ungroup layers (-)
   - Transparent (+) or solid background
   - Zoom in and out (+) and predefined zoom levels

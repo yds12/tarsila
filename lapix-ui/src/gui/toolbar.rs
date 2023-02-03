@@ -1,9 +1,8 @@
+use super::Resources;
 use crate::wrapped_image::WrappedImage;
-use lapix_core::{Event, Point, Size, Tool};
+use lapix_core::{Event, Size, Tool};
 use macroquad::prelude::*;
 use std::collections::HashMap;
-use std::path::PathBuf;
-use super::Resources;
 
 const TOOL_BTN_IMG_SIZE: Size<usize> = Size { x: 16, y: 16 };
 const TOOLS: [Tool; 5] = [
@@ -13,15 +12,6 @@ const TOOLS: [Tool; 5] = [
     Tool::Eyedropper,
     Tool::Line,
 ];
-
-fn rgb_to_rgba_u8(color: [u8; 3]) -> [u8; 4] {
-    [color[0], color[1], color[2], 255]
-}
-
-fn rgba_to_rgb_u8(color: [u8; 4]) -> [u8; 3] {
-    [color[0], color[1], color[2]]
-}
-
 
 pub struct Toolbar(HashMap<Tool, ToolButton>);
 

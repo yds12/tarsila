@@ -66,7 +66,8 @@ impl UiState {
     }
 
     pub fn update(&mut self) {
-        let mut events = self.gui.update(self.inner.main_color());
+        self.sync_gui();
+        let mut events = self.gui.update();
         events.append(&mut mouse::update(self));
 
         for event in events {
@@ -91,6 +92,21 @@ impl UiState {
         self.gui.draw_cursor(self.selected_tool());
     }
 
+    pub fn sync_gui(&mut self) {
+        let n_layers = self.inner.num_layers();
+        self.gui.sync(
+            self.inner.main_color(),
+            n_layers,
+            self.inner.active_layer(),
+            (0..n_layers)
+                .map(|i| self.inner.layer(i).visible())
+                .collect(),
+            (0..n_layers)
+                .map(|i| self.inner.layer(i).opacity())
+                .collect(),
+        );
+    }
+
     pub fn execute(&mut self, event: Event<WrappedImage>) {
         let effect = self.inner.execute(event);
 
@@ -107,8 +123,8 @@ impl UiState {
             CanvasEffect::Layer => {
                 let num_layers = self.inner.num_layers();
                 if num_layers > self.layer_textures.len() {
-                    let texture = Texture2D::from_image(
-                        &self.inner.layer(num_layers - 1).inner().0);
+                    let texture =
+                        Texture2D::from_image(&self.inner.layer_canvas(num_layers - 1).inner().0);
                     texture.set_filter(FilterMode::Nearest);
                     self.layer_textures.push(texture);
                 }
@@ -130,7 +146,7 @@ impl UiState {
     }
 
     pub fn canvas(&self) -> &Canvas<WrappedImage> {
-        &self.inner.canvas()
+        self.inner.canvas()
     }
 
     pub fn canvas_pos(&self) -> Position<f32> {
@@ -187,9 +203,9 @@ impl UiState {
         let win_h = WINDOW_H as f32;
 
         match direction {
-            Direction::Up => canvas_pos.y - camera.y > win_h as f32 - buffer,
+            Direction::Up => canvas_pos.y - camera.y > win_h - buffer,
             Direction::Down => camera.y > canvas_pos.y + canvas_size.y - buffer,
-            Direction::Left => canvas_pos.x - camera.x > win_w as f32 - buffer,
+            Direction::Left => canvas_pos.x - camera.x > win_w - buffer,
             Direction::Right => camera.x > canvas_pos.x + canvas_size.x - buffer,
         }
     }
@@ -225,7 +241,12 @@ impl UiState {
     }
 
     pub fn draw_canvas(&self) {
-        for texture in &self.layer_textures {
+        for i in 0..self.inner.num_layers() {
+            if !self.inner.layer(i).visible() {
+                continue;
+            }
+
+            let texture = self.layer_textures[i];
             let w = texture.width();
             let h = texture.height();
 
@@ -241,7 +262,8 @@ impl UiState {
                 ..Default::default()
             };
 
-            draw_texture_ex(*texture, x, y, WHITE, params);
+            let color = [255, 255, 255, self.inner.layer(i).opacity()];
+            draw_texture_ex(texture, x, y, color.into(), params);
         }
     }
 

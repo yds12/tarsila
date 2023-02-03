@@ -69,8 +69,6 @@ impl KeyboardManager {
             (KeyCode::I, Event::SetTool(Tool::Eyedropper)),
             (KeyCode::L, Event::SetTool(Tool::Line)),
             (KeyCode::Y, Event::NewLayerAbove),
-            (KeyCode::Key1, Event::SwitchLayer(0)),
-            (KeyCode::Key2, Event::SwitchLayer(1)),
         ];
         for (k, v) in kv {
             self.register_keypress_event(k, v);

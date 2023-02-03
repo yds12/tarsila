@@ -80,6 +80,7 @@ impl<IMG: Bitmap> Canvas<IMG> {
     }
 
     fn undo_edit(&mut self, edit: CanvasAtomicEdit<IMG>) -> CanvasEffect {
+        // TODO: isn't this supposed to be in CanvasAtomicEdit?
         match edit {
             CanvasAtomicEdit::ChangePixel { position, old, .. } => {
                 self.inner.set_pixel(position.x, position.y, old);

@@ -7,6 +7,26 @@ pub trait Color: Debug + Copy + PartialEq<Self> {
     fn rgba_f32(&self) -> (f32, f32, f32, f32);
     fn from_rgb(r: u8, g: u8, b: u8) -> Self;
     fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Self;
+
+    /// Blend this color on top of another
+    fn blend_over(&self, other: Self) -> Self {
+        let fg = self.rgba_f32();
+        let bg = other.rgba_f32();
+
+        let res = (
+            (fg.0 * fg.3) + (bg.0 * bg.3 * (1. - fg.3)),
+            (fg.1 * fg.3) + (bg.1 * bg.3 * (1. - fg.3)),
+            (fg.2 * fg.3) + (bg.2 * bg.3 * (1. - fg.3)),
+            fg.3 + bg.3 * (1. - fg.3),
+        );
+
+        Self::from_rgba(
+            (res.0 * 255.) as u8,
+            (res.1 * 255.) as u8,
+            (res.2 * 255.) as u8,
+            (res.3 * 255.) as u8,
+        )
+    }
 }
 
 impl Color for [u8; 3] {

@@ -53,4 +53,11 @@ impl Bitmap for WrappedImage {
     fn bytes(&self) -> &[u8] {
         &self.0.bytes
     }
+    fn from_parts(width: u16, height: u16, bytes: &[u8]) -> Self {
+        Self(Image {
+            bytes: bytes.to_owned(),
+            height,
+            width,
+        })
+    }
 }
