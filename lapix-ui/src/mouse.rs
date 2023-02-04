@@ -24,7 +24,7 @@ pub fn update(state: &UiState) -> Vec<Effect> {
                     events.push(Event::LineStart(x as u16, y as u16).into());
                 }
                 Tool::Eyedropper => {
-                    let color = state.canvas().inner().pixel(x as u16, y as u16);
+                    let color = state.visible_pixel(x as u16, y as u16);
                     events.push(Event::SetMainColor(color).into());
                     events.push(Event::SetTool(Tool::Brush).into());
                 }

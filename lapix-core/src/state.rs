@@ -225,7 +225,14 @@ impl<IMG: Bitmap + Debug> State<IMG> {
     fn blend_layers(&self) -> IMG {
         let w = self.layer_canvas(0).width();
         let h = self.layer_canvas(0).height();
+        let mut result = IMG::new(w, h, IMG::Color::from_rgba(0, 0, 0, 0));
 
+        for x in 0..w {
+            for y in 0..h {
+                result.set_pixel(x, y, self.visible_pixel(x, y));
+            }
+        }
+        /*
         // Start with the contents of layer 0 (the bottom layer)
         let mut result = if self.layer(0).visible {
             IMG::from_parts(w, h, self.layer_canvas(0).inner().bytes())
@@ -248,6 +255,25 @@ impl<IMG: Bitmap + Debug> State<IMG> {
                     result.set_pixel(x, y, blend);
                 }
             }
+        }
+        */
+
+        result
+    }
+
+    pub fn visible_pixel(&self, x: u16, y: u16) -> IMG::Color {
+        let mut result = if self.layer(0).visible {
+            self.layer_canvas(0).pixel(x, y)
+        } else {
+            IMG::Color::from_rgba(0, 0, 0, 0)
+        };
+
+        for i in 1..self.layers.len() {
+            if !self.layer(i).visible {
+                continue;
+            }
+
+            result = self.layer_canvas(i).pixel(x, y).blend_over(result);
         }
 
         result

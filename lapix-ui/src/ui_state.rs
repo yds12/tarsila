@@ -189,6 +189,10 @@ impl UiState {
         }
     }
 
+    pub fn visible_pixel(&self, x: u16, y: u16) -> [u8; 4] {
+        self.inner.visible_pixel(x, y)
+    }
+
     pub fn camera(&self) -> Position<f32> {
         self.camera
     }
