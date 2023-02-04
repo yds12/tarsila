@@ -32,4 +32,5 @@ pub trait Bitmap {
     fn set_pixel(&mut self, x: u16, y: u16, color: Self::Color);
     fn bytes(&self) -> &[u8];
     fn from_parts(width: u16, height: u16, bytes: &[u8]) -> Self;
+    fn set_from(&mut self, other: Self);
 }

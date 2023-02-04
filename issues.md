@@ -18,3 +18,4 @@ Projects issues and bugs:
 16. Eyedropper should get visible color, not the one on the layer
 17. When the active layer is deleted, move active layer to the one below
 18. Inconsistent use of types for 2D points and colors
+

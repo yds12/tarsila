@@ -155,21 +155,28 @@ impl UiState {
             // TODO: Texture2D is copy, so we don't need `drawing_mut` here, but
             // it would be better.
             CanvasEffect::Update => self.drawing().update(&self.canvas().inner().0),
-            CanvasEffect::New => {
-                *self.drawing_mut() = Texture2D::from_image(&self.canvas().inner().0);
-                self.drawing_mut().set_filter(FilterMode::Nearest);
-            }
-            CanvasEffect::Layer => {
-                let num_layers = self.inner.num_layers();
-                if num_layers > self.layer_textures.len() {
-                    let texture =
-                        Texture2D::from_image(&self.inner.layer_canvas(num_layers - 1).inner().0);
-                    texture.set_filter(FilterMode::Nearest);
-                    self.layer_textures.push(texture);
-                }
+            CanvasEffect::New | CanvasEffect::Layer => {
+                self.sync_layer_textures()
             }
             CanvasEffect::None => (),
         };
+    }
+
+    pub fn sync_layer_textures(&mut self) {
+        for layer in 0..self.inner.num_layers() {
+            self.sync_layer_texture(layer);
+        }
+    }
+
+    pub fn sync_layer_texture(&mut self, index: usize) {
+        let layer_img = &self.inner.layer_canvas(index).inner().0;
+        let texture = Texture2D::from_image(layer_img);
+        texture.set_filter(FilterMode::Nearest);
+
+        match self.layer_textures.get_mut(index) {
+            Some(tex) => *tex = texture,
+            None => self.layer_textures.push(texture)
+        }
     }
 
     pub fn process_event(&mut self, event: UiEvent) {

@@ -31,6 +31,10 @@ impl<IMG: Bitmap> Layer<IMG> {
     pub fn opacity(&self) -> u8 {
         self.opacity
     }
+
+    pub fn resize(&mut self, w: u16, h: u16) {
+        self.canvas.resize(w, h);
+    }
 }
 
 pub struct State<IMG: Bitmap> {
@@ -61,7 +65,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
         let t0 = std::time::SystemTime::now();
         match event.clone() {
             Event::ClearCanvas => self.canvas_mut().clear(),
-            Event::ResizeCanvas(w, h) => self.canvas_mut().resize(w, h),
+            Event::ResizeCanvas(w, h) => self.resize_canvas(w, h),
             Event::BrushStart | Event::LineStart(_, _) | Event::EraseStart => {
                 self.canvas_mut().start_tool_action()
             }
@@ -129,6 +133,12 @@ impl<IMG: Bitmap + Debug> State<IMG> {
         self.events.push(event);
 
         effect
+    }
+
+    pub fn resize_canvas(&mut self, width: u16, height: u16) {
+        for layer in self.layers.iter_mut() {
+            layer.resize(width, height);
+        }
     }
 
     pub fn canvas_mut(&mut self) -> &mut Canvas<IMG> {

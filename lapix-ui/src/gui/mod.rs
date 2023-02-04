@@ -129,7 +129,7 @@ impl Gui {
                 .labelled_by(label.id);
             });
 
-            let btn = ui.button("New canvas");
+            let btn = ui.button("Resize canvas");
             if btn.clicked() {
                 if let (Ok(w), Ok(h)) = (self.canvas_w_str.parse(), self.canvas_h_str.parse()) {
                     events.push(Event::ResizeCanvas(w, h).into());

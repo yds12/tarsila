@@ -123,7 +123,9 @@ impl<IMG: Bitmap> Canvas<IMG> {
 
     pub fn resize(&mut self, width: u16, height: u16) {
         // TODO: it's clearing the image, but it shouldn't
-        self.inner = IMG::new(width, height, self.empty_color);
+        let new_img = IMG::new(width, height, self.empty_color);
+        let old_img = std::mem::replace(&mut self.inner, new_img);
+        self.inner.set_from(old_img);
     }
 
     pub fn start_tool_action(&mut self) {
