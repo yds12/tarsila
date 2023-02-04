@@ -25,10 +25,6 @@ impl Resources {
     }
 }
 
-fn rgba_to_rgb_u8(color: [u8; 4]) -> [u8; 3] {
-    [color[0], color[1], color[2]]
-}
-
 fn draw_texture_helper(texture: Texture2D, x: f32, y: f32, scale: f32) {
     let w = texture.width();
     let h = texture.height();
@@ -50,9 +46,9 @@ pub struct Gui {
     cursors: CursorSet,
     canvas_w_str: String,
     canvas_h_str: String,
+    last_file: Option<PathBuf>,
     brush: [u8; 3],
     brush_alpha: String,
-    last_file: Option<PathBuf>,
 }
 
 impl Gui {
@@ -83,8 +79,7 @@ impl Gui {
         layers_vis: Vec<bool>,
         layers_alpha: Vec<u8>,
     ) {
-        self.brush = rgba_to_rgb_u8(main_color);
-        self.brush_alpha = main_color[3].to_string();
+        self.toolbar.sync(main_color);
         self.layers_panel
             .sync(num_layers, active_layer, layers_vis, layers_alpha);
     }
@@ -135,27 +130,6 @@ impl Gui {
                     events.push(Event::ResizeCanvas(w, h).into());
                 }
             }
-
-            ui.horizontal(|ui| {
-                let colorpicker = ui.color_edit_button_srgb(&mut self.brush);
-                let label = ui.label("a:");
-                let text_edit = ui
-                    .add(
-                        egui::widgets::TextEdit::singleline(&mut self.brush_alpha)
-                            .desired_width(30.0),
-                    )
-                    .labelled_by(label.id);
-
-                if colorpicker.changed() || text_edit.changed() {
-                    let color = [
-                        self.brush[0],
-                        self.brush[1],
-                        self.brush[2],
-                        self.brush_alpha.parse().unwrap_or(255),
-                    ];
-                    events.push(Event::SetMainColor(color).into());
-                }
-            });
 
             let btn = ui.button("Erase canvas");
             if btn.clicked() {

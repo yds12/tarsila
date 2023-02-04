@@ -1,4 +1,4 @@
-use crate::{UiState, Effect};
+use crate::{Effect, UiState};
 use lapix_core::{Bitmap, Event, Tool};
 use macroquad::prelude::*;
 

@@ -1,7 +1,7 @@
 use crate::gui::Gui;
 use crate::keyboard::KeyboardManager;
-use crate::{mouse, Timer};
 use crate::wrapped_image::WrappedImage;
+use crate::{mouse, Timer};
 use lapix_core::primitives::*;
 use lapix_core::{Canvas, CanvasEffect, Event, State, Tool};
 use macroquad::prelude::*;
@@ -46,7 +46,7 @@ pub enum UiEvent {
     ZoomOut,
     MoveCamera(Direction),
     MouseOverGui,
-    GuiInteraction
+    GuiInteraction,
 }
 
 pub struct UiState {
@@ -58,7 +58,7 @@ pub struct UiState {
     layer_textures: Vec<Texture2D>,
     keyboard: KeyboardManager,
     mouse_over_gui: bool,
-    gui_interaction_rest: Timer
+    gui_interaction_rest: Timer,
 }
 
 impl Default for UiState {
@@ -76,7 +76,7 @@ impl Default for UiState {
             layer_textures: vec![drawing],
             keyboard: KeyboardManager::new(),
             mouse_over_gui: false,
-            gui_interaction_rest: Timer::new()
+            gui_interaction_rest: Timer::new(),
         }
     }
 }
@@ -113,7 +113,7 @@ impl UiState {
                         self.execute(event);
                     }
                 }
-                _ => ()
+                _ => (),
             }
         }
     }
@@ -155,9 +155,7 @@ impl UiState {
             // TODO: Texture2D is copy, so we don't need `drawing_mut` here, but
             // it would be better.
             CanvasEffect::Update => self.drawing().update(&self.canvas().inner().0),
-            CanvasEffect::New | CanvasEffect::Layer => {
-                self.sync_layer_textures()
-            }
+            CanvasEffect::New | CanvasEffect::Layer => self.sync_layer_textures(),
             CanvasEffect::None => (),
         };
     }
@@ -175,7 +173,7 @@ impl UiState {
 
         match self.layer_textures.get_mut(index) {
             Some(tex) => *tex = texture,
-            None => self.layer_textures.push(texture)
+            None => self.layer_textures.push(texture),
         }
     }
 
@@ -185,7 +183,7 @@ impl UiState {
             UiEvent::ZoomOut => self.zoom_out(),
             UiEvent::MoveCamera(dir) => self.move_camera(dir),
             UiEvent::MouseOverGui => self.mouse_over_gui = true,
-            UiEvent::GuiInteraction => self.gui_interaction_rest.start(GUI_REST_MS)
+            UiEvent::GuiInteraction => self.gui_interaction_rest.start(GUI_REST_MS),
         }
     }
 

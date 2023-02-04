@@ -16,6 +16,6 @@ Projects issues and bugs:
 14. Change name to Tarsila or Portinari? [ENH]
 15. When zooming out, camera needs to be readjusted [ENH][DONE]
 16. Eyedropper should get visible color, not the one on the layer [DONE]
-17. When the active layer is deleted, move active layer to the one below
+17. When the active layer is deleted, move active layer to the one below [DONE]
 18. Inconsistent use of types for 2D points and colors
 

@@ -93,7 +93,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
                         let color = self.main_color;
                         self.canvas_mut().set_pixel(x, y, color);
                     }
-                    _ => ()
+                    _ => (),
                 }
             }
             Event::SetTool(tool) => self.tool = tool,

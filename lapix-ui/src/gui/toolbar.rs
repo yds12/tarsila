@@ -1,5 +1,5 @@
 use super::Resources;
-use crate::wrapped_image::WrappedImage;
+use crate::util;
 use crate::Effect;
 use lapix_core::{Event, Size, Tool};
 use macroquad::prelude::*;
@@ -14,15 +14,28 @@ const TOOLS: [Tool; 5] = [
     Tool::Line,
 ];
 
-pub struct Toolbar(HashMap<Tool, ToolButton>);
+pub struct Toolbar {
+    tools: HashMap<Tool, ToolButton>,
+    brush: [u8; 3],
+    brush_alpha: String,
+}
 
 impl Toolbar {
     pub fn new() -> Self {
-        Self(TOOLS.iter().map(|t| (*t, ToolButton::new(*t))).collect())
+        Self {
+            tools: TOOLS.iter().map(|t| (*t, ToolButton::new(*t))).collect(),
+            brush: [0, 0, 0],
+            brush_alpha: "255".to_owned(),
+        }
+    }
+
+    pub fn sync(&mut self, main_color: [u8; 4]) {
+        self.brush = util::rgba_to_rgb_u8(main_color);
+        self.brush_alpha = main_color[3].to_string();
     }
 
     pub fn get_mut(&mut self, tool: Tool) -> Option<&mut ToolButton> {
-        self.0.get_mut(&tool)
+        self.tools.get_mut(&tool)
     }
 
     pub fn update(&mut self, egui_ctx: &egui::Context) -> Vec<Effect> {
@@ -30,6 +43,28 @@ impl Toolbar {
 
         egui::Window::new("Toolbox").show(egui_ctx, |ui| {
             ui.horizontal(|ui| {
+                let colorpicker = ui.color_edit_button_srgb(&mut self.brush);
+                let label = ui.label("a:");
+                let text_edit = ui
+                    .add(
+                        egui::widgets::TextEdit::singleline(&mut self.brush_alpha)
+                            .desired_width(30.0),
+                    )
+                    .labelled_by(label.id);
+
+                if colorpicker.changed() || text_edit.changed() {
+                    let color = [
+                        self.brush[0],
+                        self.brush[1],
+                        self.brush[2],
+                        self.brush_alpha.parse().unwrap_or(255),
+                    ];
+                    events.push(Event::SetMainColor(color).into());
+                }
+            });
+
+            ui.horizontal_wrapped(|ui| {
+                ui.set_max_width(160.);
                 for tool in TOOLS {
                     if let Some(btn) = self.get_mut(tool) {
                         btn.add_to_ui(ui, || events.push(Event::SetTool(tool).into()));

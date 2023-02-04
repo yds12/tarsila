@@ -98,7 +98,7 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::Bucket(_, _)
             | Self::Erase(_, _) => CanvasEffect::Update,
             Self::ResizeCanvas(_, _) | Self::OpenFile(_) => CanvasEffect::New,
-            Self::NewLayerAbove | Self::NewLayerBelow => CanvasEffect::Layer,
+            Self::NewLayerAbove | Self::NewLayerBelow | Self::DeleteLayer(_) => CanvasEffect::Layer,
             _ => CanvasEffect::None,
         }
     }
