@@ -1,5 +1,6 @@
 use crate::ui_state::UiEvent;
 use crate::wrapped_image::WrappedImage;
+use crate::Effect;
 use lapix_core::{Direction, Event, Tool};
 use macroquad::prelude::*;
 use std::collections::HashMap;
@@ -19,12 +20,6 @@ pub enum Shortcut {
 pub enum Modifier {
     Ctrl,
     Shift,
-}
-
-#[derive(Debug, Clone)]
-pub enum Effect {
-    Event(Event<WrappedImage>),
-    UiEvent(UiEvent),
 }
 
 pub struct KeyboardManager {

@@ -78,13 +78,18 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             }
             Event::BrushStroke(x, y) => {
                 let last_event = self.events.last();
-                if let Some(Event::BrushStroke(x0, y0)) = last_event {
-                    let color = self.main_color;
-                    let p0 = (*x0, *y0).into();
-                    self.canvas_mut().line(p0, (x, y).into(), color);
-                } else {
-                    let color = self.main_color;
-                    self.canvas_mut().set_pixel(x, y, color);
+
+                match last_event {
+                    Some(Event::BrushStroke(x0, y0)) => {
+                        let color = self.main_color;
+                        let p0 = (*x0, *y0).into();
+                        self.canvas_mut().line(p0, (x, y).into(), color);
+                    }
+                    Some(Event::BrushStart) => {
+                        let color = self.main_color;
+                        self.canvas_mut().set_pixel(x, y, color);
+                    }
+                    _ => ()
                 }
             }
             Event::SetTool(tool) => self.tool = tool,

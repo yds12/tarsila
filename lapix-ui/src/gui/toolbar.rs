@@ -1,5 +1,6 @@
 use super::Resources;
 use crate::wrapped_image::WrappedImage;
+use crate::Effect;
 use lapix_core::{Event, Size, Tool};
 use macroquad::prelude::*;
 use std::collections::HashMap;
@@ -24,14 +25,14 @@ impl Toolbar {
         self.0.get_mut(&tool)
     }
 
-    pub fn update(&mut self, egui_ctx: &egui::Context) -> Vec<Event<WrappedImage>> {
+    pub fn update(&mut self, egui_ctx: &egui::Context) -> Vec<Effect> {
         let mut events = Vec::new();
 
         egui::Window::new("Toolbox").show(egui_ctx, |ui| {
             ui.horizontal(|ui| {
                 for tool in TOOLS {
                     if let Some(btn) = self.get_mut(tool) {
-                        btn.add_to_ui(ui, || events.push(Event::SetTool(tool)));
+                        btn.add_to_ui(ui, || events.push(Event::SetTool(tool).into()));
                     }
                 }
             });

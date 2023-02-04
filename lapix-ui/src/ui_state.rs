@@ -1,6 +1,6 @@
 use crate::gui::Gui;
-use crate::keyboard::{Effect, KeyboardManager};
-use crate::mouse;
+use crate::keyboard::KeyboardManager;
+use crate::{mouse, Timer};
 use crate::wrapped_image::WrappedImage;
 use lapix_core::primitives::*;
 use lapix_core::{Canvas, CanvasEffect, Event, State, Tool};
@@ -15,6 +15,7 @@ const CANVAS_SCALE: f32 = 8.;
 const LEFT_TOOLBAR_W: u16 = 300;
 const CAMERA_SPEED: f32 = 12.;
 const BG_COLOR: macroquad::prelude::Color = SKYBLUE;
+const GUI_REST_MS: u64 = 100;
 
 // Center on the space after the toolbar
 const CANVAS_X: f32 = LEFT_TOOLBAR_W as f32 + ((WINDOW_W as u16 - LEFT_TOOLBAR_W) / 2) as f32
@@ -22,10 +23,30 @@ const CANVAS_X: f32 = LEFT_TOOLBAR_W as f32 + ((WINDOW_W as u16 - LEFT_TOOLBAR_W
 const CANVAS_Y: f32 = (WINDOW_H / 2) as f32 - (CANVAS_H as f32 * CANVAS_SCALE / 2.);
 
 #[derive(Debug, Clone)]
+pub enum Effect {
+    Event(Event<WrappedImage>),
+    UiEvent(UiEvent),
+}
+
+impl From<Event<WrappedImage>> for Effect {
+    fn from(val: Event<WrappedImage>) -> Self {
+        Self::Event(val)
+    }
+}
+
+impl From<UiEvent> for Effect {
+    fn from(val: UiEvent) -> Self {
+        Self::UiEvent(val)
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum UiEvent {
     ZoomIn,
     ZoomOut,
     MoveCamera(Direction),
+    MouseOverGui,
+    GuiInteraction
 }
 
 pub struct UiState {
@@ -36,6 +57,8 @@ pub struct UiState {
     zoom: f32,
     layer_textures: Vec<Texture2D>,
     keyboard: KeyboardManager,
+    mouse_over_gui: bool,
+    gui_interaction_rest: Timer
 }
 
 impl Default for UiState {
@@ -52,6 +75,8 @@ impl Default for UiState {
             zoom: 8.,
             layer_textures: vec![drawing],
             keyboard: KeyboardManager::new(),
+            mouse_over_gui: false,
+            gui_interaction_rest: Timer::new()
         }
     }
 }
@@ -66,22 +91,35 @@ impl UiState {
     }
 
     pub fn update(&mut self) {
-        self.sync_gui();
-        let mut events = self.gui.update();
-        events.append(&mut mouse::update(self));
+        self.mouse_over_gui = false;
 
-        for event in events {
-            self.execute(event);
-        }
+        self.sync_gui();
+        let fx = self.gui.update();
+        self.process_fx(fx);
+
+        let fx = mouse::update(self);
+        self.process_fx(fx);
 
         let fx = self.keyboard.update();
+        self.process_fx(fx);
+    }
 
+    fn process_fx(&mut self, fx: Vec<Effect>) {
         for effect in fx {
             match effect {
-                Effect::Event(event) => self.execute(event),
                 Effect::UiEvent(event) => self.process_event(event),
+                Effect::Event(event) => {
+                    if !event.is_drawing_event() || !self.is_canvas_blocked() {
+                        self.execute(event);
+                    }
+                }
+                _ => ()
             }
         }
+    }
+
+    fn is_canvas_blocked(&self) -> bool {
+        self.mouse_over_gui || !self.gui_interaction_rest.expired()
     }
 
     pub fn draw(&mut self) {
@@ -92,6 +130,7 @@ impl UiState {
         self.gui.draw_cursor(self.selected_tool());
     }
 
+    /// Pass relevant UI state info to the GUI
     pub fn sync_gui(&mut self) {
         let n_layers = self.inner.num_layers();
         self.gui.sync(
@@ -138,6 +177,8 @@ impl UiState {
             UiEvent::ZoomIn => self.zoom_in(),
             UiEvent::ZoomOut => self.zoom_out(),
             UiEvent::MoveCamera(dir) => self.move_camera(dir),
+            UiEvent::MouseOverGui => self.mouse_over_gui = true,
+            UiEvent::GuiInteraction => self.gui_interaction_rest.start(GUI_REST_MS)
         }
     }
 

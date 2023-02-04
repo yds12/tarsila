@@ -1,9 +1,8 @@
-use crate::wrapped_image::WrappedImage;
-use crate::UiState;
+use crate::{UiState, Effect};
 use lapix_core::{Bitmap, Event, Tool};
 use macroquad::prelude::*;
 
-pub fn update(state: &UiState) -> Vec<Event<WrappedImage>> {
+pub fn update(state: &UiState) -> Vec<Effect> {
     let (x, y) = mouse_position();
     let (x, y) = state.screen_to_canvas(x, y);
     let mut events = Vec::new();
@@ -16,21 +15,21 @@ pub fn update(state: &UiState) -> Vec<Event<WrappedImage>> {
         {
             match state.selected_tool() {
                 Tool::Brush => {
-                    events.push(Event::BrushStart);
+                    events.push(Event::BrushStart.into());
                 }
                 Tool::Eraser => {
-                    events.push(Event::EraseStart);
+                    events.push(Event::EraseStart.into());
                 }
                 Tool::Line => {
-                    events.push(Event::LineStart(x as u16, y as u16));
+                    events.push(Event::LineStart(x as u16, y as u16).into());
                 }
                 Tool::Eyedropper => {
                     let color = state.canvas().inner().pixel(x as u16, y as u16);
-                    events.push(Event::SetMainColor(color));
-                    events.push(Event::SetTool(Tool::Brush));
+                    events.push(Event::SetMainColor(color).into());
+                    events.push(Event::SetTool(Tool::Brush).into());
                 }
                 Tool::Bucket => {
-                    events.push(Event::Bucket(x as u16, y as u16));
+                    events.push(Event::Bucket(x as u16, y as u16).into());
                 }
             }
         }
@@ -44,10 +43,10 @@ pub fn update(state: &UiState) -> Vec<Event<WrappedImage>> {
         {
             match state.selected_tool() {
                 Tool::Brush => {
-                    events.push(Event::BrushStroke(x as u16, y as u16));
+                    events.push(Event::BrushStroke(x as u16, y as u16).into());
                 }
                 Tool::Eraser => {
-                    events.push(Event::Erase(x as u16, y as u16));
+                    events.push(Event::Erase(x as u16, y as u16).into());
                 }
                 _ => (),
             }
@@ -62,13 +61,13 @@ pub fn update(state: &UiState) -> Vec<Event<WrappedImage>> {
         {
             match state.selected_tool() {
                 Tool::Brush => {
-                    events.push(Event::BrushEnd);
+                    events.push(Event::BrushEnd.into());
                 }
                 Tool::Eraser => {
-                    events.push(Event::EraseEnd);
+                    events.push(Event::EraseEnd.into());
                 }
                 Tool::Line => {
-                    events.push(Event::LineEnd(x as u16, y as u16));
+                    events.push(Event::LineEnd(x as u16, y as u16).into());
                 }
                 _ => (),
             }

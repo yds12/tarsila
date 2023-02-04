@@ -102,6 +102,19 @@ impl<IMG: Bitmap> Event<IMG> {
             _ => CanvasEffect::None,
         }
     }
+
+    pub fn is_drawing_event(&self) -> bool {
+        match self {
+            Self::BrushStart
+            | Self::BrushStroke(_, _)
+            | Self::LineStart(_, _)
+            | Self::LineEnd(_, _)
+            | Self::Bucket(_, _)
+            | Self::Erase(_, _) => true,
+            _ => false,
+        }
+    }
+
     pub fn repeatable(&self) -> bool {
         match self {
             Self::Undo | Self::NewLayerAbove | Self::NewLayerBelow | Self::DeleteLayer(_) => true,

@@ -1,4 +1,5 @@
 use crate::wrapped_image::WrappedImage;
+use crate::{Effect, UiEvent};
 use lapix_core::{Event, Point, Size, Tool};
 use macroquad::prelude::*;
 use std::collections::HashMap;
@@ -88,7 +89,7 @@ impl Gui {
             .sync(num_layers, active_layer, layers_vis, layers_alpha);
     }
 
-    pub fn update(&mut self) -> Vec<Event<WrappedImage>> {
+    pub fn update(&mut self) -> Vec<Effect> {
         let mut events = Vec::new();
 
         egui_macroquad::ui(|egui_ctx| {
@@ -104,10 +105,14 @@ impl Gui {
             egui_ctx.output().cursor_icon = egui::CursorIcon::None;
         });
 
+        if !events.is_empty() {
+            events.push(UiEvent::GuiInteraction.into());
+        }
+
         events
     }
 
-    fn update_canvas_panel(&mut self, egui_ctx: &egui::Context) -> Vec<Event<WrappedImage>> {
+    fn update_canvas_panel(&mut self, egui_ctx: &egui::Context) -> Vec<Effect> {
         let mut events = Vec::new();
 
         egui::Window::new("Canvas").show(egui_ctx, |ui| {
@@ -127,7 +132,7 @@ impl Gui {
             let btn = ui.button("New canvas");
             if btn.clicked() {
                 if let (Ok(w), Ok(h)) = (self.canvas_w_str.parse(), self.canvas_h_str.parse()) {
-                    events.push(Event::ResizeCanvas(w, h));
+                    events.push(Event::ResizeCanvas(w, h).into());
                 }
             }
 
@@ -148,13 +153,13 @@ impl Gui {
                         self.brush[2],
                         self.brush_alpha.parse().unwrap_or(255),
                     ];
-                    events.push(Event::SetMainColor(color));
+                    events.push(Event::SetMainColor(color).into());
                 }
             });
 
             let btn = ui.button("Erase canvas");
             if btn.clicked() {
-                events.push(Event::ClearCanvas);
+                events.push(Event::ClearCanvas.into());
             }
             let btn = ui.button("Save");
             if btn.clicked() {
@@ -166,7 +171,7 @@ impl Gui {
 
                 if let Some(path) = dialog.save_file() {
                     self.last_file = Some(path.clone());
-                    events.push(Event::Save(path));
+                    events.push(Event::Save(path).into());
                 }
             }
             let btn = ui.button("Open");
@@ -179,10 +184,14 @@ impl Gui {
 
                 if let Some(path) = dialog.pick_file() {
                     self.last_file = Some(path.clone());
-                    events.push(Event::OpenFile(path));
+                    events.push(Event::OpenFile(path).into());
                 }
             }
         });
+
+        if egui_ctx.is_pointer_over_area() {
+            events.push(Effect::UiEvent(UiEvent::MouseOverGui));
+        }
 
         events
     }

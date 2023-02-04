@@ -1,12 +1,14 @@
 use macroquad::prelude::*;
 
+mod util;
 mod gui;
 mod keyboard;
 mod mouse;
 mod ui_state;
 mod wrapped_image;
 
-use ui_state::{UiState, WINDOW_H, WINDOW_W};
+use util::*;
+use ui_state::{Effect, UiEvent, UiState, WINDOW_H, WINDOW_W};
 
 fn window_conf() -> Conf {
     Conf {
