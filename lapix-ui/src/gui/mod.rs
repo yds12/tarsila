@@ -11,6 +11,9 @@ use toolbar::Toolbar;
 mod layers;
 use layers::LayersPanel;
 
+mod preview;
+use preview::Preview;
+
 pub struct Resources;
 
 impl Resources {
@@ -44,11 +47,10 @@ pub struct Gui {
     toolbar: Toolbar,
     layers_panel: LayersPanel,
     cursors: CursorSet,
-    canvas_w_str: String,
-    canvas_h_str: String,
+    canvas_size: (String, String),
     last_file: Option<PathBuf>,
-    brush: [u8; 3],
-    brush_alpha: String,
+    spritesheet: (String, String),
+    preview: Preview,
 }
 
 impl Gui {
@@ -57,11 +59,10 @@ impl Gui {
             toolbar: Toolbar::new(),
             layers_panel: LayersPanel::new(),
             cursors: CursorSet::new(),
-            canvas_w_str: canvas_size.x.to_string(),
-            canvas_h_str: canvas_size.y.to_string(),
-            brush: [0, 0, 0],
-            brush_alpha: "255".to_owned(),
+            canvas_size: (canvas_size.x.to_string(), canvas_size.y.to_string()),
             last_file: None,
+            spritesheet: ("1".to_owned(), "1".to_owned()),
+            preview: Preview::new(),
         }
     }
 
@@ -78,10 +79,14 @@ impl Gui {
         active_layer: usize,
         layers_vis: Vec<bool>,
         layers_alpha: Vec<u8>,
+        spritesheet: Size<u8>,
+        preview_imgs: Vec<macroquad::prelude::Image>,
     ) {
+        self.spritesheet = (spritesheet.x.to_string(), spritesheet.y.to_string());
         self.toolbar.sync(main_color);
         self.layers_panel
             .sync(num_layers, active_layer, layers_vis, layers_alpha);
+        self.preview.sync(preview_imgs);
     }
 
     pub fn update(&mut self) -> Vec<Effect> {
@@ -96,6 +101,8 @@ impl Gui {
 
             let mut layers_events = self.layers_panel.update(egui_ctx);
             events.append(&mut layers_events);
+
+            self.preview.update(egui_ctx);
 
             egui_ctx.output().cursor_icon = egui::CursorIcon::None;
         });
@@ -114,22 +121,48 @@ impl Gui {
             ui.horizontal(|ui| {
                 let label = ui.label("w:");
                 ui.add(
-                    egui::widgets::TextEdit::singleline(&mut self.canvas_w_str).desired_width(30.0),
+                    egui::widgets::TextEdit::singleline(&mut self.canvas_size.0)
+                        .desired_width(30.0),
                 )
                 .labelled_by(label.id);
                 let label = ui.label("h:");
                 ui.add(
-                    egui::widgets::TextEdit::singleline(&mut self.canvas_h_str).desired_width(30.0),
+                    egui::widgets::TextEdit::singleline(&mut self.canvas_size.1)
+                        .desired_width(30.0),
                 )
                 .labelled_by(label.id);
             });
 
             let btn = ui.button("Resize canvas");
             if btn.clicked() {
-                if let (Ok(w), Ok(h)) = (self.canvas_w_str.parse(), self.canvas_h_str.parse()) {
+                if let (Ok(w), Ok(h)) = (self.canvas_size.0.parse(), self.canvas_size.1.parse()) {
                     events.push(Event::ResizeCanvas(w, h).into());
                 }
             }
+
+            ui.heading("Spritesheet");
+            ui.horizontal(|ui| {
+                let label = ui.label("cols:");
+                let t1 = ui
+                    .add(
+                        egui::widgets::TextEdit::singleline(&mut self.spritesheet.0)
+                            .desired_width(30.0),
+                    )
+                    .labelled_by(label.id);
+                let label = ui.label("rows:");
+                let t2 = ui
+                    .add(
+                        egui::widgets::TextEdit::singleline(&mut self.spritesheet.1)
+                            .desired_width(30.0),
+                    )
+                    .labelled_by(label.id);
+                if t1.changed() || t2.changed() {
+                    if let (Ok(w), Ok(h)) = (self.spritesheet.0.parse(), self.spritesheet.1.parse())
+                    {
+                        events.push(Event::SetSpritesheet(w, h).into());
+                    }
+                }
+            });
 
             let btn = ui.button("Erase canvas");
             if btn.clicked() {

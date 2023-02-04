@@ -24,6 +24,7 @@ pub enum Event<IMG: Bitmap> {
     ChangeLayerVisibility(usize, bool),
     ChangeLayerOpacity(usize, u8),
     DeleteLayer(usize),
+    SetSpritesheet(u8, u8),
     Undo,
 }
 
@@ -49,6 +50,7 @@ impl<IMG: Bitmap> Clone for Event<IMG> {
             Self::Erase(x, y) => Self::Erase(*x, *y),
             Self::LineStart(x, y) => Self::LineStart(*x, *y),
             Self::LineEnd(x, y) => Self::LineEnd(*x, *y),
+            Self::SetSpritesheet(x, y) => Self::SetSpritesheet(*x, *y),
             Self::ChangeLayerVisibility(i, b) => Self::ChangeLayerVisibility(*i, *b),
             Self::ChangeLayerOpacity(i, n) => Self::ChangeLayerOpacity(*i, *n),
             Self::Undo => Self::Undo,
@@ -73,6 +75,7 @@ impl<IMG: Bitmap> PartialEq for Event<IMG> {
             (Self::Erase(x, y), Self::Erase(i, j)) => x == i && y == j,
             (Self::LineStart(x, y), Self::LineStart(i, j)) => x == i && y == j,
             (Self::LineEnd(x, y), Self::LineEnd(i, j)) => x == i && y == j,
+            (Self::SetSpritesheet(x, y), Self::SetSpritesheet(i, j)) => x == i && y == j,
             (Self::SetTool(t), Self::SetTool(u)) => t == u,
             (Self::SetMainColor(c), Self::SetMainColor(d)) => c == d,
             (Self::Save(p), Self::Save(q)) => p == q,

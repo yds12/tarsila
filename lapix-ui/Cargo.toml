@@ -9,5 +9,5 @@ edition = "2021"
 lapix-core = { path = "../lapix-core" }
 egui-macroquad = { path = "../egui-macroquad" }
 macroquad = "0.3.25"
-egui = "0.20.1"
 rfd = "0.10.0"
+egui = "0.20.1"

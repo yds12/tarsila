@@ -7,7 +7,7 @@ Features (+ means done, (-) means least important):
 
 - Canvas to edit sprite (+)
   - Resizable (+)
-  - Multiple frames
+  - Multiple frames (+)
   - Layers (+)
     - control visibility (+)
     - control editability (+)
@@ -35,9 +35,9 @@ Features (+ means done, (-) means least important):
 - Save and load images (+)
   - Choose Scaled
   - Different formats (PNG (+), JPEG, GIF)
-- Preview
-  - Real size
-  - Animation
+- Preview (+)
+  - Real size (+)
+  - Animation (+)
 - Commands
   - Customizable shortcuts (-)
   - Try to have good defaults

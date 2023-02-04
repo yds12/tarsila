@@ -16,6 +16,8 @@ const LEFT_TOOLBAR_W: u16 = 300;
 const CAMERA_SPEED: f32 = 12.;
 const BG_COLOR: macroquad::prelude::Color = SKYBLUE;
 const GUI_REST_MS: u64 = 100;
+const SPRITESHEET_LINE_THICKNESS: f32 = 1.;
+const SPRITESHEET_LINE_COLOR: macroquad::prelude::Color = BLACK;
 
 // Center on the space after the toolbar
 const CANVAS_X: f32 = LEFT_TOOLBAR_W as f32 + ((WINDOW_W as u16 - LEFT_TOOLBAR_W) / 2) as f32
@@ -126,6 +128,7 @@ impl UiState {
         clear_background(BG_COLOR);
         self.draw_canvas_bg();
         self.draw_canvas();
+        self.draw_spritesheet_boundaries();
         egui_macroquad::draw();
         self.gui.draw_cursor(self.selected_tool());
     }
@@ -142,6 +145,12 @@ impl UiState {
                 .collect(),
             (0..n_layers)
                 .map(|i| self.inner.layer(i).opacity())
+                .collect(),
+            self.inner.spritesheet(),
+            self.inner
+                .sprite_images()
+                .into_iter()
+                .map(|i| i.0)
                 .collect(),
         );
     }
@@ -314,6 +323,29 @@ impl UiState {
 
             let color = [255, 255, 255, self.inner.layer(i).opacity()];
             draw_texture_ex(texture, x, y, color.into(), params);
+        }
+    }
+
+    pub fn draw_spritesheet_boundaries(&self) {
+        for i in 0..self.inner.spritesheet().x {
+            for j in 0..self.inner.spritesheet().y {
+                let x0 = self.canvas_pos().x - self.camera().x;
+                let y0 = self.canvas_pos().y - self.camera().y;
+                let scale = self.zoom();
+                let w = self.canvas().width() as f32 / self.inner.spritesheet().x as f32 * scale;
+                let h = self.canvas().height() as f32 / self.inner.spritesheet().y as f32 * scale;
+                let x = x0 + i as f32 * w;
+                let y = y0 + j as f32 * h;
+
+                draw_rectangle_lines(
+                    x,
+                    y,
+                    w,
+                    h,
+                    SPRITESHEET_LINE_THICKNESS,
+                    SPRITESHEET_LINE_COLOR,
+                );
+            }
         }
     }
 

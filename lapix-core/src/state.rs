@@ -1,4 +1,4 @@
-use crate::{Bitmap, Canvas, CanvasEffect, Color, Event, Tool};
+use crate::{Bitmap, Canvas, CanvasEffect, Color, Event, Size, Tool};
 use std::fmt::Debug;
 
 pub struct Layer<IMG: Bitmap> {
@@ -43,6 +43,7 @@ pub struct State<IMG: Bitmap> {
     events: Vec<Event<IMG>>,
     tool: Tool,
     main_color: IMG::Color,
+    spritesheet: Size<u8>,
 }
 
 impl<IMG: Bitmap + Debug> State<IMG> {
@@ -53,6 +54,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             events: Vec::new(),
             tool: Tool::Brush,
             main_color: IMG::Color::from_rgb(0, 0, 0),
+            spritesheet: Size::new(1, 1),
         }
     }
 
@@ -120,6 +122,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             // TODO: this should not only remove it, as we need to be able to
             // undo this
             Event::DeleteLayer(i) => self.delete_layer(i),
+            Event::SetSpritesheet(w, h) => self.set_spritesheet(w, h),
             Event::Undo => {
                 // TODO: we should add UNDO to the events list
                 dbg!(t0.elapsed().unwrap());
@@ -191,12 +194,25 @@ impl<IMG: Bitmap + Debug> State<IMG> {
         self.layers[index].opacity = opacity;
     }
 
+    pub fn spritesheet(&self) -> Size<u8> {
+        self.spritesheet
+    }
+
+    fn set_spritesheet(&mut self, w: u8, h: u8) {
+        if self.canvas().width() % w as u16 != 0 || self.canvas().height() % h as u16 != 0 {
+            eprintln!("WARN: Canvas size should be a multiple of the spritesheet size");
+            return;
+        }
+
+        self.spritesheet = Size::new(w, h);
+    }
+
     fn undo(&mut self) -> CanvasEffect {
         self.canvas_mut().undo_last()
     }
 
     fn save_image(&self, path: &str) {
-        let blended = self.blend_layers();
+        let blended = self.blended_layers();
         let bytes = blended.bytes();
 
         let img = image::RgbaImage::from_raw(
@@ -222,43 +238,40 @@ impl<IMG: Bitmap + Debug> State<IMG> {
         }
     }
 
-    fn blend_layers(&self) -> IMG {
+    pub fn blended_layers(&self) -> IMG {
         let w = self.layer_canvas(0).width();
         let h = self.layer_canvas(0).height();
+
+        self.blended_layers_rect(0, 0, w, h)
+    }
+
+    pub fn blended_layers_rect(&self, x: u16, y: u16, w: u16, h: u16) -> IMG {
         let mut result = IMG::new(w, h, IMG::Color::from_rgba(0, 0, 0, 0));
 
-        for x in 0..w {
-            for y in 0..h {
-                result.set_pixel(x, y, self.visible_pixel(x, y));
+        for i in 0..w {
+            for j in 0..h {
+                result.set_pixel(i, j, self.visible_pixel(x + i, y + j));
             }
         }
-        /*
-        // Start with the contents of layer 0 (the bottom layer)
-        let mut result = if self.layer(0).visible {
-            IMG::from_parts(w, h, self.layer_canvas(0).inner().bytes())
-        } else {
-            IMG::new(w, h, IMG::Color::from_rgba(0, 0, 0, 0))
-        };
-
-        for i in 1..self.layers.len() {
-            if !self.layer(i).visible {
-                continue;
-            }
-
-            // TODO: take opacity into account
-            for x in 0..w {
-                for y in 0..h {
-                    let blend = self
-                        .layer_canvas(i)
-                        .pixel(x, y)
-                        .blend_over(result.pixel(x, y));
-                    result.set_pixel(x, y, blend);
-                }
-            }
-        }
-        */
 
         result
+    }
+
+    pub fn sprite_images(&self) -> Vec<IMG> {
+        let mut imgs = Vec::new();
+        let w = self.layer_canvas(0).width() / self.spritesheet.x as u16;
+        let h = self.layer_canvas(0).height() / self.spritesheet.y as u16;
+
+        for j in 0..self.spritesheet.y {
+            for i in 0..self.spritesheet.x {
+                imgs.push(
+                    // TODO: maybe this (and other) multiplication can overflow
+                    self.blended_layers_rect(i as u16 * w, j as u16 * h, w, h),
+                );
+            }
+        }
+
+        imgs
     }
 
     pub fn visible_pixel(&self, x: u16, y: u16) -> IMG::Color {
