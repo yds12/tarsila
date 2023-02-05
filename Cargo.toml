@@ -1,7 +1,7 @@
 [workspace]
 members = [
-  "lapix-ui",
-  "lapix-core",
+  "tarsila",
+  "lapix",
   "egui-macroquad"
 ]
 

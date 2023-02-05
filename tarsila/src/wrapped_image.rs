@@ -1,4 +1,4 @@
-use lapix_core::Bitmap;
+use lapix::Bitmap;
 use macroquad::prelude::*;
 
 #[derive(Debug)]

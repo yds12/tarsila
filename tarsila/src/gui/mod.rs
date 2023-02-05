@@ -1,6 +1,6 @@
 use crate::wrapped_image::WrappedImage;
 use crate::{Effect, UiEvent};
-use lapix_core::{Event, Point, Size, Tool};
+use lapix::{Event, Point, Size, Tool};
 use macroquad::prelude::*;
 use std::collections::HashMap;
 use std::path::PathBuf;

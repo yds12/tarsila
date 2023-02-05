@@ -26,6 +26,7 @@ Features (+ means done, (-) means least important):
     - Vertical/horizontal
     - By any line (not in aseprite)
     - single or double
+    - works not only on brush, but all tools, including selection
 - Color palette
   - Add and remove colors
   - Save and load palettes
@@ -81,4 +82,5 @@ Features (+ means done, (-) means least important):
   - assume we may change GUI, so make everything generic if possible (+)
   - preferences menu
   - help menu
+- Tile mode: show tiles around canvas to show how it would look as a tile
 

@@ -2,8 +2,8 @@ use crate::gui::Gui;
 use crate::keyboard::KeyboardManager;
 use crate::wrapped_image::WrappedImage;
 use crate::{mouse, Timer};
-use lapix_core::primitives::*;
-use lapix_core::{Canvas, CanvasEffect, Event, State, Tool};
+use lapix::primitives::*;
+use lapix::{Canvas, CanvasEffect, Event, State, Tool};
 use macroquad::prelude::*;
 use std::default::Default;
 

@@ -616,22 +616,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "lapix-core"
+name = "lapix"
 version = "0.1.0"
 dependencies = [
  "image",
  "test-case",
-]
-
-[[package]]
-name = "lapix-ui"
-version = "0.1.0"
-dependencies = [
- "egui",
- "egui-macroquad",
- "lapix-core",
- "macroquad",
- "rfd",
 ]
 
 [[package]]
@@ -1261,6 +1250,17 @@ dependencies = [
  "pkg-config",
  "toml",
  "version-compare",
+]
+
+[[package]]
+name = "tarsila"
+version = "0.1.0"
+dependencies = [
+ "egui",
+ "egui-macroquad",
+ "lapix",
+ "macroquad",
+ "rfd",
 ]
 
 [[package]]

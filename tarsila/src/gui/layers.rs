@@ -1,5 +1,5 @@
 use crate::Effect;
-use lapix_core::Event;
+use lapix::Event;
 
 pub struct LayersPanel {
     num_layers: usize,

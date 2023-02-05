@@ -1,13 +1,12 @@
 [package]
-name = "lapix-ui"
+name = "lapix"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-lapix-core = { path = "../lapix-core" }
-egui-macroquad = { path = "../egui-macroquad" }
-macroquad = "0.3.25"
-rfd = "0.10.0"
-egui = "0.20.1"
+image = "0.24.5"
+
+[dev-dependencies]
+test-case = "2.2.2"

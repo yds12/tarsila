@@ -1,5 +1,5 @@
 use crate::{Effect, UiState};
-use lapix_core::{Bitmap, Event, Tool};
+use lapix::{Bitmap, Event, Tool};
 use macroquad::prelude::*;
 
 pub fn update(state: &UiState) -> Vec<Effect> {

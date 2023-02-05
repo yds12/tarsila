@@ -1,7 +1,7 @@
 use super::Resources;
 use crate::util;
 use crate::Effect;
-use lapix_core::{Event, Size, Tool};
+use lapix::{Event, Size, Tool};
 use macroquad::prelude::*;
 use std::collections::HashMap;
 

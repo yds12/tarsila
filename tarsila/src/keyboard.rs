@@ -1,7 +1,7 @@
 use crate::ui_state::UiEvent;
 use crate::wrapped_image::WrappedImage;
 use crate::Effect;
-use lapix_core::{Direction, Event, Tool};
+use lapix::{Direction, Event, Tool};
 use macroquad::prelude::*;
 use std::collections::HashMap;
 use std::time::SystemTime;

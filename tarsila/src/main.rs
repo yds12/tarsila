@@ -12,7 +12,7 @@ use util::*;
 
 fn window_conf() -> Conf {
     Conf {
-        window_title: "Lapix: Pixel Art and 2D Sprite Editor".to_owned(),
+        window_title: "Tarsila: Pixel Art and 2D Sprite Editor".to_owned(),
         window_width: WINDOW_W,
         window_height: WINDOW_H,
         high_dpi: true,
