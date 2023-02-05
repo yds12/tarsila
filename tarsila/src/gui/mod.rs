@@ -5,14 +5,15 @@ use macroquad::prelude::*;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-mod toolbar;
-use toolbar::Toolbar;
-
 mod layers;
-use layers::LayersPanel;
-
+mod palette;
 mod preview;
+mod toolbar;
+
+use layers::LayersPanel;
+use palette::Palette;
 use preview::Preview;
+use toolbar::Toolbar;
 
 pub struct Resources;
 
@@ -51,6 +52,7 @@ pub struct Gui {
     last_file: Option<PathBuf>,
     spritesheet: (String, String),
     preview: Preview,
+    palette: Palette,
 }
 
 impl Gui {
@@ -63,6 +65,7 @@ impl Gui {
             last_file: None,
             spritesheet: ("1".to_owned(), "1".to_owned()),
             preview: Preview::new(),
+            palette: Palette::new(),
         }
     }
 
@@ -81,12 +84,14 @@ impl Gui {
         layers_alpha: Vec<u8>,
         spritesheet: Size<u8>,
         preview_imgs: Vec<macroquad::prelude::Image>,
+        palette: Vec<[u8; 4]>,
     ) {
         self.spritesheet = (spritesheet.x.to_string(), spritesheet.y.to_string());
         self.toolbar.sync(main_color);
         self.layers_panel
             .sync(num_layers, active_layer, layers_vis, layers_alpha);
         self.preview.sync(preview_imgs);
+        self.palette.sync(palette);
     }
 
     pub fn update(&mut self) -> Vec<Effect> {
@@ -95,6 +100,9 @@ impl Gui {
         egui_macroquad::ui(|egui_ctx| {
             let mut canvas_panel_events = self.update_canvas_panel(egui_ctx);
             events.append(&mut canvas_panel_events);
+
+            let mut palette_events = self.palette.update(egui_ctx);
+            events.append(&mut palette_events);
 
             let mut toolbar_events = self.toolbar.update(egui_ctx);
             events.append(&mut toolbar_events);

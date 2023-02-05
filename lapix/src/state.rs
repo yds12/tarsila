@@ -44,6 +44,7 @@ pub struct State<IMG: Bitmap> {
     tool: Tool,
     main_color: IMG::Color,
     spritesheet: Size<u8>,
+    palette: Vec<IMG::Color>
 }
 
 impl<IMG: Bitmap + Debug> State<IMG> {
@@ -55,6 +56,22 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             tool: Tool::Brush,
             main_color: IMG::Color::from_rgb(0, 0, 0),
             spritesheet: Size::new(1, 1),
+            palette: vec![
+                IMG::Color::from_rgba(0, 0, 0, 255), // BLACK
+                IMG::Color::from_rgba(255, 255, 255, 255), // WHITE
+                IMG::Color::from_rgba(255, 0, 0, 255), // RED
+                IMG::Color::from_rgba(255, 127, 0, 255), // RED + YELLOW = ORANGE
+                IMG::Color::from_rgba(255, 255, 0, 255), // YELLOW
+                IMG::Color::from_rgba(127, 255, 0, 255), // GREEN + YELLOW
+                IMG::Color::from_rgba(0, 255, 0, 255), // GREEN
+                IMG::Color::from_rgba(0, 255, 127, 255), // GREEN + CYAN
+                IMG::Color::from_rgba(0, 255, 255, 255), // CYAN
+                IMG::Color::from_rgba(0, 127, 255, 255), // BLUE + CYAN
+                IMG::Color::from_rgba(0, 0, 255, 255), // BLUE
+                IMG::Color::from_rgba(127, 0, 255, 255), // BLUE + MAGENTA
+                IMG::Color::from_rgba(255, 0, 255, 255), // MAGENTA
+                IMG::Color::from_rgba(255, 0, 127, 255), // RED + MAGENTA
+            ]
         }
     }
 
@@ -205,6 +222,10 @@ impl<IMG: Bitmap + Debug> State<IMG> {
         }
 
         self.spritesheet = Size::new(w, h);
+    }
+
+    pub fn palette(&self) -> &[IMG::Color] {
+        &self.palette
     }
 
     fn undo(&mut self) -> CanvasEffect {

@@ -3,7 +3,7 @@ use crate::keyboard::KeyboardManager;
 use crate::wrapped_image::WrappedImage;
 use crate::{mouse, Timer};
 use lapix::primitives::*;
-use lapix::{Canvas, CanvasEffect, Event, State, Tool};
+use lapix::{Bitmap, Canvas, CanvasEffect, Color as _, Event, State, Tool};
 use macroquad::prelude::*;
 use std::default::Default;
 
@@ -152,6 +152,7 @@ impl UiState {
                 .into_iter()
                 .map(|i| i.0)
                 .collect(),
+            self.inner.palette().iter().map(|c| *c).collect(),
         );
     }
 

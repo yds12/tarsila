@@ -41,7 +41,9 @@ impl Toolbar {
     pub fn update(&mut self, egui_ctx: &egui::Context) -> Vec<Effect> {
         let mut events = Vec::new();
 
-        egui::Window::new("Toolbox").show(egui_ctx, |ui| {
+        egui::Window::new("Toolbox")
+            .default_pos((15., 330.))
+            .show(egui_ctx, |ui| {
             ui.horizontal(|ui| {
                 let colorpicker = ui.color_edit_button_srgb(&mut self.brush);
                 let label = ui.label("a:");

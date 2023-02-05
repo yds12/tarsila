@@ -27,7 +27,7 @@ Features (+ means done, (-) means least important):
     - By any line (not in aseprite)
     - single or double
     - works not only on brush, but all tools, including selection
-- Color palette
+- Color palette (+)
   - Add and remove colors
   - Save and load palettes
   - Default palettes

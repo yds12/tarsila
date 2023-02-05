@@ -35,7 +35,7 @@ impl LayersPanel {
         let mut events = Vec::new();
 
         egui::Window::new("Layers")
-            .default_pos((15., 330.))
+            .default_pos((15., 430.))
             .show(egui_ctx, |ui| {
                 let btn = ui.button("+");
                 if btn.clicked() {
