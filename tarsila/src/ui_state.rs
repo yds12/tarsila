@@ -1,10 +1,11 @@
+use crate::graphics::DrawContext;
 use crate::gui::Gui;
 use crate::keyboard::KeyboardManager;
 use crate::mouse::MouseManager;
 use crate::wrapped_image::WrappedImage;
 use crate::{graphics, Timer};
 use lapix::primitives::*;
-use lapix::{Bitmap, Canvas, CanvasEffect, Event, FreeImage, Selection, State, Tool};
+use lapix::{Bitmap, Canvas, CanvasEffect, Event, FreeImage, Layer, Selection, State, Tool};
 use macroquad::prelude::Color as MqColor;
 use macroquad::prelude::{DrawTextureParams, FilterMode, Texture2D, Vec2, BLACK, SKYBLUE};
 use std::default::Default;
@@ -18,8 +19,6 @@ const LEFT_TOOLBAR_W: u16 = 300;
 const CAMERA_SPEED: f32 = 12.;
 const BG_COLOR: MqColor = SKYBLUE;
 const GUI_REST_MS: u64 = 100;
-const SPRITESHEET_LINE_THICKNESS: f32 = 1.;
-const SPRITESHEET_LINE_COLOR: MqColor = BLACK;
 
 // Center on the space after the toolbar
 const CANVAS_X: f32 = LEFT_TOOLBAR_W as f32 + ((WINDOW_W as u16 - LEFT_TOOLBAR_W) / 2) as f32
@@ -131,14 +130,27 @@ impl UiState {
         self.mouse_over_gui || !self.gui_interaction_rest.expired()
     }
 
+    fn draw_ctx(&self) -> DrawContext {
+        DrawContext {
+            spritesheet: self.inner.spritesheet(),
+            scale: self.zoom(),
+            canvas_pos: self.canvas_pos(),
+            camera: self.camera(),
+            canvas_size: (self.canvas().width() as f32, self.canvas().height() as f32).into(),
+            selection: self.inner.selection(),
+        }
+    }
+
     pub fn draw(&mut self) {
         macroquad::prelude::clear_background(BG_COLOR);
-        self.draw_canvas_bg();
-        self.draw_canvas();
-        self.draw_spritesheet_boundaries();
 
-        if self.inner.selection().is_some() {
-            self.draw_selection();
+        let ctx = self.draw_ctx();
+        graphics::draw_canvas_bg(ctx);
+        graphics::draw_canvas(&*self);
+        graphics::draw_spritesheet_boundaries(ctx);
+
+        if let Some(selection) = self.inner.selection() {
+            graphics::draw_selection(ctx, self.inner.free_image());
         }
 
         // TODO: most of this logic should be in some update method, not a draw one
@@ -149,7 +161,12 @@ impl UiState {
                 self.free_image_tex = Some(tex);
             }
 
-            self.draw_free_image(&img);
+            graphics::draw_free_image(
+                ctx,
+                &img,
+                self.inner.layer(self.inner.active_layer()).opacity(),
+                self.free_image_tex.unwrap(),
+            );
         } else {
             self.free_image_tex = None;
         }
@@ -281,6 +298,18 @@ impl UiState {
         self.zoom
     }
 
+    pub fn layer(&self, index: usize) -> &Layer<WrappedImage> {
+        self.inner.layer(index)
+    }
+
+    pub fn num_layers(&self) -> usize {
+        self.inner.num_layers()
+    }
+
+    pub fn layer_tex(&self, index: usize) -> Texture2D {
+        self.layer_textures[index]
+    }
+
     pub fn zoom_in(&mut self) {
         self.zoom *= 2.;
         self.camera.x *= 2.;
@@ -320,132 +349,6 @@ impl UiState {
             Direction::Left => canvas_pos.x - camera.x > win_w - buffer,
             Direction::Right => camera.x > canvas_pos.x + canvas_size.x - buffer,
         }
-    }
-
-    pub fn draw_canvas_bg(&self) {
-        let scale = self.zoom();
-
-        let x = self.canvas_pos().x - self.camera().x;
-        let y = self.canvas_pos().y - self.camera().y;
-        let w = self.drawing().width() * scale;
-        let h = self.drawing().height() * scale;
-
-        let side = 4. * scale;
-
-        // TODO: optimize this by storing a rendered texture that contains all
-        // BG rectangles
-        let bg1 = MqColor::new(0.875, 0.875, 0.875, 1.);
-        let bg2 = MqColor::new(0.75, 0.75, 0.75, 1.);
-        for i in 0..(w / side + 1.) as usize {
-            for j in 0..(h / side + 1.) as usize {
-                let cur_w = i as f32 * side;
-                let cur_h = j as f32 * side;
-                let next_w = (i + 1) as f32 * side;
-                let next_h = (j + 1) as f32 * side;
-                let x = x + i as f32 * side;
-                let y = y + j as f32 * side;
-                let w = if next_w <= w { side } else { w - cur_w };
-                let h = if next_h <= h { side } else { h - cur_h };
-                let color = if (i + j) % 2 == 0 { bg1 } else { bg2 };
-                macroquad::prelude::draw_rectangle(x, y, w, h, color);
-            }
-        }
-    }
-
-    pub fn draw_canvas(&self) {
-        for i in 0..self.inner.num_layers() {
-            if !self.inner.layer(i).visible() {
-                continue;
-            }
-
-            let texture = self.layer_textures[i];
-            let w = texture.width();
-            let h = texture.height();
-
-            let x = self.canvas_pos().x - self.camera().x;
-            let y = self.canvas_pos().y - self.camera().y;
-            let scale = self.zoom();
-
-            let params = DrawTextureParams {
-                dest_size: Some(Vec2 {
-                    x: w * scale,
-                    y: h * scale,
-                }),
-                ..Default::default()
-            };
-
-            let color = [255, 255, 255, self.inner.layer(i).opacity()];
-            macroquad::prelude::draw_texture_ex(texture, x, y, color.into(), params);
-        }
-    }
-
-    pub fn draw_spritesheet_boundaries(&self) {
-        for i in 0..self.inner.spritesheet().x {
-            for j in 0..self.inner.spritesheet().y {
-                let x0 = self.canvas_pos().x - self.camera().x;
-                let y0 = self.canvas_pos().y - self.camera().y;
-                let scale = self.zoom();
-                let w = self.canvas().width() as f32 / self.inner.spritesheet().x as f32 * scale;
-                let h = self.canvas().height() as f32 / self.inner.spritesheet().y as f32 * scale;
-                let x = x0 + i as f32 * w;
-                let y = y0 + j as f32 * h;
-
-                macroquad::prelude::draw_rectangle_lines(
-                    x,
-                    y,
-                    w,
-                    h,
-                    SPRITESHEET_LINE_THICKNESS,
-                    SPRITESHEET_LINE_COLOR,
-                );
-            }
-        }
-    }
-
-    pub fn draw_selection(&self) {
-        let rect = match self.inner.selection() {
-            Some(Selection::FreeImage) => self.inner.free_image().unwrap().rect,
-            Some(Selection::Canvas(rect)) => rect.into(),
-            _ => return,
-        };
-
-        let x0 = self.canvas_pos().x - self.camera().x;
-        let y0 = self.canvas_pos().y - self.camera().y;
-        let scale = self.zoom();
-        let r = Rect {
-            x: (x0 + rect.x as f32 * scale) as i32,
-            y: (y0 + rect.y as f32 * scale) as i32,
-            w: (rect.w as f32 * scale) as i32,
-            h: (rect.h as f32 * scale) as i32,
-        };
-        graphics::draw_animated_dashed_rect(r);
-    }
-
-    pub fn draw_free_image(&self, img: &FreeImage<WrappedImage>) {
-        let w = img.texture.width() as f32;
-        let h = img.texture.height() as f32;
-
-        let scale = self.zoom();
-        let x = self.canvas_pos().x - self.camera().x + img.rect.x as f32 * scale;
-        let y = self.canvas_pos().y - self.camera().y + img.rect.y as f32 * scale;
-
-        let params = DrawTextureParams {
-            dest_size: Some(Vec2 {
-                x: w * scale,
-                y: h * scale,
-            }),
-            ..Default::default()
-        };
-
-        let layer_ix = self.inner.active_layer();
-        let color = [255, 255, 255, self.inner.layer(layer_ix).opacity()];
-        macroquad::prelude::draw_texture_ex(
-            self.free_image_tex.unwrap(),
-            x,
-            y,
-            color.into(),
-            params,
-        );
     }
 
     pub fn screen_to_canvas(&self, x: f32, y: f32) -> (i32, i32) {

@@ -13,7 +13,7 @@ pub use color::Color;
 pub use event::Event;
 pub use floating::FreeImage;
 pub use primitives::*;
-pub use state::{Selection, State};
+pub use state::{Layer, Selection, State};
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum Tool {
