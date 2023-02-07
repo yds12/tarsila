@@ -83,6 +83,10 @@ impl<IMG: Bitmap> Canvas<IMG> {
         &self.inner
     }
 
+    pub fn size(&self) -> Size<u16> {
+        (self.width(), self.height()).into()
+    }
+
     pub fn width(&self) -> u16 {
         self.inner.width()
     }

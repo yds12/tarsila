@@ -20,7 +20,7 @@ impl Number for usize {}
 impl Number for f32 {}
 impl Number for f64 {}
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Point<T: Number> {
     pub x: T,
     pub y: T,

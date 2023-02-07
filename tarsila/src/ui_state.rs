@@ -1,7 +1,8 @@
 use crate::gui::Gui;
 use crate::keyboard::KeyboardManager;
+use crate::mouse::MouseManager;
 use crate::wrapped_image::WrappedImage;
-use crate::{graphics, mouse, Timer};
+use crate::{graphics, Timer};
 use lapix::primitives::*;
 use lapix::{Bitmap, Canvas, CanvasEffect, Event, FreeImage, Selection, State, Tool};
 use macroquad::prelude::Color as MqColor;
@@ -61,6 +62,7 @@ pub struct UiState {
     zoom: f32,
     layer_textures: Vec<Texture2D>,
     keyboard: KeyboardManager,
+    mouse: MouseManager,
     mouse_over_gui: bool,
     gui_interaction_rest: Timer,
     free_image_tex: Option<Texture2D>,
@@ -80,6 +82,7 @@ impl Default for UiState {
             zoom: 8.,
             layer_textures: vec![drawing],
             keyboard: KeyboardManager::new(),
+            mouse: MouseManager::new(),
             mouse_over_gui: false,
             gui_interaction_rest: Timer::new(),
             free_image_tex: None,
@@ -103,7 +106,8 @@ impl UiState {
         let fx = self.gui.update();
         self.process_fx(fx);
 
-        let fx = mouse::update(self);
+        self.sync_mouse();
+        let fx = self.mouse.update();
         self.process_fx(fx);
 
         let fx = self.keyboard.update();
@@ -174,6 +178,28 @@ impl UiState {
                 .map(|i| i.0)
                 .collect(),
             self.inner.palette().iter().map(|c| *c).collect(),
+        );
+    }
+
+    pub fn sync_mouse(&mut self) {
+        let (x, y) = macroquad::prelude::mouse_position();
+        let (x, y) = self.screen_to_canvas(x, y);
+        let in_canvas = x >= 0
+            && y >= 0
+            && (x as u16) < self.canvas().width()
+            && (y as u16) < self.canvas().height();
+        let visible_pixel = if in_canvas {
+            Some(self.visible_pixel(x as u16, y as u16))
+        } else {
+            None
+        };
+
+        self.mouse.sync(
+            (x, y).into(),
+            in_canvas,
+            self.is_mouse_on_selection(),
+            self.selected_tool(),
+            visible_pixel,
         );
     }
 
