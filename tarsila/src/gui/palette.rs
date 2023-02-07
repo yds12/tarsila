@@ -1,7 +1,6 @@
 use crate::wrapped_image::WrappedImage;
 use crate::Effect;
 use lapix::{Bitmap, Event};
-use macroquad::prelude::Color;
 use macroquad::prelude::Image as MqImage;
 
 const BTN_SIZE: u16 = 20;

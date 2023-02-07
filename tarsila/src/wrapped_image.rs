@@ -1,7 +1,7 @@
 use lapix::Bitmap;
 use macroquad::prelude::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WrappedImage(pub Image);
 
 impl Bitmap for WrappedImage {

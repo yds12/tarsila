@@ -25,6 +25,13 @@ pub enum Event<IMG: Bitmap> {
     ChangeLayerOpacity(usize, u8),
     DeleteLayer(usize),
     SetSpritesheet(u8, u8),
+    StartSelection(u16, u16),
+    EndSelection(u16, u16),
+    ClearSelection,
+    MoveStart(u16, u16),
+    MoveEnd(u16, u16),
+    Copy,
+    Paste(u16, u16),
     Undo,
 }
 
@@ -36,6 +43,8 @@ impl<IMG: Bitmap> Clone for Event<IMG> {
             Self::EraseEnd => Self::EraseEnd,
             Self::NewLayerAbove => Self::NewLayerAbove,
             Self::NewLayerBelow => Self::NewLayerBelow,
+            Self::Copy => Self::Copy,
+            Self::ClearSelection => Self::ClearSelection,
             Self::ResizeCanvas(x, y) => Self::ResizeCanvas(*x, *y),
             Self::BrushStart => Self::BrushStart,
             Self::BrushStroke(x, y) => Self::BrushStroke(*x, *y),
@@ -50,6 +59,11 @@ impl<IMG: Bitmap> Clone for Event<IMG> {
             Self::Erase(x, y) => Self::Erase(*x, *y),
             Self::LineStart(x, y) => Self::LineStart(*x, *y),
             Self::LineEnd(x, y) => Self::LineEnd(*x, *y),
+            Self::StartSelection(x, y) => Self::StartSelection(*x, *y),
+            Self::EndSelection(x, y) => Self::EndSelection(*x, *y),
+            Self::MoveStart(x, y) => Self::MoveStart(*x, *y),
+            Self::MoveEnd(x, y) => Self::MoveEnd(*x, *y),
+            Self::Paste(x, y) => Self::Paste(*x, *y),
             Self::SetSpritesheet(x, y) => Self::SetSpritesheet(*x, *y),
             Self::ChangeLayerVisibility(i, b) => Self::ChangeLayerVisibility(*i, *b),
             Self::ChangeLayerOpacity(i, n) => Self::ChangeLayerOpacity(*i, *n),
@@ -69,6 +83,8 @@ impl<IMG: Bitmap> PartialEq for Event<IMG> {
             (Self::Undo, Self::Undo) => true,
             (Self::NewLayerAbove, Self::NewLayerAbove) => true,
             (Self::NewLayerBelow, Self::NewLayerBelow) => true,
+            (Self::Copy, Self::Copy) => true,
+            (Self::ClearSelection, Self::ClearSelection) => true,
             (Self::ResizeCanvas(x, y), Self::ResizeCanvas(i, j)) => x == i && y == j,
             (Self::BrushStroke(x, y), Self::BrushStroke(i, j)) => x == i && y == j,
             (Self::Bucket(x, y), Self::Bucket(i, j)) => x == i && y == j,
@@ -76,6 +92,10 @@ impl<IMG: Bitmap> PartialEq for Event<IMG> {
             (Self::LineStart(x, y), Self::LineStart(i, j)) => x == i && y == j,
             (Self::LineEnd(x, y), Self::LineEnd(i, j)) => x == i && y == j,
             (Self::SetSpritesheet(x, y), Self::SetSpritesheet(i, j)) => x == i && y == j,
+            (Self::StartSelection(x, y), Self::StartSelection(i, j)) => x == i && y == j,
+            (Self::EndSelection(x, y), Self::EndSelection(i, j)) => x == i && y == j,
+            (Self::MoveStart(x, y), Self::MoveStart(i, j)) => x == i && y == j,
+            (Self::Paste(x, y), Self::Paste(i, j)) => x == i && y == j,
             (Self::SetTool(t), Self::SetTool(u)) => t == u,
             (Self::SetMainColor(c), Self::SetMainColor(d)) => c == d,
             (Self::Save(p), Self::Save(q)) => p == q,
@@ -92,6 +112,7 @@ impl<IMG: Bitmap> PartialEq for Event<IMG> {
 }
 
 impl<IMG: Bitmap> Event<IMG> {
+    // TODO: maybe this should return a vec of fx, not a single one
     pub fn canvas_effect(&self) -> CanvasEffect {
         match self {
             Self::ClearCanvas
@@ -99,9 +120,13 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::BrushStroke(_, _)
             | Self::LineEnd(_, _)
             | Self::Bucket(_, _)
+            | Self::MoveStart(_, _)
+            | Self::MoveEnd(_, _)
+            | Self::Paste(_, _)
             | Self::Erase(_, _) => CanvasEffect::Update,
             Self::ResizeCanvas(_, _) | Self::OpenFile(_) => CanvasEffect::New,
             Self::NewLayerAbove | Self::NewLayerBelow | Self::DeleteLayer(_) => CanvasEffect::Layer,
+            x if x.triggers_anchoring() => CanvasEffect::Update,
             _ => CanvasEffect::None,
         }
     }
@@ -113,6 +138,9 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::LineStart(_, _)
             | Self::LineEnd(_, _)
             | Self::Bucket(_, _)
+            | Self::MoveStart(_, _)
+            | Self::MoveEnd(_, _)
+            | Self::Paste(_, _)
             | Self::Erase(_, _) => true,
             _ => false,
         }
@@ -142,8 +170,31 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::ChangeLayerVisibility(_, _)
             | Self::ChangeLayerOpacity(_, _)
             | Self::DeleteLayer(_)
+            | Self::MoveStart(_, _)
+            | Self::MoveEnd(_, _)
+            | Self::StartSelection(_, _)
+            | Self::EndSelection(_, _)
+            | Self::Paste(_, _)
             | Self::OpenFile(_) => true,
             _ => false,
+        }
+    }
+
+    pub fn clears_selection(&self) -> bool {
+        match self {
+            Self::SetTool(Tool::Brush)
+            | Self::ClearSelection
+            | Self::SetTool(Tool::Eyedropper)
+            | Self::SetTool(Tool::Eraser)
+            | Self::SetTool(Tool::Line) => true,
+            _ => false,
+        }
+    }
+
+    pub fn triggers_anchoring(&self) -> bool {
+        match self {
+            Self::MoveStart(_, _) | Self::MoveEnd(_, _) | Self::Copy => false,
+            _ => true,
         }
     }
 }

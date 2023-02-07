@@ -6,12 +6,14 @@ use macroquad::prelude::*;
 use std::collections::HashMap;
 
 const TOOL_BTN_IMG_SIZE: Size<usize> = Size { x: 16, y: 16 };
-const TOOLS: [Tool; 5] = [
+const TOOLS: [Tool; 7] = [
     Tool::Brush,
     Tool::Bucket,
     Tool::Eraser,
     Tool::Eyedropper,
     Tool::Line,
+    Tool::Selection,
+    Tool::Move,
 ];
 
 pub struct Toolbar {
@@ -44,36 +46,36 @@ impl Toolbar {
         egui::Window::new("Toolbox")
             .default_pos((15., 330.))
             .show(egui_ctx, |ui| {
-            ui.horizontal(|ui| {
-                let colorpicker = ui.color_edit_button_srgb(&mut self.brush);
-                let label = ui.label("a:");
-                let text_edit = ui
-                    .add(
-                        egui::widgets::TextEdit::singleline(&mut self.brush_alpha)
-                            .desired_width(30.0),
-                    )
-                    .labelled_by(label.id);
+                ui.horizontal(|ui| {
+                    let colorpicker = ui.color_edit_button_srgb(&mut self.brush);
+                    let label = ui.label("a:");
+                    let text_edit = ui
+                        .add(
+                            egui::widgets::TextEdit::singleline(&mut self.brush_alpha)
+                                .desired_width(30.0),
+                        )
+                        .labelled_by(label.id);
 
-                if colorpicker.changed() || text_edit.changed() {
-                    let color = [
-                        self.brush[0],
-                        self.brush[1],
-                        self.brush[2],
-                        self.brush_alpha.parse().unwrap_or(255),
-                    ];
-                    events.push(Event::SetMainColor(color).into());
-                }
-            });
-
-            ui.horizontal_wrapped(|ui| {
-                ui.set_max_width(160.);
-                for tool in TOOLS {
-                    if let Some(btn) = self.get_mut(tool) {
-                        btn.add_to_ui(ui, || events.push(Event::SetTool(tool).into()));
+                    if colorpicker.changed() || text_edit.changed() {
+                        let color = [
+                            self.brush[0],
+                            self.brush[1],
+                            self.brush[2],
+                            self.brush_alpha.parse().unwrap_or(255),
+                        ];
+                        events.push(Event::SetMainColor(color).into());
                     }
-                }
+                });
+
+                ui.horizontal_wrapped(|ui| {
+                    ui.set_max_width(160.);
+                    for tool in TOOLS {
+                        if let Some(btn) = self.get_mut(tool) {
+                            btn.add_to_ui(ui, || events.push(Event::SetTool(tool).into()));
+                        }
+                    }
+                });
             });
-        });
 
         events
     }
@@ -126,6 +128,8 @@ impl ToolButton {
             Tool::Eraser => "eraser tool (E)",
             Tool::Eyedropper => "eyedropper tool (I)",
             Tool::Line => "line tool (L)",
+            Tool::Selection => "selection tool (S)",
+            Tool::Move => "move tool (M)",
         }
     }
 }

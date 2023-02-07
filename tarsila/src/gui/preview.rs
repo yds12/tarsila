@@ -1,4 +1,3 @@
-use crate::{WINDOW_H, WINDOW_W};
 use macroquad::prelude::Image as MqImage;
 use std::time::{SystemTime, UNIX_EPOCH};
 

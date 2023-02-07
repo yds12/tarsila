@@ -1,4 +1,3 @@
-use crate::wrapped_image::WrappedImage;
 use crate::{Effect, UiEvent};
 use lapix::{Event, Point, Size, Tool};
 use macroquad::prelude::*;
@@ -25,6 +24,8 @@ impl Resources {
             Tool::Eraser => include_bytes!("../../res/icon/eraser.png"),
             Tool::Eyedropper => include_bytes!("../../res/icon/eyedropper.png"),
             Tool::Line => include_bytes!("../../res/icon/line.png"),
+            Tool::Selection => include_bytes!("../../res/icon/selection.png"),
+            Tool::Move => include_bytes!("../../res/icon/move.png"),
         }
     }
 }
@@ -217,11 +218,13 @@ pub struct CursorSet(HashMap<Tool, ToolCursor>);
 impl CursorSet {
     pub fn new() -> Self {
         let tools = [
-            (Tool::Brush, (0., 0.).into()),
-            (Tool::Bucket, (0., 3.).into()),
-            (Tool::Eraser, (0., 0.).into()),
-            (Tool::Eyedropper, (0., 0.).into()),
-            (Tool::Line, (0., 0.).into()),
+            (Tool::Brush, (0., -16.).into()),
+            (Tool::Bucket, (0., -13.).into()),
+            (Tool::Eraser, (0., -16.).into()),
+            (Tool::Eyedropper, (0., -16.).into()),
+            (Tool::Line, (0., -16.).into()),
+            (Tool::Selection, (0., 0.).into()),
+            (Tool::Move, (0., -16.).into()),
         ];
 
         Self(
@@ -248,11 +251,6 @@ impl ToolCursor {
 
     pub fn draw(&self) {
         let (x, y) = mouse_position();
-        draw_texture_helper(
-            self.texture,
-            x + self.offset.x,
-            y - self.texture.height() + self.offset.y,
-            1.,
-        )
+        draw_texture_helper(self.texture, x + self.offset.x, y + self.offset.y, 1.)
     }
 }

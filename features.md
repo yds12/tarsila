@@ -59,15 +59,15 @@ Features (+ means done, (-) means least important):
     - Rectangles
     - Ovals
       - properties of recently created objects (lines, shapes)
-  - Selection
-    - Rectangular
+  - Selection (+)
+    - Rectangular (+)
     - Lasso
     - Oval (-) and poligonal
     - Add and remove to/from selection (-)
     - By color area (with customizable tolerance) or all of the same color
       (magic wand)
-    - Copy and paste
-    - Move
+    - Copy and paste (+)
+    - Move (+)
     - When selection is active, might affect other tools, like bucket
     - create selection based on what's on a layer (-)
   - Eyedrop to select colors (+)

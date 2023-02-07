@@ -1,5 +1,6 @@
 use macroquad::prelude::*;
 
+mod graphics;
 mod gui;
 mod keyboard;
 mod mouse;

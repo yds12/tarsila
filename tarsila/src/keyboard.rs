@@ -63,12 +63,16 @@ impl KeyboardManager {
             (KeyCode::G, Event::SetTool(Tool::Bucket)),
             (KeyCode::I, Event::SetTool(Tool::Eyedropper)),
             (KeyCode::L, Event::SetTool(Tool::Line)),
+            (KeyCode::S, Event::SetTool(Tool::Selection)),
+            (KeyCode::M, Event::SetTool(Tool::Move)),
         ];
         for (k, v) in kv {
             self.register_keypress_event(k, v);
         }
 
         self.register_keypress_mod_event(Modifier::Ctrl, KeyCode::Z, Event::Undo);
+        self.register_keypress_mod_event(Modifier::Ctrl, KeyCode::C, Event::Copy);
+        self.register_keypress_mod_ui_event(Modifier::Ctrl, KeyCode::V, UiEvent::Paste);
         //self.register_keydown_mod_event(Modifier::Ctrl, KeyCode::Z, Event::Undo);
     }
 
@@ -102,6 +106,15 @@ impl KeyboardManager {
         event: Event<WrappedImage>,
     ) {
         self.register(Shortcut::KeyPressMod(modifier, key), Effect::Event(event));
+    }
+
+    pub fn register_keypress_mod_ui_event(
+        &mut self,
+        modifier: Modifier,
+        key: KeyCode,
+        event: UiEvent,
+    ) {
+        self.register(Shortcut::KeyPressMod(modifier, key), Effect::UiEvent(event));
     }
 
     pub fn register_keydown_mod_event(

@@ -1,10 +1,11 @@
 use crate::gui::Gui;
 use crate::keyboard::KeyboardManager;
 use crate::wrapped_image::WrappedImage;
-use crate::{mouse, Timer};
+use crate::{graphics, mouse, Timer};
 use lapix::primitives::*;
-use lapix::{Bitmap, Canvas, CanvasEffect, Color as _, Event, State, Tool};
-use macroquad::prelude::*;
+use lapix::{Bitmap, Canvas, CanvasEffect, Event, FreeImage, Selection, State, Tool};
+use macroquad::prelude::Color as MqColor;
+use macroquad::prelude::{DrawTextureParams, FilterMode, Texture2D, Vec2, BLACK, SKYBLUE};
 use std::default::Default;
 
 pub const WINDOW_W: i32 = 1000;
@@ -14,10 +15,10 @@ pub const CANVAS_H: u16 = 64;
 const CANVAS_SCALE: f32 = 8.;
 const LEFT_TOOLBAR_W: u16 = 300;
 const CAMERA_SPEED: f32 = 12.;
-const BG_COLOR: macroquad::prelude::Color = SKYBLUE;
+const BG_COLOR: MqColor = SKYBLUE;
 const GUI_REST_MS: u64 = 100;
 const SPRITESHEET_LINE_THICKNESS: f32 = 1.;
-const SPRITESHEET_LINE_COLOR: macroquad::prelude::Color = BLACK;
+const SPRITESHEET_LINE_COLOR: MqColor = BLACK;
 
 // Center on the space after the toolbar
 const CANVAS_X: f32 = LEFT_TOOLBAR_W as f32 + ((WINDOW_W as u16 - LEFT_TOOLBAR_W) / 2) as f32
@@ -49,6 +50,7 @@ pub enum UiEvent {
     MoveCamera(Direction),
     MouseOverGui,
     GuiInteraction,
+    Paste,
 }
 
 pub struct UiState {
@@ -61,6 +63,7 @@ pub struct UiState {
     keyboard: KeyboardManager,
     mouse_over_gui: bool,
     gui_interaction_rest: Timer,
+    free_image_tex: Option<Texture2D>,
 }
 
 impl Default for UiState {
@@ -79,6 +82,7 @@ impl Default for UiState {
             keyboard: KeyboardManager::new(),
             mouse_over_gui: false,
             gui_interaction_rest: Timer::new(),
+            free_image_tex: None,
         }
     }
 }
@@ -115,7 +119,6 @@ impl UiState {
                         self.execute(event);
                     }
                 }
-                _ => (),
             }
         }
     }
@@ -125,10 +128,28 @@ impl UiState {
     }
 
     pub fn draw(&mut self) {
-        clear_background(BG_COLOR);
+        macroquad::prelude::clear_background(BG_COLOR);
         self.draw_canvas_bg();
         self.draw_canvas();
         self.draw_spritesheet_boundaries();
+
+        if self.inner.selection().is_some() {
+            self.draw_selection();
+        }
+
+        // TODO: most of this logic should be in some update method, not a draw one
+        if let Some(img) = self.inner.free_image() {
+            if self.free_image_tex.is_none() {
+                let tex = Texture2D::from_image(&img.texture.0);
+                tex.set_filter(FilterMode::Nearest);
+                self.free_image_tex = Some(tex);
+            }
+
+            self.draw_free_image(&img);
+        } else {
+            self.free_image_tex = None;
+        }
+
         egui_macroquad::draw();
         self.gui.draw_cursor(self.selected_tool());
     }
@@ -194,6 +215,11 @@ impl UiState {
             UiEvent::MoveCamera(dir) => self.move_camera(dir),
             UiEvent::MouseOverGui => self.mouse_over_gui = true,
             UiEvent::GuiInteraction => self.gui_interaction_rest.start(GUI_REST_MS),
+            UiEvent::Paste => {
+                let (x, y) = macroquad::prelude::mouse_position();
+                let (x, y) = self.screen_to_canvas(x, y);
+                self.execute(Event::Paste(x as u16, y as u16));
+            }
         }
     }
 
@@ -282,8 +308,8 @@ impl UiState {
 
         // TODO: optimize this by storing a rendered texture that contains all
         // BG rectangles
-        let bg1 = Color::new(0.875, 0.875, 0.875, 1.);
-        let bg2 = Color::new(0.75, 0.75, 0.75, 1.);
+        let bg1 = MqColor::new(0.875, 0.875, 0.875, 1.);
+        let bg2 = MqColor::new(0.75, 0.75, 0.75, 1.);
         for i in 0..(w / side + 1.) as usize {
             for j in 0..(h / side + 1.) as usize {
                 let cur_w = i as f32 * side;
@@ -295,7 +321,7 @@ impl UiState {
                 let w = if next_w <= w { side } else { w - cur_w };
                 let h = if next_h <= h { side } else { h - cur_h };
                 let color = if (i + j) % 2 == 0 { bg1 } else { bg2 };
-                draw_rectangle(x, y, w, h, color);
+                macroquad::prelude::draw_rectangle(x, y, w, h, color);
             }
         }
     }
@@ -323,7 +349,7 @@ impl UiState {
             };
 
             let color = [255, 255, 255, self.inner.layer(i).opacity()];
-            draw_texture_ex(texture, x, y, color.into(), params);
+            macroquad::prelude::draw_texture_ex(texture, x, y, color.into(), params);
         }
     }
 
@@ -338,7 +364,7 @@ impl UiState {
                 let x = x0 + i as f32 * w;
                 let y = y0 + j as f32 * h;
 
-                draw_rectangle_lines(
+                macroquad::prelude::draw_rectangle_lines(
                     x,
                     y,
                     w,
@@ -350,14 +376,73 @@ impl UiState {
         }
     }
 
-    pub fn screen_to_canvas(&self, x: f32, y: f32) -> (i16, i16) {
+    pub fn draw_selection(&self) {
+        let rect = match self.inner.selection() {
+            Some(Selection::FreeImage) => self.inner.free_image().unwrap().rect,
+            Some(Selection::Canvas(rect)) => rect.into(),
+            _ => return,
+        };
+
+        let x0 = self.canvas_pos().x - self.camera().x;
+        let y0 = self.canvas_pos().y - self.camera().y;
+        let scale = self.zoom();
+        let r = Rect {
+            x: (x0 + rect.x as f32 * scale) as i32,
+            y: (y0 + rect.y as f32 * scale) as i32,
+            w: (rect.w as f32 * scale) as i32,
+            h: (rect.h as f32 * scale) as i32,
+        };
+        graphics::draw_animated_dashed_rect(r);
+    }
+
+    pub fn draw_free_image(&self, img: &FreeImage<WrappedImage>) {
+        let w = img.texture.width() as f32;
+        let h = img.texture.height() as f32;
+
+        let scale = self.zoom();
+        let x = self.canvas_pos().x - self.camera().x + img.rect.x as f32 * scale;
+        let y = self.canvas_pos().y - self.camera().y + img.rect.y as f32 * scale;
+
+        let params = DrawTextureParams {
+            dest_size: Some(Vec2 {
+                x: w * scale,
+                y: h * scale,
+            }),
+            ..Default::default()
+        };
+
+        let layer_ix = self.inner.active_layer();
+        let color = [255, 255, 255, self.inner.layer(layer_ix).opacity()];
+        macroquad::prelude::draw_texture_ex(
+            self.free_image_tex.unwrap(),
+            x,
+            y,
+            color.into(),
+            params,
+        );
+    }
+
+    pub fn screen_to_canvas(&self, x: f32, y: f32) -> (i32, i32) {
         let canvas_x = self.canvas_pos().x - self.camera().x;
         let canvas_y = self.canvas_pos().y - self.camera().y;
         let scale = self.zoom();
 
         (
-            ((x - canvas_x) / scale) as i16,
-            ((y - canvas_y) / scale) as i16,
+            ((x - canvas_x) / scale) as i32,
+            ((y - canvas_y) / scale) as i32,
         )
+    }
+
+    pub fn is_mouse_on_selection(&self) -> bool {
+        let (x, y) = macroquad::prelude::mouse_position();
+        let (x, y) = self.screen_to_canvas(x, y);
+
+        let rect = match self.inner.selection() {
+            Some(Selection::FreeImage) => self.inner.free_image().unwrap().rect,
+            Some(Selection::Canvas(rect)) => rect.into(),
+            _ => return false,
+        };
+
+        rect.contains(x, y)
     }
 }

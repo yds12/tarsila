@@ -1,5 +1,5 @@
 use crate::{Effect, UiState};
-use lapix::{Bitmap, Event, Tool};
+use lapix::{Event, Tool};
 use macroquad::prelude::*;
 
 pub fn update(state: &UiState) -> Vec<Effect> {
@@ -31,7 +31,23 @@ pub fn update(state: &UiState) -> Vec<Effect> {
                 Tool::Bucket => {
                     events.push(Event::Bucket(x as u16, y as u16).into());
                 }
+                Tool::Selection => {
+                    events.push(Event::StartSelection(x as u16, y as u16).into());
+                }
+                Tool::Move => {
+                    if state.is_mouse_on_selection() {
+                        events.push(Event::MoveStart(x as u16, y as u16).into());
+                    } else {
+                        events.push(Event::ClearSelection.into());
+                        // TODO: this is not working because right in the next
+                        // frame we have a release of click, so we get
+                        // EndSelection event without a StartSelection
+                        //events.push(Event::SetTool(Tool::Selection).into());
+                    }
+                }
             }
+            // TODO: if there's a selection and click was out of it, cancel
+            // selection
         }
     }
 
@@ -68,6 +84,13 @@ pub fn update(state: &UiState) -> Vec<Effect> {
                 }
                 Tool::Line => {
                     events.push(Event::LineEnd(x as u16, y as u16).into());
+                }
+                Tool::Selection => {
+                    events.push(Event::EndSelection(x as u16, y as u16).into());
+                    events.push(Event::SetTool(Tool::Move).into());
+                }
+                Tool::Move => {
+                    events.push(Event::MoveEnd(x as u16, y as u16).into());
                 }
                 _ => (),
             }

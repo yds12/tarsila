@@ -1,4 +1,4 @@
-use crate::{graphics, Bitmap, Color, Point, Position, Size};
+use crate::{graphics, Bitmap, Color, FreeImage, Point, Position, Rect, Size};
 
 #[derive(Debug, Clone, Copy)]
 pub enum CanvasEffect {
@@ -79,6 +79,26 @@ impl<IMG: Bitmap> Canvas<IMG> {
         }
     }
 
+    pub fn inner(&self) -> &IMG {
+        &self.inner
+    }
+
+    pub fn width(&self) -> u16 {
+        self.inner.width()
+    }
+
+    pub fn height(&self) -> u16 {
+        self.inner.height()
+    }
+
+    pub fn rect(&self) -> Rect<u16> {
+        Rect::new(0, 0, self.width(), self.height())
+    }
+
+    pub fn bytes(&self) -> &[u8] {
+        self.inner.bytes()
+    }
+
     fn undo_edit(&mut self, edit: CanvasAtomicEdit<IMG>) -> CanvasEffect {
         // TODO: isn't this supposed to be in CanvasAtomicEdit?
         match edit {
@@ -122,17 +142,16 @@ impl<IMG: Bitmap> Canvas<IMG> {
     }
 
     pub fn resize(&mut self, width: u16, height: u16) {
-        // TODO: it's clearing the image, but it shouldn't
         let new_img = IMG::new(width, height, self.empty_color);
         let old_img = std::mem::replace(&mut self.inner, new_img);
         self.inner.set_from(old_img);
     }
 
-    pub fn start_tool_action(&mut self) {
+    pub fn start_editing_bundle(&mut self) {
         self.cur_edit_bundle = Some(CanvasEdit::new());
     }
 
-    pub fn finish_tool_action(&mut self) {
+    pub fn finish_editing_bundle(&mut self) {
         if let Some(edit_bundle) = self.cur_edit_bundle.take() {
             self.edits.push(edit_bundle);
         } else {
@@ -140,23 +159,21 @@ impl<IMG: Bitmap> Canvas<IMG> {
         }
     }
 
-    pub fn bytes(&self) -> &[u8] {
-        self.inner.bytes()
-    }
-
     pub fn pixel(&self, x: u16, y: u16) -> IMG::Color {
         self.inner.pixel(x, y)
     }
 
     pub fn set_pixel(&mut self, x: u16, y: u16, color: IMG::Color) {
-        let old = self.inner.pixel(x, y);
+        if x < self.width() && y < self.height() {
+            let old = self.inner.pixel(x, y);
 
-        if color == old {
-            return;
+            if color == old {
+                return;
+            }
+
+            self.register_set_pixel(x, y, old, color);
+            self.inner.set_pixel(x, y, color);
         }
-
-        self.register_set_pixel(x, y, old, color);
-        self.inner.set_pixel(x, y, color);
     }
 
     pub fn line(&mut self, p1: Point<u16>, p2: Point<u16>, color: IMG::Color) {
@@ -167,8 +184,29 @@ impl<IMG: Bitmap> Canvas<IMG> {
         }
     }
 
+    pub fn set_area(&mut self, area: Rect<u16>, color: IMG::Color) {
+        for i in 0..area.w {
+            for j in 0..area.h {
+                self.set_pixel(i + area.x, j + area.y, color);
+            }
+        }
+    }
+
+    pub fn paste_obj(&mut self, obj: &FreeImage<IMG>) {
+        self.start_editing_bundle();
+        for i in 0..obj.rect.w {
+            for j in 0..obj.rect.h {
+                let color = obj.texture.pixel(i as u16, j as u16);
+                let x = (i + obj.rect.x) as u16;
+                let y = (j + obj.rect.y) as u16;
+                let blended = color.blend_over(self.pixel(x, y));
+                self.set_pixel(x, y, blended);
+            }
+        }
+        self.finish_editing_bundle();
+    }
+
     pub fn bucket(&mut self, x: u16, y: u16, color: IMG::Color) {
-        //self.cur_edit_bundle = Some(CanvasEdit::new());
         let old_color = self.inner.pixel(x, y);
 
         if color == old_color {
@@ -204,7 +242,6 @@ impl<IMG: Bitmap> Canvas<IMG> {
 
             visit.append(&mut new_visit);
         }
-        //self.edits.push(self.cur_edit_bundle.take().unwrap());
     }
 
     fn neighbors(&self, x: u16, y: u16) -> [Option<(u16, u16)>; 4] {
@@ -227,13 +264,26 @@ impl<IMG: Bitmap> Canvas<IMG> {
 
         neighbors
     }
-    pub fn inner(&self) -> &IMG {
-        &self.inner
-    }
-    pub fn width(&self) -> u16 {
-        self.inner.width()
-    }
-    pub fn height(&self) -> u16 {
-        self.inner.height()
+
+    pub fn img_from_area(&self, area: Rect<i32>) -> IMG {
+        let mut img = IMG::new(
+            area.w as u16,
+            area.h as u16,
+            IMG::Color::from_rgba(0, 0, 0, 0),
+        );
+
+        for i in 0..area.w {
+            for j in 0..area.h {
+                let x = (area.x + i) as u16;
+                let y = (area.y + j) as u16;
+
+                if x < self.width() && y < self.height() {
+                    let color = self.pixel(x, y);
+                    img.set_pixel(i as u16, j as u16, color);
+                }
+            }
+        }
+
+        img
     }
 }

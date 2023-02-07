@@ -1,4 +1,4 @@
-use crate::{Bitmap, Canvas, CanvasEffect, Color, Event, Size, Tool};
+use crate::{Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Rect, Size, Tool};
 use std::fmt::Debug;
 
 pub struct Layer<IMG: Bitmap> {
@@ -37,6 +37,12 @@ impl<IMG: Bitmap> Layer<IMG> {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum Selection {
+    Canvas(Rect<u16>),
+    FreeImage,
+}
+
 pub struct State<IMG: Bitmap> {
     layers: Vec<Layer<IMG>>,
     active_layer: usize,
@@ -44,7 +50,12 @@ pub struct State<IMG: Bitmap> {
     tool: Tool,
     main_color: IMG::Color,
     spritesheet: Size<u8>,
-    palette: Vec<IMG::Color>
+    palette: Vec<IMG::Color>,
+    // TODO: selection cannot just be a rectangle, it has to distinguish between
+    // being a canvas selection, or a free object selection
+    selection: Option<Selection>,
+    free_image: Option<FreeImage<IMG>>,
+    clipboard: Option<IMG>,
 }
 
 impl<IMG: Bitmap + Debug> State<IMG> {
@@ -57,21 +68,24 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             main_color: IMG::Color::from_rgb(0, 0, 0),
             spritesheet: Size::new(1, 1),
             palette: vec![
-                IMG::Color::from_rgba(0, 0, 0, 255), // BLACK
+                IMG::Color::from_rgba(0, 0, 0, 255),       // BLACK
                 IMG::Color::from_rgba(255, 255, 255, 255), // WHITE
-                IMG::Color::from_rgba(255, 0, 0, 255), // RED
-                IMG::Color::from_rgba(255, 127, 0, 255), // RED + YELLOW = ORANGE
-                IMG::Color::from_rgba(255, 255, 0, 255), // YELLOW
-                IMG::Color::from_rgba(127, 255, 0, 255), // GREEN + YELLOW
-                IMG::Color::from_rgba(0, 255, 0, 255), // GREEN
-                IMG::Color::from_rgba(0, 255, 127, 255), // GREEN + CYAN
-                IMG::Color::from_rgba(0, 255, 255, 255), // CYAN
-                IMG::Color::from_rgba(0, 127, 255, 255), // BLUE + CYAN
-                IMG::Color::from_rgba(0, 0, 255, 255), // BLUE
-                IMG::Color::from_rgba(127, 0, 255, 255), // BLUE + MAGENTA
-                IMG::Color::from_rgba(255, 0, 255, 255), // MAGENTA
-                IMG::Color::from_rgba(255, 0, 127, 255), // RED + MAGENTA
-            ]
+                IMG::Color::from_rgba(255, 0, 0, 255),     // RED
+                IMG::Color::from_rgba(255, 127, 0, 255),   // RED + YELLOW = ORANGE
+                IMG::Color::from_rgba(255, 255, 0, 255),   // YELLOW
+                IMG::Color::from_rgba(127, 255, 0, 255),   // GREEN + YELLOW
+                IMG::Color::from_rgba(0, 255, 0, 255),     // GREEN
+                IMG::Color::from_rgba(0, 255, 127, 255),   // GREEN + CYAN
+                IMG::Color::from_rgba(0, 255, 255, 255),   // CYAN
+                IMG::Color::from_rgba(0, 127, 255, 255),   // BLUE + CYAN
+                IMG::Color::from_rgba(0, 0, 255, 255),     // BLUE
+                IMG::Color::from_rgba(127, 0, 255, 255),   // BLUE + MAGENTA
+                IMG::Color::from_rgba(255, 0, 255, 255),   // MAGENTA
+                IMG::Color::from_rgba(255, 0, 127, 255),   // RED + MAGENTA
+            ],
+            selection: None,
+            free_image: None,
+            clipboard: None,
         }
     }
 
@@ -82,13 +96,18 @@ impl<IMG: Bitmap + Debug> State<IMG> {
 
         dbg!(&event);
         let t0 = std::time::SystemTime::now();
+
+        if event.triggers_anchoring() {
+            self.anchor();
+        }
+
         match event.clone() {
             Event::ClearCanvas => self.canvas_mut().clear(),
             Event::ResizeCanvas(w, h) => self.resize_canvas(w, h),
             Event::BrushStart | Event::LineStart(_, _) | Event::EraseStart => {
-                self.canvas_mut().start_tool_action()
+                self.canvas_mut().start_editing_bundle()
             }
-            Event::BrushEnd | Event::EraseEnd => self.canvas_mut().finish_tool_action(),
+            Event::BrushEnd | Event::EraseEnd => self.canvas_mut().finish_editing_bundle(),
             Event::LineEnd(x, y) => {
                 let last_event = self.events.last();
                 let point = match last_event {
@@ -97,7 +116,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
                 };
                 let color = self.main_color;
                 self.canvas_mut().line(point, (x, y).into(), color);
-                self.canvas_mut().finish_tool_action();
+                self.canvas_mut().finish_editing_bundle();
             }
             Event::BrushStroke(x, y) => {
                 let last_event = self.events.last();
@@ -120,15 +139,72 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             Event::Save(path) => self.save_image(path.to_string_lossy().as_ref()),
             Event::OpenFile(path) => self.open_image(path.to_string_lossy().as_ref()),
             Event::Bucket(x, y) => {
-                self.canvas_mut().start_tool_action();
+                self.canvas_mut().start_editing_bundle();
                 let color = self.main_color;
                 self.canvas_mut().bucket(x, y, color);
-                self.canvas_mut().finish_tool_action();
+                self.canvas_mut().finish_editing_bundle();
             }
             Event::Erase(x, y) => {
                 if self.canvas_mut().pixel(x, y) != IMG::Color::from_rgba(0, 0, 0, 0) {
                     self.canvas_mut()
                         .set_pixel(x, y, IMG::Color::from_rgba(0, 0, 0, 0))
+                }
+            }
+            Event::ClearSelection => (),
+            Event::StartSelection(_, _) => (),
+            Event::EndSelection(x, y) => {
+                let last_event = self.events.last();
+
+                if let Some(Event::StartSelection(x0, y0)) = last_event {
+                    let (x, y, w, h) = match (*x0, *y0, x, y) {
+                        (x0, y0, x, y) if x0 <= x && y0 <= y => (x0, y0, x - x0, y - y0),
+                        (x0, y0, x, y) if x0 > x && y0 <= y => (x, y0, x0 - x, y - y0),
+                        (x0, y0, x, y) if x0 > x && y0 > y => (x, y, x0 - x, y0 - y),
+                        (x0, y0, x, y) if x0 <= x && y0 > y => (x0, y, x - x0, y0 - y),
+                        _ => unreachable!(),
+                    };
+
+                    let rect = Rect::new(x, y, w + 1, h + 1);
+                    self.set_selection(Some(Selection::Canvas(rect)));
+                }
+            }
+            Event::Copy => match self.selection {
+                Some(Selection::Canvas(rect)) => {
+                    self.clipboard = Some(self.canvas().img_from_area(rect.into()))
+                }
+                Some(Selection::FreeImage) => {
+                    self.clipboard = Some(self.free_image.as_ref().unwrap().texture.clone())
+                }
+                None => (),
+            },
+            Event::MoveStart(_, _) => match self.selection {
+                Some(Selection::Canvas(rect)) => {
+                    self.free_image =
+                        Some(FreeImage::from_canvas_area(&self.canvas(), rect.into()));
+                    self.canvas_mut()
+                        .set_area(rect, IMG::Color::from_rgba(0, 0, 0, 0));
+                }
+                Some(Selection::FreeImage) => (),
+                None => (),
+            },
+            Event::MoveEnd(x, y) => {
+                let last_event = self.events.last();
+
+                if let (Some(Event::MoveStart(x0, y0)), Some(free_image)) =
+                    (last_event, self.free_image.as_mut())
+                {
+                    let (dx, dy) = (x as i32 - *x0 as i32, y as i32 - *y0 as i32);
+                    free_image.rect.x += dx;
+                    free_image.rect.y += dy;
+                    self.set_selection(Some(Selection::FreeImage));
+                }
+            }
+            Event::Paste(x, y) => {
+                if let Some(img) = self.clipboard.as_ref().map(|c| c.clone()) {
+                    let img = FreeImage::new(x as i32, y as i32, img);
+                    self.free_image = Some(img);
+                    //self.canvas_mut().paste_obj(&img);
+                    self.set_selection(Some(Selection::FreeImage));
                 }
             }
             Event::NewLayerAbove => self.add_layer(),
@@ -147,6 +223,11 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             }
             _ => todo!(),
         }
+
+        if event.clears_selection() {
+            self.clear_selection();
+        }
+
         dbg!(t0.elapsed().unwrap());
 
         let effect = event.canvas_effect();
@@ -226,6 +307,40 @@ impl<IMG: Bitmap + Debug> State<IMG> {
 
     pub fn palette(&self) -> &[IMG::Color] {
         &self.palette
+    }
+
+    pub fn selection(&self) -> Option<Selection> {
+        self.selection
+    }
+
+    pub fn free_image(&self) -> Option<&FreeImage<IMG>> {
+        self.free_image.as_ref()
+    }
+
+    fn clear_selection(&mut self) {
+        self.set_selection(None);
+    }
+
+    fn set_selection(&mut self, selection: Option<Selection>) {
+        match selection {
+            None => self.selection = None,
+            s @ Some(Selection::Canvas(_)) => self.selection = s,
+            s @ Some(Selection::FreeImage) => {
+                if self.free_image.is_none() {
+                    panic!("no free image to select");
+                }
+                self.selection = s;
+            }
+        }
+    }
+
+    fn anchor(&mut self) {
+        if let Some(free_image) = self.free_image.take() {
+            self.canvas_mut().paste_obj(&free_image);
+            self.set_selection(Some(Selection::Canvas(
+                free_image.rect.clip_to(self.canvas().rect().into()).into(),
+            )));
+        }
     }
 
     fn undo(&mut self) -> CanvasEffect {
