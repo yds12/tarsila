@@ -1,4 +1,4 @@
-use crate::{Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Rect, Size, Tool};
+use crate::{Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Position, Rect, Size, Tool};
 use std::fmt::Debug;
 
 pub struct Layer<IMG: Bitmap> {
@@ -177,33 +177,40 @@ impl<IMG: Bitmap + Debug> State<IMG> {
                 }
                 None => (),
             },
-            Event::MoveStart(_, _) => match self.selection {
+            Event::MoveStart(x, y) => match self.selection {
                 Some(Selection::Canvas(rect)) => {
-                    self.free_image =
-                        Some(FreeImage::from_canvas_area(&self.canvas(), rect.into()));
+                    self.free_image = Some(FreeImage::from_canvas_area(
+                        &self.canvas(),
+                        rect.into(),
+                        Some((x - rect.x, y - rect.y).into()),
+                    ));
                     self.canvas_mut()
                         .set_area(rect, IMG::Color::from_rgba(0, 0, 0, 0));
                 }
-                Some(Selection::FreeImage) => (),
+                Some(Selection::FreeImage) => {
+                    if let Some(free_image) = self.free_image.as_mut() {
+                        free_image.pivot = Some(
+                            (
+                                (x as i32 - free_image.rect.x) as u16,
+                                (y as i32 - free_image.rect.y) as u16,
+                            )
+                                .into(),
+                        );
+                    }
+                }
                 None => (),
             },
             Event::MoveEnd(x, y) => {
                 let last_event = self.events.last();
 
-                if let (Some(Event::MoveStart(x0, y0)), Some(free_image)) =
-                    (last_event, self.free_image.as_mut())
-                {
-                    let (dx, dy) = (x as i32 - *x0 as i32, y as i32 - *y0 as i32);
-                    free_image.rect.x += dx;
-                    free_image.rect.y += dy;
-                    self.set_selection(Some(Selection::FreeImage));
+                if let Some(Event::MoveStart(_, _)) = last_event {
+                    self.move_free_image((x as i32, y as i32).into());
                 }
             }
             Event::Paste(x, y) => {
                 if let Some(img) = self.clipboard.as_ref().map(|c| c.clone()) {
                     let img = FreeImage::new(x as i32, y as i32, img);
                     self.free_image = Some(img);
-                    //self.canvas_mut().paste_obj(&img);
                     self.set_selection(Some(Selection::FreeImage));
                 }
             }
@@ -345,6 +352,21 @@ impl<IMG: Bitmap + Debug> State<IMG> {
 
     fn undo(&mut self) -> CanvasEffect {
         self.canvas_mut().undo_last()
+    }
+
+    pub fn update_free_image(&mut self, mouse_canvas: Position<i32>) {
+        let last_event = self.events.last();
+
+        if let Some(Event::MoveStart(_, _)) = last_event {
+            self.move_free_image(mouse_canvas);
+        }
+    }
+
+    fn move_free_image(&mut self, new: Position<i32>) {
+        if let Some(free_image) = self.free_image.as_mut() {
+            free_image.move_by_pivot(new);
+            self.set_selection(Some(Selection::FreeImage));
+        }
     }
 
     fn save_image(&self, path: &str) {

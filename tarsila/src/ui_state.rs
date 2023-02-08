@@ -149,6 +149,10 @@ impl UiState {
         graphics::draw_canvas(&*self);
         graphics::draw_spritesheet_boundaries(ctx);
 
+        let (x, y) = macroquad::prelude::mouse_position();
+        let mouse_canvas = self.screen_to_canvas(x, y).into();
+        self.inner.update_free_image(mouse_canvas);
+
         if let Some(selection) = self.inner.selection() {
             graphics::draw_selection(ctx, self.inner.free_image());
         }
