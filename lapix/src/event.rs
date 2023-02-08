@@ -12,6 +12,7 @@ pub enum Event<IMG: Bitmap> {
     SetMainColor(IMG::Color),
     Save(PathBuf),
     OpenFile(PathBuf),
+    LoadPalette(PathBuf),
     Bucket(u16, u16),
     EraseStart,
     EraseEnd,
@@ -55,6 +56,7 @@ impl<IMG: Bitmap> Clone for Event<IMG> {
             Self::SetMainColor(c) => Self::SetMainColor(*c),
             Self::Save(path) => Self::Save(path.clone()),
             Self::OpenFile(path) => Self::OpenFile(path.clone()),
+            Self::LoadPalette(path) => Self::LoadPalette(path.clone()),
             Self::Bucket(x, y) => Self::Bucket(*x, *y),
             Self::Erase(x, y) => Self::Erase(*x, *y),
             Self::LineStart(x, y) => Self::LineStart(*x, *y),
@@ -100,6 +102,7 @@ impl<IMG: Bitmap> PartialEq for Event<IMG> {
             (Self::SetMainColor(c), Self::SetMainColor(d)) => c == d,
             (Self::Save(p), Self::Save(q)) => p == q,
             (Self::OpenFile(p), Self::OpenFile(q)) => p == q,
+            (Self::LoadPalette(p), Self::LoadPalette(q)) => p == q,
             (Self::SwitchLayer(i), Self::SwitchLayer(j)) => i == j,
             (Self::DeleteLayer(i), Self::DeleteLayer(j)) => i == j,
             (Self::ChangeLayerVisibility(i, b), Self::ChangeLayerVisibility(j, p)) => {
@@ -175,6 +178,7 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::StartSelection(_, _)
             | Self::EndSelection(_, _)
             | Self::Paste(_, _)
+            | Self::LoadPalette(_)
             | Self::OpenFile(_) => true,
             _ => false,
         }

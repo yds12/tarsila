@@ -4,6 +4,8 @@ use crate::{
 };
 use std::fmt::Debug;
 
+const MAX_PALETTE: usize = 200;
+
 pub struct Layer<IMG: Bitmap> {
     canvas: Canvas<IMG>,
     visible: bool,
@@ -142,6 +144,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             Event::SetMainColor(color) => self.main_color = color,
             Event::Save(path) => self.save_image(path.to_string_lossy().as_ref()),
             Event::OpenFile(path) => self.open_image(path.to_string_lossy().as_ref()),
+            Event::LoadPalette(path) => self.load_palette(path.to_string_lossy().as_ref()),
             Event::Bucket(x, y) => {
                 self.canvas_mut().start_editing_bundle();
                 let color = self.main_color;
@@ -416,10 +419,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
     }
 
     fn open_image(&mut self, path: &str) {
-        use image::io::Reader as ImageReader;
-
-        let img = ImageReader::open(path).unwrap().decode().unwrap();
-        let img = img.into_rgba8();
+        let img = self.load_img_from_file(path);
         self.canvas_mut()
             .resize(img.width() as u16, img.height() as u16);
 
@@ -427,6 +427,29 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             let color = IMG::Color::from_rgba(pixel.0[0], pixel.0[1], pixel.0[2], pixel.0[3]);
             self.canvas_mut().set_pixel(x as u16, y as u16, color);
         }
+    }
+
+    fn load_palette(&mut self, path: &str) {
+        let img = self.load_img_from_file(path);
+        self.palette = Vec::new();
+
+        for (x, y, pixel) in img.enumerate_pixels() {
+            let color = IMG::Color::from_rgba(pixel.0[0], pixel.0[1], pixel.0[2], pixel.0[3]);
+
+            if !self.palette.contains(&color) {
+                self.palette.push(color);
+            }
+
+            if self.palette.len() >= MAX_PALETTE {
+                break;
+            }
+        }
+    }
+
+    fn load_img_from_file(&self, path: &str) -> image::RgbaImage {
+        use image::io::Reader as ImageReader;
+        let img = ImageReader::open(path).unwrap().decode().unwrap();
+        img.into_rgba8()
     }
 
     pub fn blended_layers(&self) -> IMG {

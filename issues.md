@@ -21,3 +21,5 @@ Projects issues and bugs:
 19. Optimize syncing of preview and palette images (don't need to generate every single frame [ENH]
 20. Create mouse manager, and store events to be ran on mouse release [DONE]
 21. Cannot type on spritesheet size textboxes if intermediate values are not valid spritesheet sizes
+22. Preview window gets too big and cannot be closed or resized
+23. Add tooltips to everything

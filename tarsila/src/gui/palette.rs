@@ -47,6 +47,14 @@ impl Palette {
         let mut fx = Vec::new();
 
         egui::Window::new("Palette").show(egui_ctx, |ui| {
+            let btn = ui.button("Load");
+            if btn.clicked() {
+                let mut dialog = rfd::FileDialog::new();
+
+                if let Some(path) = dialog.pick_file() {
+                    fx.push(Event::LoadPalette(path).into());
+                }
+            }
             ui.horizontal_wrapped(|ui| {
                 ui.set_max_width(160.);
                 ui.spacing_mut().item_spacing = egui::vec2(0., 0.);
