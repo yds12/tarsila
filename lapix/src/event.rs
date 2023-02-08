@@ -193,7 +193,7 @@ impl<IMG: Bitmap> Event<IMG> {
 
     pub fn triggers_anchoring(&self) -> bool {
         match self {
-            Self::MoveStart(_, _) | Self::MoveEnd(_, _) | Self::Copy => false,
+            Self::MoveStart(_, _) | Self::MoveEnd(_, _) | Self::Copy | Self::LineEnd(_, _) => false,
             _ => true,
         }
     }

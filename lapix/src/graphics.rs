@@ -4,11 +4,8 @@ pub fn distance(p1: Point<i32>, p2: Point<i32>) -> f32 {
     ((((p1.x - p2.x) as i64).pow(2) + ((p1.y - p2.y) as i64).pow(2)) as f64).sqrt() as f32
 }
 
-pub fn line(p1: Point<u16>, p2: Point<u16>) -> Vec<Point<u16>> {
+pub fn line(p1: Point<i32>, p2: Point<i32>) -> Vec<Point<i32>> {
     let mut line = Vec::new();
-
-    let p1 = Point::new(p1.x as i32, p1.y as i32);
-    let p2 = Point::new(p2.x as i32, p2.y as i32);
 
     let diff_x = p2.x - p1.x;
     let diff_y = p2.y - p1.y;
@@ -17,8 +14,8 @@ pub fn line(p1: Point<u16>, p2: Point<u16>) -> Vec<Point<u16>> {
     let dy = if dist < 0.1 { 0. } else { diff_y as f32 / dist };
 
     for i in 0..=dist.round() as usize {
-        let x = (p1.x as f32 + (i as f32 * dx)).round() as u16;
-        let y = (p1.y as f32 + (i as f32 * dy)).round() as u16;
+        let x = (p1.x as f32 + (i as f32 * dx)).round() as i32;
+        let y = (p1.y as f32 + (i as f32 * dy)).round() as i32;
 
         if let Some(Point { x: x0, y: y0 }) = line.last() {
             if x == *x0 && y == *y0 {
@@ -42,7 +39,7 @@ mod tests {
     #[test_case((0,0), (2,2), vec![(0, 0), (1, 1), (2, 2)])]
     #[test_case((2,0), (0,0), vec![(0, 0), (1, 0), (2, 0)])]
     #[test_case((0,0), (3,1), vec![(0, 0), (1, 0), (2, 1), (3, 1)])]
-    fn simple_line_cases(p1: (u16, u16), p2: (u16, u16), expected: Vec<(u16, u16)>) {
+    fn simple_line_cases(p1: (i32, i32), p2: (i32, i32), expected: Vec<(i32, i32)>) {
         let mut l = line(p1.into(), p2.into());
         l.sort();
 

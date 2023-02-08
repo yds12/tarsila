@@ -103,6 +103,10 @@ impl<IMG: Bitmap> Canvas<IMG> {
         self.inner.bytes()
     }
 
+    pub fn is_in_bounds(&self, p: Point<i32>) -> bool {
+        p.x >= 0 && p.y >= 0 && (p.x as u16) < self.width() && (p.y as u16) < self.height()
+    }
+
     fn undo_edit(&mut self, edit: CanvasAtomicEdit<IMG>) -> CanvasEffect {
         // TODO: isn't this supposed to be in CanvasAtomicEdit?
         match edit {
@@ -181,10 +185,12 @@ impl<IMG: Bitmap> Canvas<IMG> {
     }
 
     pub fn line(&mut self, p1: Point<u16>, p2: Point<u16>, color: IMG::Color) {
+        let p1 = Point::new(p1.x as i32, p1.y as i32);
+        let p2 = Point::new(p2.x as i32, p2.y as i32);
         let line = graphics::line(p1, p2);
 
         for p in line {
-            self.set_pixel(p.x, p.y, color);
+            self.set_pixel(p.x as u16, p.y as u16, color);
         }
     }
 
@@ -203,8 +209,11 @@ impl<IMG: Bitmap> Canvas<IMG> {
                 let color = obj.texture.pixel(i as u16, j as u16);
                 let x = (i + obj.rect.x) as u16;
                 let y = (j + obj.rect.y) as u16;
-                let blended = color.blend_over(self.pixel(x, y));
-                self.set_pixel(x, y, blended);
+
+                if self.is_in_bounds((x as i32, y as i32).into()) {
+                    let blended = color.blend_over(self.pixel(x, y));
+                    self.set_pixel(x, y, blended);
+                }
             }
         }
         self.finish_editing_bundle();

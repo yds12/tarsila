@@ -1,4 +1,7 @@
-use crate::{Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Position, Rect, Size, Tool};
+use crate::{
+    graphics, Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Point, Position, Rect, Size,
+    Tool,
+};
 use std::fmt::Debug;
 
 pub struct Layer<IMG: Bitmap> {
@@ -117,6 +120,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
                 let color = self.main_color;
                 self.canvas_mut().line(point, (x, y).into(), color);
                 self.canvas_mut().finish_editing_bundle();
+                self.free_image = None;
             }
             Event::BrushStroke(x, y) => {
                 let last_event = self.events.last();
@@ -355,10 +359,12 @@ impl<IMG: Bitmap + Debug> State<IMG> {
     }
 
     pub fn update_free_image(&mut self, mouse_canvas: Position<i32>) {
-        let last_event = self.events.last();
-
-        if let Some(Event::MoveStart(_, _)) = last_event {
-            self.move_free_image(mouse_canvas);
+        match self.events.last() {
+            Some(Event::MoveStart(_, _)) => self.move_free_image(mouse_canvas),
+            Some(Event::LineStart(x, y)) => {
+                self.update_line_preview((*x as i32, *y as i32).into(), mouse_canvas)
+            }
+            _ => (),
         }
     }
 
@@ -367,6 +373,33 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             free_image.move_by_pivot(new);
             self.set_selection(Some(Selection::FreeImage));
         }
+    }
+
+    fn update_line_preview(&mut self, p0: Point<i32>, p: Point<i32>) {
+        let line = graphics::line(p0, p);
+        let (xspan, yspan) = ((p.x - p0.x).abs(), (p.y - p0.y).abs());
+
+        if xspan == 0 && yspan == 0 {
+            return;
+        }
+
+        let mut img = IMG::new(
+            xspan as u16 + 1,
+            yspan as u16 + 1,
+            IMG::Color::from_rgba(0, 0, 0, 0),
+        );
+
+        let offset = Point::new(
+            std::cmp::min(p.x, p0.x) as i32,
+            std::cmp::min(p.y, p0.y) as i32,
+        );
+        for point in line {
+            let x = (point.x - offset.x) as u16;
+            let y = (point.y - offset.y) as u16;
+            img.set_pixel(x, y, self.main_color());
+        }
+
+        self.free_image = Some(FreeImage::new(offset.x, offset.y, img));
     }
 
     fn save_image(&self, path: &str) {

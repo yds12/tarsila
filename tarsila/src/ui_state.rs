@@ -5,9 +5,9 @@ use crate::mouse::MouseManager;
 use crate::wrapped_image::WrappedImage;
 use crate::{graphics, Timer};
 use lapix::primitives::*;
-use lapix::{Bitmap, Canvas, CanvasEffect, Event, FreeImage, Layer, Selection, State, Tool};
+use lapix::{Canvas, CanvasEffect, Event, Layer, Selection, State, Tool};
 use macroquad::prelude::Color as MqColor;
-use macroquad::prelude::{DrawTextureParams, FilterMode, Texture2D, Vec2, BLACK, SKYBLUE};
+use macroquad::prelude::{FilterMode, Texture2D, SKYBLUE};
 use std::default::Default;
 
 pub const WINDOW_W: i32 = 1000;
@@ -153,17 +153,15 @@ impl UiState {
         let mouse_canvas = self.screen_to_canvas(x, y).into();
         self.inner.update_free_image(mouse_canvas);
 
-        if let Some(selection) = self.inner.selection() {
+        if self.inner.selection().is_some() {
             graphics::draw_selection(ctx, self.inner.free_image());
         }
 
         // TODO: most of this logic should be in some update method, not a draw one
         if let Some(img) = self.inner.free_image() {
-            if self.free_image_tex.is_none() {
-                let tex = Texture2D::from_image(&img.texture.0);
-                tex.set_filter(FilterMode::Nearest);
-                self.free_image_tex = Some(tex);
-            }
+            let tex = Texture2D::from_image(&img.texture.0);
+            tex.set_filter(FilterMode::Nearest);
+            self.free_image_tex = Some(tex);
 
             graphics::draw_free_image(
                 ctx,
@@ -205,10 +203,7 @@ impl UiState {
     pub fn sync_mouse(&mut self) {
         let (x, y) = macroquad::prelude::mouse_position();
         let (x, y) = self.screen_to_canvas(x, y);
-        let in_canvas = x >= 0
-            && y >= 0
-            && (x as u16) < self.canvas().width()
-            && (y as u16) < self.canvas().height();
+        let in_canvas = self.canvas().is_in_bounds((x as i32, y as i32).into());
         let visible_pixel = if in_canvas {
             Some(self.visible_pixel(x as u16, y as u16))
         } else {
