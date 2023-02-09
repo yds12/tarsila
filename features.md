@@ -28,20 +28,20 @@ Features (+ means done, (-) means least important):
     - single or double
     - works not only on brush, but all tools, including selection
 - Color palette (+)
-  - Add and remove colors
-  - Save and load palettes
-  - Default palettes
+  - Add and remove colors (+)
+  - Save and load (+) palettes [v0.1]
+  - Default palettes [v0.1]
   - Sorting based on multiple possible properties (-)
-  - possible to edit a color in the palette based on full color picker
+  - possible to edit a color in the palette based on full color picker (-)
 - Save and load images (+)
-  - Choose Scaled
-  - Different formats (PNG (+), JPEG, GIF)
+  - Choose Scaled [v0.2]
+  - Different formats (PNG (+), JPEG (+), GIF)
 - Preview (+)
   - Real size (+)
   - Animation (+)
 - Commands
   - Customizable shortcuts (-)
-  - Try to have good defaults
+  - Try to have good defaults (+)
   - Undo (+) and redo
 - Tools
   - Brush (+)
@@ -51,13 +51,13 @@ Features (+ means done, (-) means least important):
     - Pixel perfect mode
     - Different color on right and left click
   - Bucket (+)
-    - adjustable tolerance
-    - all areas with same color
+    - adjustable tolerance [v0.2]
+    - all areas with same color [v0.2]
     - gradient
   - Shapes
     - Lines (+)
-    - Rectangles
-    - Ovals
+    - Rectangles [v0.1]
+    - Ovals [v0.2]
       - properties of recently created objects (lines, shapes)
   - Selection (+)
     - Rectangular (+)
@@ -72,15 +72,16 @@ Features (+ means done, (-) means least important):
     - create selection based on what's on a layer (-)
   - Eyedrop to select colors (+)
   - Transform
-    - Resize
-    - Rotate
-    - Flip (horizontal or vertical)
+    - Resize [v0.1]
+    - Rotate [v0.2]
+    - Flip (horizontal or vertical) [v0.1]
   - Effects
     - add outline
-    - change colors (hue, saturation, brightness, contrast, etc)
+    - change colors (hue, saturation, brightness, contrast, etc) [v0.2]
 - UI
   - assume we may change GUI, so make everything generic if possible (+)
   - preferences menu
   - help menu
-- Tile mode: show tiles around canvas to show how it would look as a tile
+  - status bar showing general info
+- Tile mode: show tiles around canvas to show how it would look as a tile [v0.2]
 

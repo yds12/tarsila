@@ -145,6 +145,14 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             Event::Save(path) => self.save_image(path.to_string_lossy().as_ref()),
             Event::OpenFile(path) => self.open_image(path.to_string_lossy().as_ref()),
             Event::LoadPalette(path) => self.load_palette(path.to_string_lossy().as_ref()),
+            Event::AddToPalette(color) => {
+                if !self.palette.contains(&color) {
+                    self.palette.push(color)
+                }
+            },
+            Event::RemoveFromPalette(color) => {
+                self.palette.retain(|c| *c != color);
+            }
             Event::Bucket(x, y) => {
                 self.canvas_mut().start_editing_bundle();
                 let color = self.main_color;

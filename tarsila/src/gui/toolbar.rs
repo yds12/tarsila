@@ -44,7 +44,7 @@ impl Toolbar {
         let mut events = Vec::new();
 
         egui::Window::new("Toolbox")
-            .default_pos((15., 330.))
+            .default_pos((15., 360.))
             .show(egui_ctx, |ui| {
                 ui.horizontal(|ui| {
                     let colorpicker = ui.color_edit_button_srgb(&mut self.brush);
@@ -55,15 +55,20 @@ impl Toolbar {
                                 .desired_width(30.0),
                         )
                         .labelled_by(label.id);
+                    let color = [
+                        self.brush[0],
+                        self.brush[1],
+                        self.brush[2],
+                        self.brush_alpha.parse().unwrap_or(255),
+                    ];
 
                     if colorpicker.changed() || text_edit.changed() {
-                        let color = [
-                            self.brush[0],
-                            self.brush[1],
-                            self.brush[2],
-                            self.brush_alpha.parse().unwrap_or(255),
-                        ];
                         events.push(Event::SetMainColor(color).into());
+                    }
+
+                    let btn = ui.button("+").on_hover_text("add to palette");
+                    if btn.clicked() {
+                        events.push(Event::AddToPalette(color).into());
                     }
                 });
 

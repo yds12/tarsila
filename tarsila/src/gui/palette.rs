@@ -66,11 +66,18 @@ impl Palette {
                     let tex: &egui::TextureHandle = tex.get_or_insert_with(|| {
                         ui.ctx().load_texture("", image.clone(), Default::default())
                     });
-                    let tooltip = format!("Select color {:?}", self.colors[i]);
+                    let tooltip = format!(
+                        "Select color {:?} (left click to remove from palette",
+                        self.colors[i]
+                    );
 
                     let btn = egui::ImageButton::new(tex, tex.size_vec2());
-                    if ui.add(btn).on_hover_text(tooltip).clicked() {
+                    let btn = ui.add(btn).on_hover_text(tooltip);
+                    if btn.clicked() {
                         fx.push(Event::SetMainColor(self.colors[i]).into());
+                    }
+                    if btn.clicked_by(egui::PointerButton::Secondary) {
+                        fx.push(Event::RemoveFromPalette(self.colors[i]).into());
                     }
                 }
             });

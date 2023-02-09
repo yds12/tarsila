@@ -10,6 +10,8 @@ pub enum Event<IMG: Bitmap> {
     BrushEnd,
     SetTool(Tool),
     SetMainColor(IMG::Color),
+    AddToPalette(IMG::Color),
+    RemoveFromPalette(IMG::Color),
     Save(PathBuf),
     OpenFile(PathBuf),
     LoadPalette(PathBuf),
@@ -54,6 +56,8 @@ impl<IMG: Bitmap> Clone for Event<IMG> {
             Self::DeleteLayer(i) => Self::DeleteLayer(*i),
             Self::SetTool(t) => Self::SetTool(*t),
             Self::SetMainColor(c) => Self::SetMainColor(*c),
+            Self::AddToPalette(c) => Self::AddToPalette(*c),
+            Self::RemoveFromPalette(c) => Self::RemoveFromPalette(*c),
             Self::Save(path) => Self::Save(path.clone()),
             Self::OpenFile(path) => Self::OpenFile(path.clone()),
             Self::LoadPalette(path) => Self::LoadPalette(path.clone()),
@@ -100,6 +104,8 @@ impl<IMG: Bitmap> PartialEq for Event<IMG> {
             (Self::Paste(x, y), Self::Paste(i, j)) => x == i && y == j,
             (Self::SetTool(t), Self::SetTool(u)) => t == u,
             (Self::SetMainColor(c), Self::SetMainColor(d)) => c == d,
+            (Self::AddToPalette(c), Self::AddToPalette(d)) => c == d,
+            (Self::RemoveFromPalette(c), Self::RemoveFromPalette(d)) => c == d,
             (Self::Save(p), Self::Save(q)) => p == q,
             (Self::OpenFile(p), Self::OpenFile(q)) => p == q,
             (Self::LoadPalette(p), Self::LoadPalette(q)) => p == q,
@@ -163,6 +169,8 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::BrushStroke(_, _)
             | Self::BrushEnd
             | Self::SetMainColor(_)
+            | Self::AddToPalette(_)
+            | Self::RemoveFromPalette(_)
             | Self::Bucket(_, _)
             | Self::Erase(_, _)
             | Self::LineStart(_, _)
