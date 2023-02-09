@@ -33,4 +33,28 @@ impl<IMG: Bitmap> FreeImage<IMG> {
         self.rect.x = dx;
         self.rect.y = dy;
     }
+
+    pub fn flip_horizontally(&mut self) {
+        for i in 0..(self.rect.w / 2) {
+            for j in 0..self.rect.h {
+                let c1 = self.texture.pixel(i as u16, j as u16);
+                let c2 = self.texture.pixel((self.rect.w - i - 1) as u16, j as u16);
+                self.texture.set_pixel(i as u16, j as u16, c2);
+                self.texture
+                    .set_pixel((self.rect.w - i - 1) as u16, j as u16, c1);
+            }
+        }
+    }
+
+    pub fn flip_vertically(&mut self) {
+        for j in 0..(self.rect.h / 2) {
+            for i in 0..self.rect.w {
+                let c1 = self.texture.pixel(i as u16, j as u16);
+                let c2 = self.texture.pixel(i as u16, (self.rect.h - j - 1) as u16);
+                self.texture.set_pixel(i as u16, j as u16, c2);
+                self.texture
+                    .set_pixel(i as u16, (self.rect.h - j - 1) as u16, c1);
+            }
+        }
+    }
 }

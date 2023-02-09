@@ -149,7 +149,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
                 if !self.palette.contains(&color) {
                     self.palette.push(color)
                 }
-            },
+            }
             Event::RemoveFromPalette(color) => {
                 self.palette.retain(|c| *c != color);
             }
@@ -193,14 +193,8 @@ impl<IMG: Bitmap + Debug> State<IMG> {
                 None => (),
             },
             Event::MoveStart(x, y) => match self.selection {
-                Some(Selection::Canvas(rect)) => {
-                    self.free_image = Some(FreeImage::from_canvas_area(
-                        &self.canvas(),
-                        rect.into(),
-                        Some((x - rect.x, y - rect.y).into()),
-                    ));
-                    self.canvas_mut()
-                        .set_area(rect, IMG::Color::from_rgba(0, 0, 0, 0));
+                Some(Selection::Canvas(_)) => {
+                    self.free_image_from_selection(Some((x, y).into()));
                 }
                 Some(Selection::FreeImage) => {
                     if let Some(free_image) = self.free_image.as_mut() {
@@ -227,6 +221,22 @@ impl<IMG: Bitmap + Debug> State<IMG> {
                     let img = FreeImage::new(x as i32, y as i32, img);
                     self.free_image = Some(img);
                     self.set_selection(Some(Selection::FreeImage));
+                }
+            }
+            Event::FlipHorizontal => {
+                if let Some(Selection::Canvas(_)) = self.selection {
+                    self.free_image_from_selection(None);
+                }
+                if let Some(free_img) = self.free_image.as_mut() {
+                    free_img.flip_horizontally();
+                }
+            }
+            Event::FlipVertical => {
+                if let Some(Selection::Canvas(_)) = self.selection {
+                    self.free_image_from_selection(None);
+                }
+                if let Some(free_img) = self.free_image.as_mut() {
+                    free_img.flip_vertically();
                 }
             }
             Event::NewLayerAbove => self.add_layer(),
@@ -383,6 +393,19 @@ impl<IMG: Bitmap + Debug> State<IMG> {
         if let Some(free_image) = self.free_image.as_mut() {
             free_image.move_by_pivot(new);
             self.set_selection(Some(Selection::FreeImage));
+        }
+    }
+
+    fn free_image_from_selection(&mut self, mouse_pos: Option<Point<u16>>) {
+        if let Some(Selection::Canvas(rect)) = self.selection {
+            self.free_image = Some(FreeImage::from_canvas_area(
+                &self.canvas(),
+                rect.into(),
+                mouse_pos.map(|p| (p.x - rect.x, p.y - rect.y).into()),
+            ));
+            self.canvas_mut()
+                .set_area(rect, IMG::Color::from_rgba(0, 0, 0, 0));
+            self.selection = Some(Selection::FreeImage);
         }
     }
 

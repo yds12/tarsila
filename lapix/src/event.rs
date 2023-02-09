@@ -35,6 +35,8 @@ pub enum Event<IMG: Bitmap> {
     MoveEnd(u16, u16),
     Copy,
     Paste(u16, u16),
+    FlipHorizontal,
+    FlipVertical,
     Undo,
 }
 
@@ -48,6 +50,8 @@ impl<IMG: Bitmap> Clone for Event<IMG> {
             Self::NewLayerBelow => Self::NewLayerBelow,
             Self::Copy => Self::Copy,
             Self::ClearSelection => Self::ClearSelection,
+            Self::FlipHorizontal => Self::FlipHorizontal,
+            Self::FlipVertical => Self::FlipVertical,
             Self::ResizeCanvas(x, y) => Self::ResizeCanvas(*x, *y),
             Self::BrushStart => Self::BrushStart,
             Self::BrushStroke(x, y) => Self::BrushStroke(*x, *y),
@@ -91,6 +95,8 @@ impl<IMG: Bitmap> PartialEq for Event<IMG> {
             (Self::NewLayerBelow, Self::NewLayerBelow) => true,
             (Self::Copy, Self::Copy) => true,
             (Self::ClearSelection, Self::ClearSelection) => true,
+            (Self::FlipHorizontal, Self::FlipHorizontal) => true,
+            (Self::FlipVertical, Self::FlipVertical) => true,
             (Self::ResizeCanvas(x, y), Self::ResizeCanvas(i, j)) => x == i && y == j,
             (Self::BrushStroke(x, y), Self::BrushStroke(i, j)) => x == i && y == j,
             (Self::Bucket(x, y), Self::Bucket(i, j)) => x == i && y == j,
@@ -132,6 +138,8 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::MoveStart(_, _)
             | Self::MoveEnd(_, _)
             | Self::Paste(_, _)
+            | Self::FlipHorizontal
+            | Self::FlipVertical
             | Self::Erase(_, _) => CanvasEffect::Update,
             Self::ResizeCanvas(_, _) | Self::OpenFile(_) => CanvasEffect::New,
             Self::NewLayerAbove | Self::NewLayerBelow | Self::DeleteLayer(_) => CanvasEffect::Layer,
@@ -157,7 +165,12 @@ impl<IMG: Bitmap> Event<IMG> {
 
     pub fn repeatable(&self) -> bool {
         match self {
-            Self::Undo | Self::NewLayerAbove | Self::NewLayerBelow | Self::DeleteLayer(_) => true,
+            Self::Undo
+            | Self::NewLayerAbove
+            | Self::NewLayerBelow
+            | Self::DeleteLayer(_)
+            | Self::FlipHorizontal
+            | Self::FlipVertical => true,
             _ => false,
         }
     }
@@ -177,6 +190,8 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::LineEnd(_, _)
             | Self::NewLayerAbove
             | Self::NewLayerBelow
+            | Self::FlipHorizontal
+            | Self::FlipVertical
             | Self::SwitchLayer(_)
             | Self::ChangeLayerVisibility(_, _)
             | Self::ChangeLayerOpacity(_, _)
@@ -205,7 +220,12 @@ impl<IMG: Bitmap> Event<IMG> {
 
     pub fn triggers_anchoring(&self) -> bool {
         match self {
-            Self::MoveStart(_, _) | Self::MoveEnd(_, _) | Self::Copy | Self::LineEnd(_, _) => false,
+            Self::MoveStart(_, _)
+            | Self::MoveEnd(_, _)
+            | Self::Copy
+            | Self::LineEnd(_, _)
+            | Self::FlipHorizontal
+            | Self::FlipVertical => false,
             _ => true,
         }
     }

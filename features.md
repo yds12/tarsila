@@ -74,7 +74,7 @@ Features (+ means done, (-) means least important):
   - Transform
     - Resize [v0.1]
     - Rotate [v0.2]
-    - Flip (horizontal or vertical) [v0.1]
+    - Flip (horizontal or vertical) (+)
   - Effects
     - add outline
     - change colors (hue, saturation, brightness, contrast, etc) [v0.2]

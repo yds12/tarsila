@@ -65,6 +65,8 @@ impl KeyboardManager {
             (KeyCode::L, Event::SetTool(Tool::Line)),
             (KeyCode::S, Event::SetTool(Tool::Selection)),
             (KeyCode::M, Event::SetTool(Tool::Move)),
+            (KeyCode::H, Event::FlipHorizontal),
+            (KeyCode::V, Event::FlipVertical),
         ];
         for (k, v) in kv {
             self.register_keypress_event(k, v);
@@ -137,31 +139,21 @@ impl KeyboardManager {
     pub fn update(&mut self) -> Vec<Effect> {
         let mut fx = Vec::new();
 
+        let ctrl_down = is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl);
+        let shift_down = is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift);
+        let mod_down = ctrl_down || shift_down;
+
         for (shortcut, effect) in &self.shortcuts {
             let execute = match shortcut {
-                Shortcut::KeyPress(key) => is_key_pressed(*key),
-                Shortcut::KeyDown(key) => is_key_down(*key) && self.allow_keydown(),
+                Shortcut::KeyPress(key) => !mod_down && is_key_pressed(*key),
+                Shortcut::KeyDown(key) => !mod_down && is_key_down(*key) && self.allow_keydown(),
                 Shortcut::KeyPressMod(modif, key) => match modif {
-                    Modifier::Ctrl => {
-                        (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl))
-                            && is_key_pressed(*key)
-                    }
-                    Modifier::Shift => {
-                        (is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift))
-                            && is_key_pressed(*key)
-                    }
+                    Modifier::Ctrl => ctrl_down && is_key_pressed(*key),
+                    Modifier::Shift => shift_down && is_key_pressed(*key),
                 },
                 Shortcut::KeyDownMod(modif, key) => match modif {
-                    Modifier::Ctrl => {
-                        (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl))
-                            && is_key_down(*key)
-                            && self.allow_keydown()
-                    }
-                    Modifier::Shift => {
-                        (is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift))
-                            && is_key_down(*key)
-                            && self.allow_keydown()
-                    }
+                    Modifier::Ctrl => ctrl_down && is_key_down(*key) && self.allow_keydown(),
+                    Modifier::Shift => shift_down && is_key_down(*key) && self.allow_keydown(),
                 },
             };
 
