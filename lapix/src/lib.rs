@@ -24,6 +24,7 @@ pub enum Tool {
     Line,
     Selection,
     Move,
+    Rectangle,
 }
 
 pub trait Bitmap: Clone {

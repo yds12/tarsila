@@ -26,6 +26,7 @@ impl Resources {
             Tool::Line => include_bytes!("../../res/icon/line.png"),
             Tool::Selection => include_bytes!("../../res/icon/selection.png"),
             Tool::Move => include_bytes!("../../res/icon/move.png"),
+            Tool::Rectangle => include_bytes!("../../res/icon/rectangle.png"),
         }
     }
 }
@@ -225,6 +226,7 @@ impl CursorSet {
             (Tool::Line, (0., -16.).into()),
             (Tool::Selection, (0., 0.).into()),
             (Tool::Move, (0., -16.).into()),
+            (Tool::Rectangle, (0., -16.).into()),
         ];
 
         Self(

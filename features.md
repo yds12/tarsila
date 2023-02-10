@@ -56,7 +56,7 @@ Features (+ means done, (-) means least important):
     - gradient
   - Shapes
     - Lines (+)
-    - Rectangles [v0.1]
+    - Rectangles (+)
     - Ovals [v0.2]
       - properties of recently created objects (lines, shapes)
   - Selection (+)
@@ -81,7 +81,7 @@ Features (+ means done, (-) means least important):
 - UI
   - assume we may change GUI, so make everything generic if possible (+)
   - preferences menu
-  - help menu
+  - help menu [v0.1]
   - status bar showing general info
 - Tile mode: show tiles around canvas to show how it would look as a tile [v0.2]
 

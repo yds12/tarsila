@@ -10,7 +10,7 @@ Projects issues and bugs:
 8. Eraser: similar issue as with brush, non-contiguous strokes
 9. When ending a line outside of canvas, cannot undo
 10. Sometimes when leaving the canvas, tool is not released and continue drawing
-11. Improve the visibility of the tool cursors (e.g. on black) [ENH]
+11. Improve the visibility of the tool cursors (e.g. on black) [ENH][DONE]
 12. Data about tools is too spread around: Tool enum, data about icons, etc.
 13. Now that we changed event processing, it's not possible to have 2 events at the same time, that is making it impossible to scroll horizontally and vertically together [DONE]
 14. Change name to Tarsila or Portinari? [ENH]
@@ -22,4 +22,5 @@ Projects issues and bugs:
 20. Create mouse manager, and store events to be ran on mouse release [DONE]
 21. Cannot type on spritesheet size textboxes if intermediate values are not valid spritesheet sizes
 22. Preview window gets too big and cannot be closed or resized
-23. Add tooltips to everything
+23. Add tooltips to everything [ENH]
+24. Use default mouse pointer out of canvas

@@ -65,6 +65,7 @@ impl KeyboardManager {
             (KeyCode::L, Event::SetTool(Tool::Line)),
             (KeyCode::S, Event::SetTool(Tool::Selection)),
             (KeyCode::M, Event::SetTool(Tool::Move)),
+            (KeyCode::R, Event::SetTool(Tool::Rectangle)),
             (KeyCode::H, Event::FlipHorizontal),
             (KeyCode::V, Event::FlipVertical),
         ];

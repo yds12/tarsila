@@ -35,16 +35,15 @@ pub fn draw_animated_dashed_line(p1: Point<i32>, p2: Point<i32>) {
         % 2) as usize;
 
     for i in 0..(segments as usize) {
-        if i % 2 == iteration {
-            draw_line(
-                p1.x as f32 + i as f32 * dx as f32,
-                p1.y as f32 + i as f32 * dy as f32,
-                p1.x as f32 + (i as f32 + 1.) * dx as f32,
-                p1.y as f32 + (i as f32 + 1.) * dy as f32,
-                1.,
-                BLACK,
-            );
-        };
+        let color = if i % 2 == iteration { BLACK } else { WHITE };
+        draw_line(
+            p1.x as f32 + i as f32 * dx as f32,
+            p1.y as f32 + i as f32 * dy as f32,
+            p1.x as f32 + (i as f32 + 1.) * dx as f32,
+            p1.y as f32 + (i as f32 + 1.) * dy as f32,
+            1.,
+            color,
+        );
     }
 }
 

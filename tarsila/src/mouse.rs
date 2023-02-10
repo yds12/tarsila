@@ -54,6 +54,9 @@ impl MouseManager {
                     Tool::Line => {
                         events.push(Event::LineStart(x as u16, y as u16).into());
                     }
+                    Tool::Rectangle => {
+                        events.push(Event::RectStart(x as u16, y as u16).into());
+                    }
                     Tool::Eyedropper => {
                         let color = self.visible_pixel_on_mouse.unwrap();
                         events.push(Event::SetMainColor(color).into());
@@ -105,6 +108,9 @@ impl MouseManager {
                     }
                     Tool::Line => {
                         events.push(Event::LineEnd(x as u16, y as u16).into());
+                    }
+                    Tool::Rectangle => {
+                        events.push(Event::RectEnd(x as u16, y as u16).into());
                     }
                     Tool::Selection => {
                         events.push(Event::EndSelection(x as u16, y as u16).into());

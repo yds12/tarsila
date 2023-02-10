@@ -21,6 +21,8 @@ pub enum Event<IMG: Bitmap> {
     Erase(u16, u16),
     LineStart(u16, u16),
     LineEnd(u16, u16),
+    RectStart(u16, u16),
+    RectEnd(u16, u16),
     NewLayerAbove,
     NewLayerBelow,
     SwitchLayer(usize),
@@ -69,6 +71,8 @@ impl<IMG: Bitmap> Clone for Event<IMG> {
             Self::Erase(x, y) => Self::Erase(*x, *y),
             Self::LineStart(x, y) => Self::LineStart(*x, *y),
             Self::LineEnd(x, y) => Self::LineEnd(*x, *y),
+            Self::RectStart(x, y) => Self::RectStart(*x, *y),
+            Self::RectEnd(x, y) => Self::RectEnd(*x, *y),
             Self::StartSelection(x, y) => Self::StartSelection(*x, *y),
             Self::EndSelection(x, y) => Self::EndSelection(*x, *y),
             Self::MoveStart(x, y) => Self::MoveStart(*x, *y),
@@ -103,6 +107,8 @@ impl<IMG: Bitmap> PartialEq for Event<IMG> {
             (Self::Erase(x, y), Self::Erase(i, j)) => x == i && y == j,
             (Self::LineStart(x, y), Self::LineStart(i, j)) => x == i && y == j,
             (Self::LineEnd(x, y), Self::LineEnd(i, j)) => x == i && y == j,
+            (Self::RectStart(x, y), Self::RectStart(i, j)) => x == i && y == j,
+            (Self::RectEnd(x, y), Self::RectEnd(i, j)) => x == i && y == j,
             (Self::SetSpritesheet(x, y), Self::SetSpritesheet(i, j)) => x == i && y == j,
             (Self::StartSelection(x, y), Self::StartSelection(i, j)) => x == i && y == j,
             (Self::EndSelection(x, y), Self::EndSelection(i, j)) => x == i && y == j,
@@ -134,6 +140,7 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::BrushStart
             | Self::BrushStroke(_, _)
             | Self::LineEnd(_, _)
+            | Self::RectEnd(_, _)
             | Self::Bucket(_, _)
             | Self::MoveStart(_, _)
             | Self::MoveEnd(_, _)
@@ -154,6 +161,8 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::BrushStroke(_, _)
             | Self::LineStart(_, _)
             | Self::LineEnd(_, _)
+            | Self::RectStart(_, _)
+            | Self::RectEnd(_, _)
             | Self::Bucket(_, _)
             | Self::MoveStart(_, _)
             | Self::MoveEnd(_, _)
@@ -188,6 +197,8 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::Erase(_, _)
             | Self::LineStart(_, _)
             | Self::LineEnd(_, _)
+            | Self::RectStart(_, _)
+            | Self::RectEnd(_, _)
             | Self::NewLayerAbove
             | Self::NewLayerBelow
             | Self::FlipHorizontal
@@ -213,6 +224,7 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::ClearSelection
             | Self::SetTool(Tool::Eyedropper)
             | Self::SetTool(Tool::Eraser)
+            | Self::SetTool(Tool::Rectangle)
             | Self::SetTool(Tool::Line) => true,
             _ => false,
         }
@@ -224,6 +236,7 @@ impl<IMG: Bitmap> Event<IMG> {
             | Self::MoveEnd(_, _)
             | Self::Copy
             | Self::LineEnd(_, _)
+            | Self::RectEnd(_, _)
             | Self::FlipHorizontal
             | Self::FlipVertical => false,
             _ => true,

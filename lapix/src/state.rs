@@ -109,9 +109,10 @@ impl<IMG: Bitmap + Debug> State<IMG> {
         match event.clone() {
             Event::ClearCanvas => self.canvas_mut().clear(),
             Event::ResizeCanvas(w, h) => self.resize_canvas(w, h),
-            Event::BrushStart | Event::LineStart(_, _) | Event::EraseStart => {
-                self.canvas_mut().start_editing_bundle()
-            }
+            Event::BrushStart
+            | Event::LineStart(_, _)
+            | Event::EraseStart
+            | Event::RectStart(_, _) => self.canvas_mut().start_editing_bundle(),
             Event::BrushEnd | Event::EraseEnd => self.canvas_mut().finish_editing_bundle(),
             Event::LineEnd(x, y) => {
                 let last_event = self.events.last();
@@ -121,6 +122,27 @@ impl<IMG: Bitmap + Debug> State<IMG> {
                 };
                 let color = self.main_color;
                 self.canvas_mut().line(point, (x, y).into(), color);
+                self.canvas_mut().finish_editing_bundle();
+                self.free_image = None;
+            }
+            Event::RectEnd(x, y) => {
+                let last_event = self.events.last();
+                let p: Point<u16> = match last_event {
+                    Some(Event::RectStart(i, j)) => (*i, *j).into(),
+                    _ => panic!("rectangle not started!"),
+                };
+                let color = self.main_color;
+
+                // draw 4 lines
+                self.canvas_mut()
+                    .line((p.x, p.y).into(), (p.x, y).into(), color);
+                self.canvas_mut()
+                    .line((p.x, p.y).into(), (x, p.y).into(), color);
+                self.canvas_mut()
+                    .line((p.x, y).into(), (x, y).into(), color);
+                self.canvas_mut()
+                    .line((x, p.y).into(), (x, y).into(), color);
+
                 self.canvas_mut().finish_editing_bundle();
                 self.free_image = None;
             }
@@ -385,6 +407,10 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             Some(Event::LineStart(x, y)) => {
                 self.update_line_preview((*x as i32, *y as i32).into(), mouse_canvas)
             }
+            Some(Event::RectStart(x, y)) => {
+                // TODO: rectangle preview
+                self.update_rect_preview((*x as i32, *y as i32).into(), mouse_canvas)
+            }
             _ => (),
         }
     }
@@ -428,6 +454,38 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             std::cmp::min(p.y, p0.y) as i32,
         );
         for point in line {
+            let x = (point.x - offset.x) as u16;
+            let y = (point.y - offset.y) as u16;
+            img.set_pixel(x, y, self.main_color());
+        }
+
+        self.free_image = Some(FreeImage::new(offset.x, offset.y, img));
+    }
+
+    fn update_rect_preview(&mut self, p0: Point<i32>, p: Point<i32>) {
+        let l1 = graphics::line((p0.x, p0.y).into(), (p0.x, p.y).into());
+        let l2 = graphics::line((p0.x, p0.y).into(), (p.x, p0.y).into());
+        let l3 = graphics::line((p.x, p0.y).into(), (p.x, p.y).into());
+        let l4 = graphics::line((p0.x, p.y).into(), (p.x, p.y).into());
+        let rect = vec![l1, l2, l3, l4].into_iter().flatten();
+
+        let (xspan, yspan) = ((p.x - p0.x).abs(), (p.y - p0.y).abs());
+
+        if xspan == 0 && yspan == 0 {
+            return;
+        }
+
+        let mut img = IMG::new(
+            xspan as u16 + 1,
+            yspan as u16 + 1,
+            IMG::Color::from_rgba(0, 0, 0, 0),
+        );
+
+        let offset = Point::new(
+            std::cmp::min(p.x, p0.x) as i32,
+            std::cmp::min(p.y, p0.y) as i32,
+        );
+        for point in rect {
             let x = (point.x - offset.x) as u16;
             let y = (point.y - offset.y) as u16;
             img.set_pixel(x, y, self.main_color());
