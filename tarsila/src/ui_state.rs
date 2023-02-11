@@ -190,7 +190,6 @@ impl UiState {
             (0..n_layers)
                 .map(|i| self.inner.layer(i).opacity())
                 .collect(),
-            self.inner.spritesheet(),
             self.inner
                 .sprite_images()
                 .into_iter()

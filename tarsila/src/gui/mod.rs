@@ -84,11 +84,9 @@ impl Gui {
         active_layer: usize,
         layers_vis: Vec<bool>,
         layers_alpha: Vec<u8>,
-        spritesheet: Size<u8>,
         preview_imgs: Vec<macroquad::prelude::Image>,
         palette: Vec<[u8; 4]>,
     ) {
-        self.spritesheet = (spritesheet.x.to_string(), spritesheet.y.to_string());
         self.toolbar.sync(main_color);
         self.layers_panel
             .sync(num_layers, active_layer, layers_vis, layers_alpha);
@@ -166,7 +164,8 @@ impl Gui {
                             .desired_width(30.0),
                     )
                     .labelled_by(label.id);
-                if t1.changed() || t2.changed() {
+                let btn = ui.button("Ok");
+                if btn.clicked() {
                     if let (Ok(w), Ok(h)) = (self.spritesheet.0.parse(), self.spritesheet.1.parse())
                     {
                         events.push(Event::SetSpritesheet(w, h).into());
