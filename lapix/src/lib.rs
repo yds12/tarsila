@@ -28,13 +28,11 @@ pub enum Tool {
 }
 
 pub trait Bitmap: Clone {
-    type Color: Color;
-
-    fn new(width: u16, height: u16, color: Self::Color) -> Self;
+    fn new(width: u16, height: u16, color: Color) -> Self;
     fn width(&self) -> u16;
     fn height(&self) -> u16;
-    fn pixel(&self, x: u16, y: u16) -> Self::Color;
-    fn set_pixel(&mut self, x: u16, y: u16, color: Self::Color);
+    fn pixel(&self, x: u16, y: u16) -> Color;
+    fn set_pixel(&mut self, x: u16, y: u16, color: Color);
     fn bytes(&self) -> &[u8];
     fn from_parts(width: u16, height: u16, bytes: &[u8]) -> Self;
     fn set_from(&mut self, other: Self);

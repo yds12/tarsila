@@ -1,3 +1,4 @@
+use crate::color::TRANSPARENT;
 use crate::{graphics, Bitmap, Color, FreeImage, Point, Position, Rect, Size};
 
 #[derive(Debug, Clone, Copy)]
@@ -9,11 +10,11 @@ pub enum CanvasEffect {
 }
 
 #[derive(Debug)]
-pub enum CanvasAtomicEdit<IMG: Bitmap> {
+pub enum CanvasAtomicEdit {
     ChangePixel {
         position: Position<u16>,
-        old: IMG::Color,
-        new: IMG::Color,
+        old: Color,
+        new: Color,
     },
     ChangeSize {
         old: Size<u16>,
@@ -21,8 +22,8 @@ pub enum CanvasAtomicEdit<IMG: Bitmap> {
     },
 }
 
-impl<IMG: Bitmap> CanvasAtomicEdit<IMG> {
-    pub fn undo(&self) -> CanvasAtomicEdit<IMG> {
+impl CanvasAtomicEdit {
+    pub fn undo(&self) -> CanvasAtomicEdit {
         match self {
             CanvasAtomicEdit::ChangePixel { position, old, new } => CanvasAtomicEdit::ChangePixel {
                 position: *position,
@@ -35,23 +36,23 @@ impl<IMG: Bitmap> CanvasAtomicEdit<IMG> {
 }
 
 #[derive(Debug)]
-pub struct CanvasEdit<IMG: Bitmap>(Vec<CanvasAtomicEdit<IMG>>);
+pub struct CanvasEdit(Vec<CanvasAtomicEdit>);
 
-impl<IMG: Bitmap> CanvasEdit<IMG> {
+impl CanvasEdit {
     pub fn new() -> Self {
         Self(Vec::new())
     }
-    pub fn push(&mut self, edit: CanvasAtomicEdit<IMG>) {
+    pub fn push(&mut self, edit: CanvasAtomicEdit) {
         self.0.push(edit);
     }
-    pub fn set_pixel(x: u16, y: u16, old: IMG::Color, new: IMG::Color) -> Self {
+    pub fn set_pixel(x: u16, y: u16, old: Color, new: Color) -> Self {
         Self(vec![CanvasAtomicEdit::ChangePixel {
             position: Position::new(x, y),
             old,
             new,
         }])
     }
-    pub fn undo(&self) -> CanvasEdit<IMG> {
+    pub fn undo(&self) -> CanvasEdit {
         let mut edits = Vec::new();
         for edit in &self.0 {
             edits.push(edit.undo());
@@ -63,17 +64,14 @@ impl<IMG: Bitmap> CanvasEdit<IMG> {
 
 pub struct Canvas<IMG: Bitmap> {
     inner: IMG,
-    empty_color: IMG::Color,
-    edits: Vec<CanvasEdit<IMG>>,
-    cur_edit_bundle: Option<CanvasEdit<IMG>>,
+    edits: Vec<CanvasEdit>,
+    cur_edit_bundle: Option<CanvasEdit>,
 }
 
 impl<IMG: Bitmap> Canvas<IMG> {
     pub fn new(width: u16, height: u16) -> Self {
-        let empty_color = IMG::Color::from_rgba(0, 0, 0, 0);
         Self {
-            inner: IMG::new(width, height, empty_color),
-            empty_color,
+            inner: IMG::new(width, height, TRANSPARENT),
             edits: Vec::new(),
             cur_edit_bundle: None,
         }
@@ -107,7 +105,7 @@ impl<IMG: Bitmap> Canvas<IMG> {
         p.x >= 0 && p.y >= 0 && (p.x as u16) < self.width() && (p.y as u16) < self.height()
     }
 
-    fn undo_edit(&mut self, edit: CanvasAtomicEdit<IMG>) -> CanvasEffect {
+    fn undo_edit(&mut self, edit: CanvasAtomicEdit) -> CanvasEffect {
         // TODO: isn't this supposed to be in CanvasAtomicEdit?
         match edit {
             CanvasAtomicEdit::ChangePixel { position, old, .. } => {
@@ -135,7 +133,7 @@ impl<IMG: Bitmap> Canvas<IMG> {
         effect
     }
 
-    fn register_set_pixel(&mut self, x: u16, y: u16, old: IMG::Color, new: IMG::Color) {
+    fn register_set_pixel(&mut self, x: u16, y: u16, old: Color, new: Color) {
         if let Some(edit_bundle) = self.cur_edit_bundle.as_mut() {
             edit_bundle.push(CanvasAtomicEdit::ChangePixel {
                 position: (x, y).into(),
@@ -146,11 +144,11 @@ impl<IMG: Bitmap> Canvas<IMG> {
     }
 
     pub fn clear(&mut self) {
-        self.inner = IMG::new(self.width(), self.height(), self.empty_color);
+        self.inner = IMG::new(self.width(), self.height(), TRANSPARENT);
     }
 
     pub fn resize(&mut self, width: u16, height: u16) {
-        let new_img = IMG::new(width, height, self.empty_color);
+        let new_img = IMG::new(width, height, TRANSPARENT);
         let old_img = std::mem::replace(&mut self.inner, new_img);
         self.inner.set_from(old_img);
     }
@@ -167,11 +165,11 @@ impl<IMG: Bitmap> Canvas<IMG> {
         }
     }
 
-    pub fn pixel(&self, x: u16, y: u16) -> IMG::Color {
+    pub fn pixel(&self, x: u16, y: u16) -> Color {
         self.inner.pixel(x, y)
     }
 
-    pub fn set_pixel(&mut self, x: u16, y: u16, color: IMG::Color) {
+    pub fn set_pixel(&mut self, x: u16, y: u16, color: Color) {
         if x < self.width() && y < self.height() {
             let old = self.inner.pixel(x, y);
 
@@ -184,7 +182,7 @@ impl<IMG: Bitmap> Canvas<IMG> {
         }
     }
 
-    pub fn line(&mut self, p1: Point<u16>, p2: Point<u16>, color: IMG::Color) {
+    pub fn line(&mut self, p1: Point<u16>, p2: Point<u16>, color: Color) {
         let p1 = Point::new(p1.x as i32, p1.y as i32);
         let p2 = Point::new(p2.x as i32, p2.y as i32);
         let line = graphics::line(p1, p2);
@@ -194,7 +192,7 @@ impl<IMG: Bitmap> Canvas<IMG> {
         }
     }
 
-    pub fn set_area(&mut self, area: Rect<u16>, color: IMG::Color) {
+    pub fn set_area(&mut self, area: Rect<u16>, color: Color) {
         for i in 0..area.w {
             for j in 0..area.h {
                 self.set_pixel(i + area.x, j + area.y, color);
@@ -219,7 +217,7 @@ impl<IMG: Bitmap> Canvas<IMG> {
         self.finish_editing_bundle();
     }
 
-    pub fn bucket(&mut self, x: u16, y: u16, color: IMG::Color) {
+    pub fn bucket(&mut self, x: u16, y: u16, color: Color) {
         let old_color = self.inner.pixel(x, y);
 
         if color == old_color {
@@ -279,11 +277,7 @@ impl<IMG: Bitmap> Canvas<IMG> {
     }
 
     pub fn img_from_area(&self, area: Rect<i32>) -> IMG {
-        let mut img = IMG::new(
-            area.w as u16,
-            area.h as u16,
-            IMG::Color::from_rgba(0, 0, 0, 0),
-        );
+        let mut img = IMG::new(area.w as u16, area.h as u16, TRANSPARENT);
 
         for i in 0..area.w {
             for j in 0..area.h {

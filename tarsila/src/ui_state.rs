@@ -27,12 +27,12 @@ const CANVAS_Y: f32 = (WINDOW_H / 2) as f32 - (CANVAS_H as f32 * CANVAS_SCALE / 
 
 #[derive(Debug, Clone)]
 pub enum Effect {
-    Event(Event<WrappedImage>),
+    Event(Event),
     UiEvent(UiEvent),
 }
 
-impl From<Event<WrappedImage>> for Effect {
-    fn from(val: Event<WrappedImage>) -> Self {
+impl From<Event> for Effect {
+    fn from(val: Event) -> Self {
         Self::Event(val)
     }
 }
@@ -181,7 +181,7 @@ impl UiState {
     pub fn sync_gui(&mut self) {
         let n_layers = self.inner.num_layers();
         self.gui.sync(
-            self.inner.main_color(),
+            self.inner.main_color().into(),
             n_layers,
             self.inner.active_layer(),
             (0..n_layers)
@@ -195,7 +195,7 @@ impl UiState {
                 .into_iter()
                 .map(|i| i.0)
                 .collect(),
-            self.inner.palette().iter().map(|c| *c).collect(),
+            self.inner.palette().iter().map(|c| (*c).into()).collect(),
         );
     }
 
@@ -218,7 +218,7 @@ impl UiState {
         );
     }
 
-    pub fn execute(&mut self, event: Event<WrappedImage>) {
+    pub fn execute(&mut self, event: Event) {
         let effect = self.inner.execute(event);
 
         // TODO: resize and new canvas events now need to affect all layers
@@ -265,7 +265,7 @@ impl UiState {
     }
 
     pub fn visible_pixel(&self, x: u16, y: u16) -> [u8; 4] {
-        self.inner.visible_pixel(x, y)
+        self.inner.visible_pixel(x, y).into()
     }
 
     pub fn camera(&self) -> Position<f32> {

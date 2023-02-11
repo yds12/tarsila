@@ -95,20 +95,15 @@ impl KeyboardManager {
         self.shortcuts.insert(shortcut, effect);
     }
 
-    pub fn register_keypress_event(&mut self, key: KeyCode, event: Event<WrappedImage>) {
+    pub fn register_keypress_event(&mut self, key: KeyCode, event: Event) {
         self.register(Shortcut::KeyPress(key), Effect::Event(event));
     }
 
-    pub fn register_keydown_event(&mut self, key: KeyCode, event: Event<WrappedImage>) {
+    pub fn register_keydown_event(&mut self, key: KeyCode, event: Event) {
         self.register(Shortcut::KeyDown(key), Effect::Event(event));
     }
 
-    pub fn register_keypress_mod_event(
-        &mut self,
-        modifier: Modifier,
-        key: KeyCode,
-        event: Event<WrappedImage>,
-    ) {
+    pub fn register_keypress_mod_event(&mut self, modifier: Modifier, key: KeyCode, event: Event) {
         self.register(Shortcut::KeyPressMod(modifier, key), Effect::Event(event));
     }
 
@@ -121,12 +116,7 @@ impl KeyboardManager {
         self.register(Shortcut::KeyPressMod(modifier, key), Effect::UiEvent(event));
     }
 
-    pub fn register_keydown_mod_event(
-        &mut self,
-        modifier: Modifier,
-        key: KeyCode,
-        event: Event<WrappedImage>,
-    ) {
+    pub fn register_keydown_mod_event(&mut self, modifier: Modifier, key: KeyCode, event: Event) {
         self.register(Shortcut::KeyDownMod(modifier, key), Effect::Event(event));
     }
 

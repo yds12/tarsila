@@ -29,7 +29,7 @@ impl Palette {
             self.images = self
                 .colors
                 .iter()
-                .map(|c| WrappedImage::new(BTN_SIZE, BTN_SIZE, *c).0)
+                .map(|c| WrappedImage::new(BTN_SIZE, BTN_SIZE, (*c).into()).0)
                 .collect();
             self.textures = (0..self.images.len()).map(|_| None).collect();
             self.egui_images = Vec::new();
@@ -74,10 +74,10 @@ impl Palette {
                     let btn = egui::ImageButton::new(tex, tex.size_vec2());
                     let btn = ui.add(btn).on_hover_text(tooltip);
                     if btn.clicked() {
-                        fx.push(Event::SetMainColor(self.colors[i]).into());
+                        fx.push(Event::SetMainColor(self.colors[i].into()).into());
                     }
                     if btn.clicked_by(egui::PointerButton::Secondary) {
-                        fx.push(Event::RemoveFromPalette(self.colors[i]).into());
+                        fx.push(Event::RemoveFromPalette(self.colors[i].into()).into());
                     }
                 }
             });

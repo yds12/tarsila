@@ -1,8 +1,8 @@
+use crate::color::{BLACK, TRANSPARENT};
 use crate::{
     graphics, Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Point, Position, Rect, Size,
     Tool,
 };
-use std::fmt::Debug;
 
 const MAX_PALETTE: usize = 200;
 
@@ -51,40 +51,40 @@ pub enum Selection {
 pub struct State<IMG: Bitmap> {
     layers: Vec<Layer<IMG>>,
     active_layer: usize,
-    events: Vec<Event<IMG>>,
+    events: Vec<Event>,
     tool: Tool,
-    main_color: IMG::Color,
+    main_color: Color,
     spritesheet: Size<u8>,
-    palette: Vec<IMG::Color>,
+    palette: Vec<Color>,
     selection: Option<Selection>,
     free_image: Option<FreeImage<IMG>>,
     clipboard: Option<IMG>,
 }
 
-impl<IMG: Bitmap + Debug> State<IMG> {
+impl<IMG: Bitmap> State<IMG> {
     pub fn new(width: u16, height: u16) -> Self {
         Self {
             layers: vec![Layer::new(width, height)],
             active_layer: 0,
             events: Vec::new(),
             tool: Tool::Brush,
-            main_color: IMG::Color::from_rgb(0, 0, 0),
+            main_color: BLACK,
             spritesheet: Size::new(1, 1),
             palette: vec![
-                IMG::Color::from_rgba(0, 0, 0, 255),       // BLACK
-                IMG::Color::from_rgba(255, 255, 255, 255), // WHITE
-                IMG::Color::from_rgba(255, 0, 0, 255),     // RED
-                IMG::Color::from_rgba(255, 127, 0, 255),   // RED + YELLOW = ORANGE
-                IMG::Color::from_rgba(255, 255, 0, 255),   // YELLOW
-                IMG::Color::from_rgba(127, 255, 0, 255),   // GREEN + YELLOW
-                IMG::Color::from_rgba(0, 255, 0, 255),     // GREEN
-                IMG::Color::from_rgba(0, 255, 127, 255),   // GREEN + CYAN
-                IMG::Color::from_rgba(0, 255, 255, 255),   // CYAN
-                IMG::Color::from_rgba(0, 127, 255, 255),   // BLUE + CYAN
-                IMG::Color::from_rgba(0, 0, 255, 255),     // BLUE
-                IMG::Color::from_rgba(127, 0, 255, 255),   // BLUE + MAGENTA
-                IMG::Color::from_rgba(255, 0, 255, 255),   // MAGENTA
-                IMG::Color::from_rgba(255, 0, 127, 255),   // RED + MAGENTA
+                Color::new(0, 0, 0, 255),       // BLACK
+                Color::new(255, 255, 255, 255), // WHITE
+                Color::new(255, 0, 0, 255),     // RED
+                Color::new(255, 127, 0, 255),   // RED + YELLOW = ORANGE
+                Color::new(255, 255, 0, 255),   // YELLOW
+                Color::new(127, 255, 0, 255),   // GREEN + YELLOW
+                Color::new(0, 255, 0, 255),     // GREEN
+                Color::new(0, 255, 127, 255),   // GREEN + CYAN
+                Color::new(0, 255, 255, 255),   // CYAN
+                Color::new(0, 127, 255, 255),   // BLUE + CYAN
+                Color::new(0, 0, 255, 255),     // BLUE
+                Color::new(127, 0, 255, 255),   // BLUE + MAGENTA
+                Color::new(255, 0, 255, 255),   // MAGENTA
+                Color::new(255, 0, 127, 255),   // RED + MAGENTA
             ],
             selection: None,
             free_image: None,
@@ -92,7 +92,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
         }
     }
 
-    pub fn execute(&mut self, event: Event<IMG>) -> CanvasEffect {
+    pub fn execute(&mut self, event: Event) -> CanvasEffect {
         if Some(&event) == self.events.last() && !event.repeatable() {
             return CanvasEffect::None;
         }
@@ -163,14 +163,13 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             Event::Erase(x, y) => {
                 let last_event = self.events.last();
 
-                let color = Color::from_rgba(0, 0, 0, 0);
                 match last_event {
                     Some(Event::Erase(x0, y0)) => {
                         let p0 = (*x0, *y0).into();
-                        self.canvas_mut().line(p0, (x, y).into(), color);
+                        self.canvas_mut().line(p0, (x, y).into(), TRANSPARENT);
                     }
                     Some(Event::EraseStart) => {
-                        self.canvas_mut().set_pixel(x, y, color);
+                        self.canvas_mut().set_pixel(x, y, TRANSPARENT);
                     }
                     _ => (),
                 }
@@ -221,18 +220,14 @@ impl<IMG: Bitmap + Debug> State<IMG> {
                 }
                 None => (),
             },
-            Event::DeleteSelection => {
-                match self.selection {
-                    Some(Selection::Canvas(rect)) =>
-                        self.canvas_mut()
-                            .set_area(rect, IMG::Color::from_rgba(0, 0, 0, 0)),
-                    Some(Selection::FreeImage) => {
-                        self.free_image = None;
-                        self.set_selection(None);
-                    }
-                    _ => ()
+            Event::DeleteSelection => match self.selection {
+                Some(Selection::Canvas(rect)) => self.canvas_mut().set_area(rect, TRANSPARENT),
+                Some(Selection::FreeImage) => {
+                    self.free_image = None;
+                    self.set_selection(None);
                 }
-            }
+                _ => (),
+            },
             Event::MoveStart(x, y) => match self.selection {
                 Some(Selection::Canvas(_)) => {
                     self.free_image_from_selection(Some((x, y).into()));
@@ -335,7 +330,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
         self.tool
     }
 
-    pub fn main_color(&self) -> IMG::Color {
+    pub fn main_color(&self) -> Color {
         self.main_color
     }
 
@@ -378,7 +373,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
         self.spritesheet = Size::new(w, h);
     }
 
-    pub fn palette(&self) -> &[IMG::Color] {
+    pub fn palette(&self) -> &[Color] {
         &self.palette
     }
 
@@ -448,8 +443,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
                 rect.into(),
                 mouse_pos.map(|p| (p.x - rect.x, p.y - rect.y).into()),
             ));
-            self.canvas_mut()
-                .set_area(rect, IMG::Color::from_rgba(0, 0, 0, 0));
+            self.canvas_mut().set_area(rect, TRANSPARENT);
             self.selection = Some(Selection::FreeImage);
         }
     }
@@ -462,11 +456,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             return;
         }
 
-        let mut img = IMG::new(
-            xspan as u16 + 1,
-            yspan as u16 + 1,
-            IMG::Color::from_rgba(0, 0, 0, 0),
-        );
+        let mut img = IMG::new(xspan as u16 + 1, yspan as u16 + 1, TRANSPARENT);
 
         let offset = Point::new(
             std::cmp::min(p.x, p0.x) as i32,
@@ -494,11 +484,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             return;
         }
 
-        let mut img = IMG::new(
-            xspan as u16 + 1,
-            yspan as u16 + 1,
-            IMG::Color::from_rgba(0, 0, 0, 0),
-        );
+        let mut img = IMG::new(xspan as u16 + 1, yspan as u16 + 1, TRANSPARENT);
 
         let offset = Point::new(
             std::cmp::min(p.x, p0.x) as i32,
@@ -532,7 +518,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
             .resize(img.width() as u16, img.height() as u16);
 
         for (x, y, pixel) in img.enumerate_pixels() {
-            let color = IMG::Color::from_rgba(pixel.0[0], pixel.0[1], pixel.0[2], pixel.0[3]);
+            let color = Color::new(pixel.0[0], pixel.0[1], pixel.0[2], pixel.0[3]);
             self.canvas_mut().set_pixel(x as u16, y as u16, color);
         }
     }
@@ -541,8 +527,8 @@ impl<IMG: Bitmap + Debug> State<IMG> {
         let img = self.load_img_from_file(path);
         self.palette = Vec::new();
 
-        for (x, y, pixel) in img.enumerate_pixels() {
-            let color = IMG::Color::from_rgba(pixel.0[0], pixel.0[1], pixel.0[2], pixel.0[3]);
+        for (_, _, pixel) in img.enumerate_pixels() {
+            let color = Color::new(pixel.0[0], pixel.0[1], pixel.0[2], pixel.0[3]);
 
             if !self.palette.contains(&color) {
                 self.palette.push(color);
@@ -568,7 +554,7 @@ impl<IMG: Bitmap + Debug> State<IMG> {
     }
 
     pub fn blended_layers_rect(&self, x: u16, y: u16, w: u16, h: u16) -> IMG {
-        let mut result = IMG::new(w, h, IMG::Color::from_rgba(0, 0, 0, 0));
+        let mut result = IMG::new(w, h, TRANSPARENT);
 
         for i in 0..w {
             for j in 0..h {
@@ -596,11 +582,11 @@ impl<IMG: Bitmap + Debug> State<IMG> {
         imgs
     }
 
-    pub fn visible_pixel(&self, x: u16, y: u16) -> IMG::Color {
+    pub fn visible_pixel(&self, x: u16, y: u16) -> Color {
         let mut result = if self.layer(0).visible {
             self.layer_canvas(0).pixel(x, y)
         } else {
-            IMG::Color::from_rgba(0, 0, 0, 0)
+            TRANSPARENT
         };
 
         for i in 1..self.layers.len() {

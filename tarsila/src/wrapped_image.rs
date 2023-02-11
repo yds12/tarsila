@@ -1,13 +1,11 @@
-use lapix::Bitmap;
+use lapix::{Bitmap, Color};
 use macroquad::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct WrappedImage(pub Image);
 
 impl Bitmap for WrappedImage {
-    type Color = [u8; 4];
-
-    fn new(width: u16, height: u16, color: Self::Color) -> Self {
+    fn new(width: u16, height: u16, color: Color) -> Self {
         let bytes = vec![0; width as usize * height as usize * 4];
         let mut img = Self(Image {
             bytes,
@@ -32,26 +30,26 @@ impl Bitmap for WrappedImage {
         self.0.height() as u16
     }
 
-    fn pixel(&self, x: u16, y: u16) -> Self::Color {
+    fn pixel(&self, x: u16, y: u16) -> Color {
         let x = x as usize;
         let y = y as usize;
         let base_idx = y * 4 * self.width() as usize + x * 4;
-        [
+        Color::new(
             self.0.bytes[base_idx],
             self.0.bytes[base_idx + 1],
             self.0.bytes[base_idx + 2],
             self.0.bytes[base_idx + 3],
-        ]
+        )
     }
 
-    fn set_pixel(&mut self, x: u16, y: u16, color: Self::Color) {
+    fn set_pixel(&mut self, x: u16, y: u16, color: Color) {
         let x = x as usize;
         let y = y as usize;
         let base_idx = y * 4 * self.width() as usize + x * 4;
-        self.0.bytes[base_idx] = color[0];
-        self.0.bytes[base_idx + 1] = color[1];
-        self.0.bytes[base_idx + 2] = color[2];
-        self.0.bytes[base_idx + 3] = color[3];
+        self.0.bytes[base_idx] = color.r;
+        self.0.bytes[base_idx + 1] = color.g;
+        self.0.bytes[base_idx + 2] = color.b;
+        self.0.bytes[base_idx + 3] = color.a;
     }
 
     fn bytes(&self) -> &[u8] {

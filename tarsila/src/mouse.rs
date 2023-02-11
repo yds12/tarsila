@@ -59,7 +59,7 @@ impl MouseManager {
                     }
                     Tool::Eyedropper => {
                         let color = self.visible_pixel_on_mouse.unwrap();
-                        events.push(Event::SetMainColor(color).into());
+                        events.push(Event::SetMainColor(color.into()).into());
                         events.push(Event::SetTool(Tool::Brush).into());
                     }
                     Tool::Bucket => {

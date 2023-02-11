@@ -2,16 +2,16 @@ pub use crate::{Bitmap, CanvasEffect, Color, Tool};
 use std::path::PathBuf;
 
 #[derive(Debug)]
-pub enum Event<IMG: Bitmap> {
+pub enum Event {
     ClearCanvas,
     ResizeCanvas(u16, u16),
     BrushStart,
     BrushStroke(u16, u16),
     BrushEnd,
     SetTool(Tool),
-    SetMainColor(IMG::Color),
-    AddToPalette(IMG::Color),
-    RemoveFromPalette(IMG::Color),
+    SetMainColor(Color),
+    AddToPalette(Color),
+    RemoveFromPalette(Color),
     Save(PathBuf),
     OpenFile(PathBuf),
     LoadPalette(PathBuf),
@@ -43,7 +43,7 @@ pub enum Event<IMG: Bitmap> {
     Undo,
 }
 
-impl<IMG: Bitmap> Clone for Event<IMG> {
+impl Clone for Event {
     fn clone(&self) -> Self {
         match self {
             Self::ClearCanvas => Self::ClearCanvas,
@@ -88,7 +88,7 @@ impl<IMG: Bitmap> Clone for Event<IMG> {
     }
 }
 
-impl<IMG: Bitmap> PartialEq for Event<IMG> {
+impl PartialEq for Event {
     fn eq(&self, value: &Self) -> bool {
         match (self, value) {
             (Self::ClearCanvas, Self::ClearCanvas) => true,
@@ -135,7 +135,7 @@ impl<IMG: Bitmap> PartialEq for Event<IMG> {
     }
 }
 
-impl<IMG: Bitmap> Event<IMG> {
+impl Event {
     // TODO: maybe this should return a vec of fx, not a single one
     pub fn canvas_effect(&self) -> CanvasEffect {
         match self {

@@ -64,12 +64,12 @@ impl Toolbar {
                     ];
 
                     if colorpicker.changed() || text_edit.changed() {
-                        events.push(Event::SetMainColor(color).into());
+                        events.push(Event::SetMainColor(color.into()).into());
                     }
 
                     let btn = ui.button("+").on_hover_text("add to palette");
                     if btn.clicked() {
-                        events.push(Event::AddToPalette(color).into());
+                        events.push(Event::AddToPalette(color.into()).into());
                     }
                 });
 
