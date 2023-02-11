@@ -56,8 +56,6 @@ pub struct State<IMG: Bitmap> {
     main_color: IMG::Color,
     spritesheet: Size<u8>,
     palette: Vec<IMG::Color>,
-    // TODO: selection cannot just be a rectangle, it has to distinguish between
-    // being a canvas selection, or a free object selection
     selection: Option<Selection>,
     free_image: Option<FreeImage<IMG>>,
     clipboard: Option<IMG>,
@@ -162,6 +160,21 @@ impl<IMG: Bitmap + Debug> State<IMG> {
                     _ => (),
                 }
             }
+            Event::Erase(x, y) => {
+                let last_event = self.events.last();
+
+                let color = Color::from_rgba(0, 0, 0, 0);
+                match last_event {
+                    Some(Event::Erase(x0, y0)) => {
+                        let p0 = (*x0, *y0).into();
+                        self.canvas_mut().line(p0, (x, y).into(), color);
+                    }
+                    Some(Event::EraseStart) => {
+                        self.canvas_mut().set_pixel(x, y, color);
+                    }
+                    _ => (),
+                }
+            }
             Event::SetTool(tool) => self.tool = tool,
             Event::SetMainColor(color) => self.main_color = color,
             Event::Save(path) => self.save_image(path.to_string_lossy().as_ref()),
@@ -180,12 +193,6 @@ impl<IMG: Bitmap + Debug> State<IMG> {
                 let color = self.main_color;
                 self.canvas_mut().bucket(x, y, color);
                 self.canvas_mut().finish_editing_bundle();
-            }
-            Event::Erase(x, y) => {
-                if self.canvas_mut().pixel(x, y) != IMG::Color::from_rgba(0, 0, 0, 0) {
-                    self.canvas_mut()
-                        .set_pixel(x, y, IMG::Color::from_rgba(0, 0, 0, 0))
-                }
             }
             Event::ClearSelection => (),
             Event::StartSelection(_, _) => (),
