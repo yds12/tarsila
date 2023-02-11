@@ -36,6 +36,7 @@ Features (+ means done, (-) means least important):
 - Save and load images (+)
   - Choose Scaled [v0.2]
   - Different formats (PNG (+), JPEG (+), GIF)
+  - save/load project files
 - Preview (+)
   - Real size (+)
   - Animation (+)
@@ -52,7 +53,7 @@ Features (+ means done, (-) means least important):
     - Different color on right and left click
   - Bucket (+)
     - adjustable tolerance [v0.2]
-    - all areas with same color [v0.2]
+    - all areas with same color [v0.1]
     - gradient
   - Shapes
     - Lines (+)

@@ -33,6 +33,7 @@ pub enum Event<IMG: Bitmap> {
     StartSelection(u16, u16),
     EndSelection(u16, u16),
     ClearSelection,
+    DeleteSelection,
     MoveStart(u16, u16),
     MoveEnd(u16, u16),
     Copy,
@@ -46,6 +47,7 @@ impl<IMG: Bitmap> Clone for Event<IMG> {
     fn clone(&self) -> Self {
         match self {
             Self::ClearCanvas => Self::ClearCanvas,
+            Self::DeleteSelection => Self::DeleteSelection,
             Self::EraseStart => Self::EraseStart,
             Self::EraseEnd => Self::EraseEnd,
             Self::NewLayerAbove => Self::NewLayerAbove,
@@ -99,6 +101,7 @@ impl<IMG: Bitmap> PartialEq for Event<IMG> {
             (Self::NewLayerBelow, Self::NewLayerBelow) => true,
             (Self::Copy, Self::Copy) => true,
             (Self::ClearSelection, Self::ClearSelection) => true,
+            (Self::DeleteSelection, Self::DeleteSelection) => true,
             (Self::FlipHorizontal, Self::FlipHorizontal) => true,
             (Self::FlipVertical, Self::FlipVertical) => true,
             (Self::ResizeCanvas(x, y), Self::ResizeCanvas(i, j)) => x == i && y == j,
@@ -137,6 +140,7 @@ impl<IMG: Bitmap> Event<IMG> {
     pub fn canvas_effect(&self) -> CanvasEffect {
         match self {
             Self::ClearCanvas
+            | Self::DeleteSelection
             | Self::BrushStart
             | Self::BrushStroke(_, _)
             | Self::LineEnd(_, _)
@@ -158,6 +162,7 @@ impl<IMG: Bitmap> Event<IMG> {
     pub fn is_drawing_event(&self) -> bool {
         match self {
             Self::BrushStart
+            | Self::DeleteSelection
             | Self::BrushStroke(_, _)
             | Self::LineStart(_, _)
             | Self::LineEnd(_, _)
@@ -186,6 +191,7 @@ impl<IMG: Bitmap> Event<IMG> {
     pub fn undoable(&self) -> bool {
         match self {
             Self::ClearCanvas
+            | Self::DeleteSelection
             | Self::ResizeCanvas(_, _)
             | Self::BrushStart
             | Self::BrushStroke(_, _)
@@ -222,6 +228,7 @@ impl<IMG: Bitmap> Event<IMG> {
         match self {
             Self::SetTool(Tool::Brush)
             | Self::ClearSelection
+            | Self::DeleteSelection
             | Self::SetTool(Tool::Eyedropper)
             | Self::SetTool(Tool::Eraser)
             | Self::SetTool(Tool::Rectangle)

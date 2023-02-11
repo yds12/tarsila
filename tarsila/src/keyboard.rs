@@ -68,6 +68,7 @@ impl KeyboardManager {
             (KeyCode::R, Event::SetTool(Tool::Rectangle)),
             (KeyCode::H, Event::FlipHorizontal),
             (KeyCode::V, Event::FlipVertical),
+            (KeyCode::Delete, Event::DeleteSelection),
         ];
         for (k, v) in kv {
             self.register_keypress_event(k, v);

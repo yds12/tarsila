@@ -24,3 +24,4 @@ Projects issues and bugs:
 22. Preview window gets too big and cannot be closed or resized
 23. Add tooltips to everything [ENH]
 24. Use default mouse pointer out of canvas
+25. Preview animation not affected by layer's alpha

@@ -214,6 +214,18 @@ impl<IMG: Bitmap + Debug> State<IMG> {
                 }
                 None => (),
             },
+            Event::DeleteSelection => {
+                match self.selection {
+                    Some(Selection::Canvas(rect)) =>
+                        self.canvas_mut()
+                            .set_area(rect, IMG::Color::from_rgba(0, 0, 0, 0)),
+                    Some(Selection::FreeImage) => {
+                        self.free_image = None;
+                        self.set_selection(None);
+                    }
+                    _ => ()
+                }
+            }
             Event::MoveStart(x, y) => match self.selection {
                 Some(Selection::Canvas(_)) => {
                     self.free_image_from_selection(Some((x, y).into()));
