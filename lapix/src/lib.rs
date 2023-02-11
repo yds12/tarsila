@@ -5,15 +5,20 @@ mod color;
 mod event;
 mod floating;
 pub mod graphics;
+mod layer;
+mod palette;
 pub mod primitives;
 mod state;
+mod util;
 
 pub use canvas::{Canvas, CanvasEffect};
 pub use color::Color;
 pub use event::Event;
 pub use floating::FreeImage;
+pub use layer::Layer;
+use palette::Palette;
 pub use primitives::*;
-pub use state::{Layer, Selection, State};
+pub use state::{Selection, State};
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum Tool {

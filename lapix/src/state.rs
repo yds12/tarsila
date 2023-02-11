@@ -1,46 +1,8 @@
 use crate::color::{BLACK, TRANSPARENT};
 use crate::{
-    graphics, Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Point, Position, Rect, Size,
-    Tool,
+    graphics, util, Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Layer, Palette, Point,
+    Position, Rect, Size, Tool,
 };
-
-const MAX_PALETTE: usize = 200;
-
-pub struct Layer<IMG: Bitmap> {
-    canvas: Canvas<IMG>,
-    visible: bool,
-    opacity: u8,
-}
-
-impl<IMG: Bitmap> Layer<IMG> {
-    pub fn new(width: u16, height: u16) -> Self {
-        Self {
-            canvas: Canvas::new(width, height),
-            visible: true,
-            opacity: 255,
-        }
-    }
-
-    pub fn canvas(&self) -> &Canvas<IMG> {
-        &self.canvas
-    }
-
-    pub fn canvas_mut(&mut self) -> &mut Canvas<IMG> {
-        &mut self.canvas
-    }
-
-    pub fn visible(&self) -> bool {
-        self.visible
-    }
-
-    pub fn opacity(&self) -> u8 {
-        self.opacity
-    }
-
-    pub fn resize(&mut self, w: u16, h: u16) {
-        self.canvas.resize(w, h);
-    }
-}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Selection {
@@ -55,7 +17,7 @@ pub struct State<IMG: Bitmap> {
     tool: Tool,
     main_color: Color,
     spritesheet: Size<u8>,
-    palette: Vec<Color>,
+    palette: Palette,
     selection: Option<Selection>,
     free_image: Option<FreeImage<IMG>>,
     clipboard: Option<IMG>,
@@ -70,22 +32,7 @@ impl<IMG: Bitmap> State<IMG> {
             tool: Tool::Brush,
             main_color: BLACK,
             spritesheet: Size::new(1, 1),
-            palette: vec![
-                Color::new(0, 0, 0, 255),       // BLACK
-                Color::new(255, 255, 255, 255), // WHITE
-                Color::new(255, 0, 0, 255),     // RED
-                Color::new(255, 127, 0, 255),   // RED + YELLOW = ORANGE
-                Color::new(255, 255, 0, 255),   // YELLOW
-                Color::new(127, 255, 0, 255),   // GREEN + YELLOW
-                Color::new(0, 255, 0, 255),     // GREEN
-                Color::new(0, 255, 127, 255),   // GREEN + CYAN
-                Color::new(0, 255, 255, 255),   // CYAN
-                Color::new(0, 127, 255, 255),   // BLUE + CYAN
-                Color::new(0, 0, 255, 255),     // BLUE
-                Color::new(127, 0, 255, 255),   // BLUE + MAGENTA
-                Color::new(255, 0, 255, 255),   // MAGENTA
-                Color::new(255, 0, 127, 255),   // RED + MAGENTA
-            ],
+            palette: Palette::default(),
             selection: None,
             free_image: None,
             clipboard: None,
@@ -130,17 +77,7 @@ impl<IMG: Bitmap> State<IMG> {
                     _ => panic!("rectangle not started!"),
                 };
                 let color = self.main_color;
-
-                // draw 4 lines
-                self.canvas_mut()
-                    .line((p.x, p.y).into(), (p.x, y).into(), color);
-                self.canvas_mut()
-                    .line((p.x, p.y).into(), (x, p.y).into(), color);
-                self.canvas_mut()
-                    .line((p.x, y).into(), (x, y).into(), color);
-                self.canvas_mut()
-                    .line((x, p.y).into(), (x, y).into(), color);
-
+                self.canvas_mut().rectangle(p, (x, y).into(), color);
                 self.canvas_mut().finish_editing_bundle();
                 self.free_image = None;
             }
@@ -178,15 +115,11 @@ impl<IMG: Bitmap> State<IMG> {
             Event::SetMainColor(color) => self.main_color = color,
             Event::Save(path) => self.save_image(path.to_string_lossy().as_ref()),
             Event::OpenFile(path) => self.open_image(path.to_string_lossy().as_ref()),
-            Event::LoadPalette(path) => self.load_palette(path.to_string_lossy().as_ref()),
-            Event::AddToPalette(color) => {
-                if !self.palette.contains(&color) {
-                    self.palette.push(color)
-                }
+            Event::LoadPalette(path) => {
+                self.palette = Palette::from_file(path.to_string_lossy().as_ref())
             }
-            Event::RemoveFromPalette(color) => {
-                self.palette.retain(|c| *c != color);
-            }
+            Event::AddToPalette(color) => self.palette.add_color(color),
+            Event::RemoveFromPalette(color) => self.palette.remove_color(color),
             Event::Bucket(x, y) => {
                 self.canvas_mut().start_editing_bundle();
                 let color = self.main_color;
@@ -199,14 +132,10 @@ impl<IMG: Bitmap> State<IMG> {
                 let last_event = self.events.last();
 
                 if let Some(Event::StartSelection(x0, y0)) = last_event {
-                    let (x, y, w, h) = match (*x0, *y0, x, y) {
-                        (x0, y0, x, y) if x0 <= x && y0 <= y => (x0, y0, x - x0, y - y0),
-                        (x0, y0, x, y) if x0 > x && y0 <= y => (x, y0, x0 - x, y - y0),
-                        (x0, y0, x, y) if x0 > x && y0 > y => (x, y, x0 - x, y0 - y),
-                        (x0, y0, x, y) if x0 <= x && y0 > y => (x0, y, x - x0, y0 - y),
-                        _ => unreachable!(),
-                    };
-
+                    let w = (x as i32 - *x0 as i32).abs() as u16;
+                    let h = (y as i32 - *y0 as i32).abs() as u16;
+                    let x = std::cmp::min(*x0, x);
+                    let y = std::cmp::min(*y0, y);
                     let rect = Rect::new(x, y, w + 1, h + 1);
                     self.set_selection(Some(Selection::Canvas(rect)));
                 }
@@ -221,7 +150,9 @@ impl<IMG: Bitmap> State<IMG> {
                 None => (),
             },
             Event::DeleteSelection => match self.selection {
-                Some(Selection::Canvas(rect)) => self.canvas_mut().set_area(rect, TRANSPARENT),
+                Some(Selection::Canvas(rect)) => {
+                    self.canvas_mut().set_area(rect, TRANSPARENT);
+                }
                 Some(Selection::FreeImage) => {
                     self.free_image = None;
                     self.set_selection(None);
@@ -353,11 +284,11 @@ impl<IMG: Bitmap> State<IMG> {
     }
 
     fn change_layer_visibility(&mut self, index: usize, visible: bool) {
-        self.layers[index].visible = visible;
+        self.layers[index].set_visibility(visible);
     }
 
     fn change_layer_opacity(&mut self, index: usize, opacity: u8) {
-        self.layers[index].opacity = opacity;
+        self.layers[index].set_opacity(opacity);
     }
 
     pub fn spritesheet(&self) -> Size<u8> {
@@ -374,7 +305,7 @@ impl<IMG: Bitmap> State<IMG> {
     }
 
     pub fn palette(&self) -> &[Color] {
-        &self.palette
+        self.palette.inner()
     }
 
     pub fn selection(&self) -> Option<Selection> {
@@ -422,7 +353,6 @@ impl<IMG: Bitmap> State<IMG> {
                 self.update_line_preview((*x as i32, *y as i32).into(), mouse_canvas)
             }
             Some(Event::RectStart(x, y)) => {
-                // TODO: rectangle preview
                 self.update_rect_preview((*x as i32, *y as i32).into(), mouse_canvas)
             }
             _ => (),
@@ -449,54 +379,43 @@ impl<IMG: Bitmap> State<IMG> {
     }
 
     fn update_line_preview(&mut self, p0: Point<i32>, p: Point<i32>) {
-        let line = graphics::line(p0, p);
         let (xspan, yspan) = ((p.x - p0.x).abs(), (p.y - p0.y).abs());
 
         if xspan == 0 && yspan == 0 {
             return;
         }
 
-        let mut img = IMG::new(xspan as u16 + 1, yspan as u16 + 1, TRANSPARENT);
-
         let offset = Point::new(
             std::cmp::min(p.x, p0.x) as i32,
             std::cmp::min(p.y, p0.y) as i32,
         );
-        for point in line {
-            let x = (point.x - offset.x) as u16;
-            let y = (point.y - offset.y) as u16;
-            img.set_pixel(x, y, self.main_color());
-        }
 
-        self.free_image = Some(FreeImage::new(offset.x, offset.y, img));
+        self.free_image = Some(FreeImage::from_pixels(
+            (xspan as u16 + 1, yspan as u16 + 1).into(),
+            graphics::line(p0, p),
+            self.main_color(),
+            offset,
+        ));
     }
 
     fn update_rect_preview(&mut self, p0: Point<i32>, p: Point<i32>) {
-        let l1 = graphics::line((p0.x, p0.y).into(), (p0.x, p.y).into());
-        let l2 = graphics::line((p0.x, p0.y).into(), (p.x, p0.y).into());
-        let l3 = graphics::line((p.x, p0.y).into(), (p.x, p.y).into());
-        let l4 = graphics::line((p0.x, p.y).into(), (p.x, p.y).into());
-        let rect = vec![l1, l2, l3, l4].into_iter().flatten();
-
         let (xspan, yspan) = ((p.x - p0.x).abs(), (p.y - p0.y).abs());
 
         if xspan == 0 && yspan == 0 {
             return;
         }
 
-        let mut img = IMG::new(xspan as u16 + 1, yspan as u16 + 1, TRANSPARENT);
-
         let offset = Point::new(
             std::cmp::min(p.x, p0.x) as i32,
             std::cmp::min(p.y, p0.y) as i32,
         );
-        for point in rect {
-            let x = (point.x - offset.x) as u16;
-            let y = (point.y - offset.y) as u16;
-            img.set_pixel(x, y, self.main_color());
-        }
 
-        self.free_image = Some(FreeImage::new(offset.x, offset.y, img));
+        self.free_image = Some(FreeImage::from_pixels(
+            (xspan as u16 + 1, yspan as u16 + 1).into(),
+            graphics::rectangle(p0, p),
+            self.main_color(),
+            offset,
+        ));
     }
 
     fn save_image(&self, path: &str) {
@@ -513,7 +432,7 @@ impl<IMG: Bitmap> State<IMG> {
     }
 
     fn open_image(&mut self, path: &str) {
-        let img = self.load_img_from_file(path);
+        let img = util::load_img_from_file(path);
         self.canvas_mut()
             .resize(img.width() as u16, img.height() as u16);
 
@@ -521,29 +440,6 @@ impl<IMG: Bitmap> State<IMG> {
             let color = Color::new(pixel.0[0], pixel.0[1], pixel.0[2], pixel.0[3]);
             self.canvas_mut().set_pixel(x as u16, y as u16, color);
         }
-    }
-
-    fn load_palette(&mut self, path: &str) {
-        let img = self.load_img_from_file(path);
-        self.palette = Vec::new();
-
-        for (_, _, pixel) in img.enumerate_pixels() {
-            let color = Color::new(pixel.0[0], pixel.0[1], pixel.0[2], pixel.0[3]);
-
-            if !self.palette.contains(&color) {
-                self.palette.push(color);
-            }
-
-            if self.palette.len() >= MAX_PALETTE {
-                break;
-            }
-        }
-    }
-
-    fn load_img_from_file(&self, path: &str) -> image::RgbaImage {
-        use image::io::Reader as ImageReader;
-        let img = ImageReader::open(path).unwrap().decode().unwrap();
-        img.into_rgba8()
     }
 
     pub fn blended_layers(&self) -> IMG {
@@ -583,14 +479,14 @@ impl<IMG: Bitmap> State<IMG> {
     }
 
     pub fn visible_pixel(&self, x: u16, y: u16) -> Color {
-        let mut result = if self.layer(0).visible {
+        let mut result = if self.layer(0).visible() {
             self.layer_canvas(0).pixel(x, y)
         } else {
             TRANSPARENT
         };
 
         for i in 1..self.layers.len() {
-            if !self.layer(i).visible {
+            if !self.layer(i).visible() {
                 continue;
             }
 

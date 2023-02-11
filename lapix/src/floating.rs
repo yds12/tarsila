@@ -1,4 +1,5 @@
-use crate::{Bitmap, Canvas, Point, Rect};
+use crate::color::TRANSPARENT;
+use crate::{Bitmap, Canvas, Color, Point, Position, Rect, Size};
 
 pub struct FreeImage<IMG: Bitmap> {
     pub rect: Rect<i32>,
@@ -25,6 +26,22 @@ impl<IMG: Bitmap> FreeImage<IMG> {
             texture: canvas.img_from_area(area),
             pivot,
         }
+    }
+
+    pub fn from_pixels(
+        size: Size<u16>,
+        pixels: Vec<Point<i32>>,
+        color: Color,
+        offset: Position<i32>,
+    ) -> Self {
+        let mut img = IMG::new(size.x, size.y, TRANSPARENT);
+        for point in pixels {
+            let x = (point.x - offset.x) as u16;
+            let y = (point.y - offset.y) as u16;
+            img.set_pixel(x, y, color);
+        }
+
+        Self::new(offset.x, offset.y, img)
     }
 
     pub fn move_by_pivot(&mut self, p: Point<i32>) {

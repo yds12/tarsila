@@ -192,6 +192,16 @@ impl<IMG: Bitmap> Canvas<IMG> {
         }
     }
 
+    pub fn rectangle(&mut self, p1: Point<u16>, p2: Point<u16>, color: Color) {
+        let p1 = Point::new(p1.x as i32, p1.y as i32);
+        let p2 = Point::new(p2.x as i32, p2.y as i32);
+        let rect = graphics::rectangle(p1, p2);
+
+        for p in rect {
+            self.set_pixel(p.x as u16, p.y as u16, color);
+        }
+    }
+
     pub fn set_area(&mut self, area: Rect<u16>, color: Color) {
         for i in 0..area.w {
             for j in 0..area.h {

@@ -29,6 +29,15 @@ pub fn line(p1: Point<i32>, p2: Point<i32>) -> Vec<Point<i32>> {
     line
 }
 
+pub fn rectangle(p1: Point<i32>, p2: Point<i32>) -> Vec<Point<i32>> {
+    let l1 = line((p1.x, p1.y).into(), (p1.x, p2.y).into());
+    let l2 = line((p1.x, p1.y).into(), (p2.x, p1.y).into());
+    let l3 = line((p2.x, p1.y).into(), (p2.x, p2.y).into());
+    let l4 = line((p1.x, p2.y).into(), (p2.x, p2.y).into());
+
+    vec![l1, l2, l3, l4].into_iter().flatten().collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
