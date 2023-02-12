@@ -2,7 +2,7 @@ Projects issues and bugs:
 
 1. Line stroke is not registered when passing out of screen
 2. Line stroke is not pixel perfect [ENH]
-3. When interacting with UI elements, draws on canvas behind [DONE]
+3. When interacting with UI elements, draws on canvas behind
 4. Undo not working with canvas resizes
 5. When line is started outside of canvas, we do not register the line start
 6. Need some way of controlling the repetition of keydown time [DONE]
@@ -21,7 +21,7 @@ Projects issues and bugs:
 19. Optimize syncing of preview and palette images (don't need to generate every single frame [ENH]
 20. Create mouse manager, and store events to be ran on mouse release [DONE]
 21. Cannot type on spritesheet size textboxes if intermediate values are not valid spritesheet sizes[DONE]
-22. Preview window gets too big and cannot be closed or resized
+22. Preview window gets too big and cannot be closed or resized [DONE]
 23. Add tooltips to everything [ENH]
 24. Use default mouse pointer out of canvas
 25. Preview animation not affected by layer's alpha

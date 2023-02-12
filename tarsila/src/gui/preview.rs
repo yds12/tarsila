@@ -37,6 +37,7 @@ impl Preview {
 
     pub fn update(&mut self, egui_ctx: &egui::Context) {
         egui::Window::new("Preview")
+            .scroll2([true, true])
             .anchor(egui::Align2::RIGHT_BOTTOM, (-15., -15.))
             .show(egui_ctx, |ui| {
                 let label = ui.label("scale:");
@@ -60,7 +61,9 @@ impl Preview {
                             .load_texture("", image.clone(), egui::TextureOptions::NEAREST)
                     });
                     let scale = self.scale.parse().unwrap_or(1.);
-                    ui.image(tex, tex.size_vec2() * scale);
+                    let image = egui::Image::new(tex, tex.size_vec2() * scale)
+                        .bg_fill(egui::Color32::LIGHT_GRAY);
+                    ui.add(image);
                 }
             });
     }
