@@ -1,5 +1,5 @@
 use crate::color::TRANSPARENT;
-use crate::{Bitmap, Canvas, Color, Point, Position, Rect, Size};
+use crate::{graphics, Bitmap, Canvas, Color, Point, Position, Rect, Size};
 
 pub struct FreeImage<IMG: Bitmap> {
     pub rect: Rect<i32>,
@@ -40,6 +40,30 @@ impl<IMG: Bitmap> FreeImage<IMG> {
         }
 
         Self::new(offset, img)
+    }
+
+    pub fn line_preview(p0: Point<i32>, p: Point<i32>, color: Color) -> Option<Self> {
+        let span = p.abs_diff(p0);
+        let offset = p.rect_min_corner(p0);
+
+        Some(FreeImage::from_pixels(
+            span + Point::ONE,
+            graphics::line(p0, p),
+            color,
+            offset,
+        ))
+    }
+
+    pub fn rect_preview(p0: Point<i32>, p: Point<i32>, color: Color) -> Option<Self> {
+        let span = p.abs_diff(p0);
+        let offset = p.rect_min_corner(p0);
+
+        Some(FreeImage::from_pixels(
+            span + Point::ONE,
+            graphics::rectangle(p0, p),
+            color,
+            offset,
+        ))
     }
 
     pub fn move_by_pivot(&mut self, p: Point<i32>) {

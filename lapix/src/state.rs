@@ -367,48 +367,16 @@ impl<IMG: Bitmap> State<IMG> {
     }
 
     fn update_line_preview(&mut self, p0: Point<i32>, p: Point<i32>) {
-        let span = p.abs_diff(p0);
-        if span == Point::ZERO {
-            return;
-        }
-
-        let offset = p.rect_min_corner(p0);
-
-        self.free_image = Some(FreeImage::from_pixels(
-            span + Point::ONE,
-            graphics::line(p0, p),
-            self.main_color(),
-            offset,
-        ));
+        self.free_image = FreeImage::line_preview(p0, p, self.main_color());
     }
 
     fn update_rect_preview(&mut self, p0: Point<i32>, p: Point<i32>) {
-        let span = p.abs_diff(p0);
-        if span == Point::ZERO {
-            return;
-        }
-
-        let offset = p.rect_min_corner(p0);
-
-        self.free_image = Some(FreeImage::from_pixels(
-            span + Point::ONE,
-            graphics::rectangle(p0, p),
-            self.main_color(),
-            offset,
-        ));
+        self.free_image = FreeImage::rect_preview(p0, p, self.main_color());
     }
 
     fn save_image(&self, path: &str) {
         let blended = self.blended_layers();
-        let bytes = blended.bytes();
-
-        let img = image::RgbaImage::from_raw(
-            self.canvas().width() as u32,
-            self.canvas().height() as u32,
-            bytes.to_owned(),
-        )
-        .expect("Failed to generate image from bytes");
-        img.save(path).expect("Failed to save image");
+        util::save_image(blended, path);
     }
 
     fn open_image(&mut self, path: &str) {
