@@ -1,5 +1,5 @@
 use crate::{Effect, UiEvent};
-use lapix::{Event, Point, Size, Tool};
+use lapix::{Event, Point, Position, Size, Tool};
 use macroquad::prelude::*;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -31,7 +31,7 @@ impl Resources {
     }
 }
 
-fn draw_texture_helper(texture: Texture2D, x: f32, y: f32, scale: f32) {
+fn draw_texture_helper(texture: Texture2D, p: Position<f32>, scale: f32) {
     let w = texture.width();
     let h = texture.height();
 
@@ -43,7 +43,7 @@ fn draw_texture_helper(texture: Texture2D, x: f32, y: f32, scale: f32) {
         ..Default::default()
     };
 
-    draw_texture_ex(texture, x, y, WHITE, params);
+    draw_texture_ex(texture, p.x, p.y, WHITE, params);
 }
 
 pub struct Gui {
@@ -144,7 +144,7 @@ impl Gui {
             let btn = ui.button("Resize canvas");
             if btn.clicked() {
                 if let (Ok(w), Ok(h)) = (self.canvas_size.0.parse(), self.canvas_size.1.parse()) {
-                    events.push(Event::ResizeCanvas(w, h).into());
+                    events.push(Event::ResizeCanvas((w, h).into()).into());
                 }
             }
 
@@ -168,7 +168,7 @@ impl Gui {
                 if btn.clicked() {
                     if let (Ok(w), Ok(h)) = (self.spritesheet.0.parse(), self.spritesheet.1.parse())
                     {
-                        events.push(Event::SetSpritesheet(w, h).into());
+                        events.push(Event::SetSpritesheet((w, h).into()).into());
                     }
                 }
             });
@@ -252,6 +252,10 @@ impl ToolCursor {
 
     pub fn draw(&self) {
         let (x, y) = mouse_position();
-        draw_texture_helper(self.texture, x + self.offset.x, y + self.offset.y, 1.)
+        draw_texture_helper(
+            self.texture,
+            (x + self.offset.x, y + self.offset.y).into(),
+            1.,
+        )
     }
 }

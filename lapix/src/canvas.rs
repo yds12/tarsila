@@ -12,13 +12,13 @@ pub enum CanvasEffect {
 #[derive(Debug)]
 pub enum CanvasAtomicEdit {
     ChangePixel {
-        position: Position<u16>,
+        position: Position<i32>,
         old: Color,
         new: Color,
     },
     ChangeSize {
-        old: Size<u16>,
-        new: Size<u16>,
+        old: Size<i32>,
+        new: Size<i32>,
     },
 }
 
@@ -45,12 +45,8 @@ impl CanvasEdit {
     pub fn push(&mut self, edit: CanvasAtomicEdit) {
         self.0.push(edit);
     }
-    pub fn set_pixel(x: u16, y: u16, old: Color, new: Color) -> Self {
-        Self(vec![CanvasAtomicEdit::ChangePixel {
-            position: Position::new(x, y),
-            old,
-            new,
-        }])
+    pub fn set_pixel(position: Position<i32>, old: Color, new: Color) -> Self {
+        Self(vec![CanvasAtomicEdit::ChangePixel { position, old, new }])
     }
     pub fn undo(&self) -> CanvasEdit {
         let mut edits = Vec::new();
@@ -69,9 +65,9 @@ pub struct Canvas<IMG: Bitmap> {
 }
 
 impl<IMG: Bitmap> Canvas<IMG> {
-    pub fn new(width: u16, height: u16) -> Self {
+    pub fn new(size: Size<i32>) -> Self {
         Self {
-            inner: IMG::new(width, height, TRANSPARENT),
+            inner: IMG::new(size, TRANSPARENT),
             edits: Vec::new(),
             cur_edit_bundle: None,
         }
@@ -81,19 +77,19 @@ impl<IMG: Bitmap> Canvas<IMG> {
         &self.inner
     }
 
-    pub fn size(&self) -> Size<u16> {
-        (self.width(), self.height()).into()
+    pub fn size(&self) -> Size<i32> {
+        self.inner.size()
     }
 
-    pub fn width(&self) -> u16 {
+    pub fn width(&self) -> i32 {
         self.inner.width()
     }
 
-    pub fn height(&self) -> u16 {
+    pub fn height(&self) -> i32 {
         self.inner.height()
     }
 
-    pub fn rect(&self) -> Rect<u16> {
+    pub fn rect(&self) -> Rect<i32> {
         Rect::new(0, 0, self.width(), self.height())
     }
 
@@ -102,14 +98,14 @@ impl<IMG: Bitmap> Canvas<IMG> {
     }
 
     pub fn is_in_bounds(&self, p: Point<i32>) -> bool {
-        p.x >= 0 && p.y >= 0 && (p.x as u16) < self.width() && (p.y as u16) < self.height()
+        p.x >= 0 && p.y >= 0 && p.x < self.width() && p.y < self.height()
     }
 
     fn undo_edit(&mut self, edit: CanvasAtomicEdit) -> CanvasEffect {
         // TODO: isn't this supposed to be in CanvasAtomicEdit?
         match edit {
             CanvasAtomicEdit::ChangePixel { position, old, .. } => {
-                self.inner.set_pixel(position.x, position.y, old);
+                self.inner.set_pixel(position, old);
 
                 CanvasEffect::Update
             }
@@ -133,22 +129,18 @@ impl<IMG: Bitmap> Canvas<IMG> {
         effect
     }
 
-    fn register_set_pixel(&mut self, x: u16, y: u16, old: Color, new: Color) {
+    fn register_set_pixel(&mut self, position: Position<i32>, old: Color, new: Color) {
         if let Some(edit_bundle) = self.cur_edit_bundle.as_mut() {
-            edit_bundle.push(CanvasAtomicEdit::ChangePixel {
-                position: (x, y).into(),
-                old,
-                new,
-            });
+            edit_bundle.push(CanvasAtomicEdit::ChangePixel { position, old, new });
         }
     }
 
     pub fn clear(&mut self) {
-        self.inner = IMG::new(self.width(), self.height(), TRANSPARENT);
+        self.inner = IMG::new(self.size(), TRANSPARENT);
     }
 
-    pub fn resize(&mut self, width: u16, height: u16) {
-        let new_img = IMG::new(width, height, TRANSPARENT);
+    pub fn resize(&mut self, size: Size<i32>) {
+        let new_img = IMG::new(size, TRANSPARENT);
         let old_img = std::mem::replace(&mut self.inner, new_img);
         self.inner.set_from(old_img);
     }
@@ -165,47 +157,43 @@ impl<IMG: Bitmap> Canvas<IMG> {
         }
     }
 
-    pub fn pixel(&self, x: u16, y: u16) -> Color {
-        self.inner.pixel(x, y)
+    pub fn pixel(&self, p: Point<i32>) -> Color {
+        self.inner.pixel(p)
     }
 
-    pub fn set_pixel(&mut self, x: u16, y: u16, color: Color) {
-        if x < self.width() && y < self.height() {
-            let old = self.inner.pixel(x, y);
+    pub fn set_pixel(&mut self, p: Point<i32>, color: Color) {
+        if self.is_in_bounds(p) {
+            let old = self.inner.pixel(p);
 
             if color == old {
                 return;
             }
 
-            self.register_set_pixel(x, y, old, color);
-            self.inner.set_pixel(x, y, color);
+            self.register_set_pixel(p, old, color);
+            self.inner.set_pixel(p, color);
         }
     }
 
-    pub fn line(&mut self, p1: Point<u16>, p2: Point<u16>, color: Color) {
-        let p1 = Point::new(p1.x as i32, p1.y as i32);
-        let p2 = Point::new(p2.x as i32, p2.y as i32);
+    pub fn line(&mut self, p1: Point<i32>, p2: Point<i32>, color: Color) {
         let line = graphics::line(p1, p2);
 
         for p in line {
-            self.set_pixel(p.x as u16, p.y as u16, color);
+            self.set_pixel(p, color);
         }
     }
 
-    pub fn rectangle(&mut self, p1: Point<u16>, p2: Point<u16>, color: Color) {
-        let p1 = Point::new(p1.x as i32, p1.y as i32);
-        let p2 = Point::new(p2.x as i32, p2.y as i32);
+    pub fn rectangle(&mut self, p1: Point<i32>, p2: Point<i32>, color: Color) {
         let rect = graphics::rectangle(p1, p2);
 
         for p in rect {
-            self.set_pixel(p.x as u16, p.y as u16, color);
+            self.set_pixel(p, color);
         }
     }
 
-    pub fn set_area(&mut self, area: Rect<u16>, color: Color) {
+    pub fn set_area(&mut self, area: Rect<i32>, color: Color) {
         for i in 0..area.w {
             for j in 0..area.h {
-                self.set_pixel(i + area.x, j + area.y, color);
+                self.set_pixel((i + area.x, j + area.y).into(), color);
             }
         }
     }
@@ -214,21 +202,21 @@ impl<IMG: Bitmap> Canvas<IMG> {
         self.start_editing_bundle();
         for i in 0..obj.rect.w {
             for j in 0..obj.rect.h {
-                let color = obj.texture.pixel(i as u16, j as u16);
-                let x = (i + obj.rect.x) as u16;
-                let y = (j + obj.rect.y) as u16;
+                let ij = Point::new(i, j);
+                let color = obj.texture.pixel(ij);
+                let p = ij + obj.rect.pos();
 
-                if self.is_in_bounds((x as i32, y as i32).into()) {
-                    let blended = color.blend_over(self.pixel(x, y));
-                    self.set_pixel(x, y, blended);
+                if self.is_in_bounds(p) {
+                    let blended = color.blend_over(self.pixel(p));
+                    self.set_pixel(p, blended);
                 }
             }
         }
         self.finish_editing_bundle();
     }
 
-    pub fn bucket(&mut self, x: u16, y: u16, color: Color) {
-        let old_color = self.inner.pixel(x, y);
+    pub fn bucket(&mut self, p: Point<i32>, color: Color) {
+        let old_color = self.inner.pixel(p);
 
         if color == old_color {
             return;
@@ -238,7 +226,7 @@ impl<IMG: Bitmap> Canvas<IMG> {
         let h = self.inner.height() as usize;
 
         let mut marked = vec![false; w * h];
-        let mut visit = vec![(x, y)];
+        let mut visit = vec![(p.x, p.y)];
 
         loop {
             if visit.is_empty() {
@@ -248,12 +236,12 @@ impl<IMG: Bitmap> Canvas<IMG> {
             let mut new_visit = Vec::new();
             while let Some((vx, vy)) = visit.pop() {
                 marked[(vy as usize) * w + vx as usize] = true;
-                self.set_pixel(vx, vy, color);
+                self.set_pixel((vx, vy).into(), color);
 
                 for n in self.neighbors(vx, vy) {
                     if let Some((nx, ny)) = n {
                         let ind = (ny as usize) * w + nx as usize;
-                        if self.inner.pixel(nx, ny) == old_color && !marked[ind] {
+                        if self.inner.pixel((nx, ny).into()) == old_color && !marked[ind] {
                             new_visit.push((nx, ny));
                             marked[ind] = true;
                         }
@@ -265,7 +253,7 @@ impl<IMG: Bitmap> Canvas<IMG> {
         }
     }
 
-    fn neighbors(&self, x: u16, y: u16) -> [Option<(u16, u16)>; 4] {
+    fn neighbors(&self, x: i32, y: i32) -> [Option<(i32, i32)>; 4] {
         let mut neighbors = [None; 4];
         let w = self.inner.width();
         let h = self.inner.height();
@@ -287,16 +275,16 @@ impl<IMG: Bitmap> Canvas<IMG> {
     }
 
     pub fn img_from_area(&self, area: Rect<i32>) -> IMG {
-        let mut img = IMG::new(area.w as u16, area.h as u16, TRANSPARENT);
+        let mut img = IMG::new((area.w, area.h).into(), TRANSPARENT);
 
         for i in 0..area.w {
             for j in 0..area.h {
-                let x = (area.x + i) as u16;
-                let y = (area.y + j) as u16;
+                let ij = Point::new(i, j);
+                let p = area.pos() + ij;
 
-                if x < self.width() && y < self.height() {
-                    let color = self.pixel(x, y);
-                    img.set_pixel(i as u16, j as u16, color);
+                if p.x < self.width() && p.y < self.height() {
+                    let color = self.pixel(p);
+                    img.set_pixel(ij, color);
                 }
             }
         }

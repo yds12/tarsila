@@ -6,7 +6,7 @@ use crate::{
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Selection {
-    Canvas(Rect<u16>),
+    Canvas(Rect<i32>),
     FreeImage,
 }
 
@@ -24,9 +24,9 @@ pub struct State<IMG: Bitmap> {
 }
 
 impl<IMG: Bitmap> State<IMG> {
-    pub fn new(width: u16, height: u16) -> Self {
+    pub fn new(size: Size<i32>) -> Self {
         Self {
-            layers: vec![Layer::new(width, height)],
+            layers: vec![Layer::new(size)],
             active_layer: 0,
             events: Vec::new(),
             tool: Tool::Brush,
@@ -53,60 +53,59 @@ impl<IMG: Bitmap> State<IMG> {
 
         match event.clone() {
             Event::ClearCanvas => self.canvas_mut().clear(),
-            Event::ResizeCanvas(w, h) => self.resize_canvas(w, h),
-            Event::BrushStart
-            | Event::LineStart(_, _)
-            | Event::EraseStart
-            | Event::RectStart(_, _) => self.canvas_mut().start_editing_bundle(),
+            Event::ResizeCanvas(size) => self.resize_canvas(size),
+            Event::BrushStart | Event::LineStart(_) | Event::EraseStart | Event::RectStart(_) => {
+                self.canvas_mut().start_editing_bundle()
+            }
             Event::BrushEnd | Event::EraseEnd => self.canvas_mut().finish_editing_bundle(),
-            Event::LineEnd(x, y) => {
+            Event::LineEnd(p) => {
                 let last_event = self.events.last();
-                let point = match last_event {
-                    Some(Event::LineStart(i, j)) => (*i, *j).into(),
+                let p0 = match last_event {
+                    Some(Event::LineStart(p0)) => *p0,
                     _ => panic!("line not started!"),
                 };
                 let color = self.main_color;
-                self.canvas_mut().line(point, (x, y).into(), color);
+                self.canvas_mut().line(p0, p, color);
                 self.canvas_mut().finish_editing_bundle();
                 self.free_image = None;
             }
-            Event::RectEnd(x, y) => {
+            Event::RectEnd(p) => {
                 let last_event = self.events.last();
-                let p: Point<u16> = match last_event {
-                    Some(Event::RectStart(i, j)) => (*i, *j).into(),
+                let p0: Point<i32> = match last_event {
+                    Some(Event::RectStart(p0)) => *p0,
                     _ => panic!("rectangle not started!"),
                 };
                 let color = self.main_color;
-                self.canvas_mut().rectangle(p, (x, y).into(), color);
+                self.canvas_mut().rectangle(p0, p, color);
                 self.canvas_mut().finish_editing_bundle();
                 self.free_image = None;
             }
-            Event::BrushStroke(x, y) => {
+            Event::BrushStroke(p) => {
                 let last_event = self.events.last();
 
                 match last_event {
-                    Some(Event::BrushStroke(x0, y0)) => {
+                    Some(Event::BrushStroke(p0)) => {
                         let color = self.main_color;
-                        let p0 = (*x0, *y0).into();
-                        self.canvas_mut().line(p0, (x, y).into(), color);
+                        let p0 = *p0;
+                        self.canvas_mut().line(p0, p, color);
                     }
                     Some(Event::BrushStart) => {
                         let color = self.main_color;
-                        self.canvas_mut().set_pixel(x, y, color);
+                        self.canvas_mut().set_pixel(p, color);
                     }
                     _ => (),
                 }
             }
-            Event::Erase(x, y) => {
+            Event::Erase(p) => {
                 let last_event = self.events.last();
 
                 match last_event {
-                    Some(Event::Erase(x0, y0)) => {
-                        let p0 = (*x0, *y0).into();
-                        self.canvas_mut().line(p0, (x, y).into(), TRANSPARENT);
+                    Some(Event::Erase(p0)) => {
+                        let p0 = *p0;
+                        self.canvas_mut().line(p0, p, TRANSPARENT);
                     }
                     Some(Event::EraseStart) => {
-                        self.canvas_mut().set_pixel(x, y, TRANSPARENT);
+                        self.canvas_mut().set_pixel(p, TRANSPARENT);
                     }
                     _ => (),
                 }
@@ -120,23 +119,21 @@ impl<IMG: Bitmap> State<IMG> {
             }
             Event::AddToPalette(color) => self.palette.add_color(color),
             Event::RemoveFromPalette(color) => self.palette.remove_color(color),
-            Event::Bucket(x, y) => {
+            Event::Bucket(p) => {
                 self.canvas_mut().start_editing_bundle();
                 let color = self.main_color;
-                self.canvas_mut().bucket(x, y, color);
+                self.canvas_mut().bucket(p, color);
                 self.canvas_mut().finish_editing_bundle();
             }
             Event::ClearSelection => (),
-            Event::StartSelection(_, _) => (),
-            Event::EndSelection(x, y) => {
+            Event::StartSelection(_) => (),
+            Event::EndSelection(p) => {
                 let last_event = self.events.last();
 
-                if let Some(Event::StartSelection(x0, y0)) = last_event {
-                    let w = (x as i32 - *x0 as i32).abs() as u16;
-                    let h = (y as i32 - *y0 as i32).abs() as u16;
-                    let x = std::cmp::min(*x0, x);
-                    let y = std::cmp::min(*y0, y);
-                    let rect = Rect::new(x, y, w + 1, h + 1);
+                if let Some(Event::StartSelection(p0)) = last_event {
+                    let size = p.abs_diff(*p0);
+                    let corner = p.rect_min_corner(*p0);
+                    let rect = Rect::new(corner.x, corner.y, size.x + 1, size.y + 1);
                     self.set_selection(Some(Selection::Canvas(rect)));
                 }
             }
@@ -159,33 +156,27 @@ impl<IMG: Bitmap> State<IMG> {
                 }
                 _ => (),
             },
-            Event::MoveStart(x, y) => match self.selection {
+            Event::MoveStart(p) => match self.selection {
                 Some(Selection::Canvas(_)) => {
-                    self.free_image_from_selection(Some((x, y).into()));
+                    self.free_image_from_selection(Some(p));
                 }
                 Some(Selection::FreeImage) => {
                     if let Some(free_image) = self.free_image.as_mut() {
-                        free_image.pivot = Some(
-                            (
-                                (x as i32 - free_image.rect.x) as u16,
-                                (y as i32 - free_image.rect.y) as u16,
-                            )
-                                .into(),
-                        );
+                        free_image.pivot = Some(p - free_image.rect.pos());
                     }
                 }
                 None => (),
             },
-            Event::MoveEnd(x, y) => {
+            Event::MoveEnd(p) => {
                 let last_event = self.events.last();
 
-                if let Some(Event::MoveStart(_, _)) = last_event {
-                    self.move_free_image((x as i32, y as i32).into());
+                if let Some(Event::MoveStart(_)) = last_event {
+                    self.move_free_image(p);
                 }
             }
-            Event::Paste(x, y) => {
+            Event::Paste(p) => {
                 if let Some(img) = self.clipboard.as_ref().map(|c| c.clone()) {
-                    let img = FreeImage::new(x as i32, y as i32, img);
+                    let img = FreeImage::new(p, img);
                     self.free_image = Some(img);
                     self.set_selection(Some(Selection::FreeImage));
                 }
@@ -214,7 +205,7 @@ impl<IMG: Bitmap> State<IMG> {
             // TODO: this should not only remove it, as we need to be able to
             // undo this
             Event::DeleteLayer(i) => self.delete_layer(i),
-            Event::SetSpritesheet(w, h) => self.set_spritesheet(w, h),
+            Event::SetSpritesheet(size) => self.set_spritesheet(size),
             Event::Undo => {
                 // TODO: we should add UNDO to the events list
                 dbg!(t0.elapsed().unwrap());
@@ -235,9 +226,9 @@ impl<IMG: Bitmap> State<IMG> {
         effect
     }
 
-    pub fn resize_canvas(&mut self, width: u16, height: u16) {
+    pub fn resize_canvas(&mut self, size: Size<i32>) {
         for layer in self.layers.iter_mut() {
-            layer.resize(width, height);
+            layer.resize(size);
         }
     }
 
@@ -274,7 +265,7 @@ impl<IMG: Bitmap> State<IMG> {
     }
 
     fn add_layer(&mut self) {
-        let layer = Layer::<IMG>::new(self.canvas().width(), self.canvas().height());
+        let layer = Layer::<IMG>::new(self.canvas().size());
         self.layers.push(layer);
     }
 
@@ -295,13 +286,14 @@ impl<IMG: Bitmap> State<IMG> {
         self.spritesheet
     }
 
-    fn set_spritesheet(&mut self, w: u8, h: u8) {
-        if self.canvas().width() % w as u16 != 0 || self.canvas().height() % h as u16 != 0 {
+    fn set_spritesheet(&mut self, size: Size<u8>) {
+        if self.canvas().width() % size.x as i32 != 0 || self.canvas().height() % size.y as i32 != 0
+        {
             eprintln!("WARN: Canvas size should be a multiple of the spritesheet size");
             return;
         }
 
-        self.spritesheet = Size::new(w, h);
+        self.spritesheet = size;
     }
 
     pub fn palette(&self) -> &[Color] {
@@ -348,13 +340,9 @@ impl<IMG: Bitmap> State<IMG> {
 
     pub fn update_free_image(&mut self, mouse_canvas: Position<i32>) {
         match self.events.last() {
-            Some(Event::MoveStart(_, _)) => self.move_free_image(mouse_canvas),
-            Some(Event::LineStart(x, y)) => {
-                self.update_line_preview((*x as i32, *y as i32).into(), mouse_canvas)
-            }
-            Some(Event::RectStart(x, y)) => {
-                self.update_rect_preview((*x as i32, *y as i32).into(), mouse_canvas)
-            }
+            Some(Event::MoveStart(_)) => self.move_free_image(mouse_canvas),
+            Some(Event::LineStart(p)) => self.update_line_preview(*p, mouse_canvas),
+            Some(Event::RectStart(p)) => self.update_rect_preview(*p, mouse_canvas),
             _ => (),
         }
     }
@@ -366,12 +354,12 @@ impl<IMG: Bitmap> State<IMG> {
         }
     }
 
-    fn free_image_from_selection(&mut self, mouse_pos: Option<Point<u16>>) {
+    fn free_image_from_selection(&mut self, mouse_pos: Option<Point<i32>>) {
         if let Some(Selection::Canvas(rect)) = self.selection {
             self.free_image = Some(FreeImage::from_canvas_area(
                 &self.canvas(),
                 rect.into(),
-                mouse_pos.map(|p| (p.x - rect.x, p.y - rect.y).into()),
+                mouse_pos.map(|p| p - rect.pos()),
             ));
             self.canvas_mut().set_area(rect, TRANSPARENT);
             self.selection = Some(Selection::FreeImage);
@@ -379,19 +367,15 @@ impl<IMG: Bitmap> State<IMG> {
     }
 
     fn update_line_preview(&mut self, p0: Point<i32>, p: Point<i32>) {
-        let (xspan, yspan) = ((p.x - p0.x).abs(), (p.y - p0.y).abs());
-
-        if xspan == 0 && yspan == 0 {
+        let span = p.abs_diff(p0);
+        if span == Point::ZERO {
             return;
         }
 
-        let offset = Point::new(
-            std::cmp::min(p.x, p0.x) as i32,
-            std::cmp::min(p.y, p0.y) as i32,
-        );
+        let offset = p.rect_min_corner(p0);
 
         self.free_image = Some(FreeImage::from_pixels(
-            (xspan as u16 + 1, yspan as u16 + 1).into(),
+            span + Point::ONE,
             graphics::line(p0, p),
             self.main_color(),
             offset,
@@ -399,19 +383,15 @@ impl<IMG: Bitmap> State<IMG> {
     }
 
     fn update_rect_preview(&mut self, p0: Point<i32>, p: Point<i32>) {
-        let (xspan, yspan) = ((p.x - p0.x).abs(), (p.y - p0.y).abs());
-
-        if xspan == 0 && yspan == 0 {
+        let span = p.abs_diff(p0);
+        if span == Point::ZERO {
             return;
         }
 
-        let offset = Point::new(
-            std::cmp::min(p.x, p0.x) as i32,
-            std::cmp::min(p.y, p0.y) as i32,
-        );
+        let offset = p.rect_min_corner(p0);
 
         self.free_image = Some(FreeImage::from_pixels(
-            (xspan as u16 + 1, yspan as u16 + 1).into(),
+            span + Point::ONE,
             graphics::rectangle(p0, p),
             self.main_color(),
             offset,
@@ -433,12 +413,12 @@ impl<IMG: Bitmap> State<IMG> {
 
     fn open_image(&mut self, path: &str) {
         let img = util::load_img_from_file(path);
-        self.canvas_mut()
-            .resize(img.width() as u16, img.height() as u16);
+        self.resize_canvas((img.width() as i32, img.height() as i32).into());
 
         for (x, y, pixel) in img.enumerate_pixels() {
             let color = Color::new(pixel.0[0], pixel.0[1], pixel.0[2], pixel.0[3]);
-            self.canvas_mut().set_pixel(x as u16, y as u16, color);
+            self.canvas_mut()
+                .set_pixel((x as i32, y as i32).into(), color);
         }
     }
 
@@ -446,15 +426,16 @@ impl<IMG: Bitmap> State<IMG> {
         let w = self.layer_canvas(0).width();
         let h = self.layer_canvas(0).height();
 
-        self.blended_layers_rect(0, 0, w, h)
+        self.blended_layers_rect((0, 0, w, h).into())
     }
 
-    pub fn blended_layers_rect(&self, x: u16, y: u16, w: u16, h: u16) -> IMG {
-        let mut result = IMG::new(w, h, TRANSPARENT);
+    pub fn blended_layers_rect(&self, r: Rect<i32>) -> IMG {
+        let mut result = IMG::new((r.w, r.h).into(), TRANSPARENT);
 
-        for i in 0..w {
-            for j in 0..h {
-                result.set_pixel(i, j, self.visible_pixel(x + i, y + j));
+        for i in 0..r.w {
+            for j in 0..r.h {
+                let ij = Point::new(i, j);
+                result.set_pixel(ij, self.visible_pixel(ij + r.pos()));
             }
         }
 
@@ -463,14 +444,14 @@ impl<IMG: Bitmap> State<IMG> {
 
     pub fn sprite_images(&self) -> Vec<IMG> {
         let mut imgs = Vec::new();
-        let w = self.layer_canvas(0).width() / self.spritesheet.x as u16;
-        let h = self.layer_canvas(0).height() / self.spritesheet.y as u16;
+        let w = self.layer_canvas(0).width() / self.spritesheet.x as i32;
+        let h = self.layer_canvas(0).height() / self.spritesheet.y as i32;
 
         for j in 0..self.spritesheet.y {
             for i in 0..self.spritesheet.x {
                 imgs.push(
                     // TODO: maybe this (and other) multiplication can overflow
-                    self.blended_layers_rect(i as u16 * w, j as u16 * h, w, h),
+                    self.blended_layers_rect((i as i32 * w, j as i32 * h, w, h).into()),
                 );
             }
         }
@@ -478,9 +459,9 @@ impl<IMG: Bitmap> State<IMG> {
         imgs
     }
 
-    pub fn visible_pixel(&self, x: u16, y: u16) -> Color {
+    pub fn visible_pixel(&self, p: Point<i32>) -> Color {
         let mut result = if self.layer(0).visible() {
-            self.layer_canvas(0).pixel(x, y)
+            self.layer_canvas(0).pixel(p)
         } else {
             TRANSPARENT
         };
@@ -490,7 +471,7 @@ impl<IMG: Bitmap> State<IMG> {
                 continue;
             }
 
-            result = self.layer_canvas(i).pixel(x, y).blend_over(result);
+            result = self.layer_canvas(i).pixel(p).blend_over(result);
         }
 
         result

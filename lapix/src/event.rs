@@ -1,12 +1,12 @@
-pub use crate::{Bitmap, CanvasEffect, Color, Tool};
+pub use crate::{Bitmap, CanvasEffect, Color, Point, Position, Size, Tool};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Event {
     ClearCanvas,
-    ResizeCanvas(u16, u16),
+    ResizeCanvas(Size<i32>),
     BrushStart,
-    BrushStroke(u16, u16),
+    BrushStroke(Position<i32>),
     BrushEnd,
     SetTool(Tool),
     SetMainColor(Color),
@@ -15,29 +15,29 @@ pub enum Event {
     Save(PathBuf),
     OpenFile(PathBuf),
     LoadPalette(PathBuf),
-    Bucket(u16, u16),
+    Bucket(Point<i32>),
     EraseStart,
     EraseEnd,
-    Erase(u16, u16),
-    LineStart(u16, u16),
-    LineEnd(u16, u16),
-    RectStart(u16, u16),
-    RectEnd(u16, u16),
+    Erase(Position<i32>),
+    LineStart(Point<i32>),
+    LineEnd(Point<i32>),
+    RectStart(Point<i32>),
+    RectEnd(Point<i32>),
     NewLayerAbove,
     NewLayerBelow,
     SwitchLayer(usize),
     ChangeLayerVisibility(usize, bool),
     ChangeLayerOpacity(usize, u8),
     DeleteLayer(usize),
-    SetSpritesheet(u8, u8),
-    StartSelection(u16, u16),
-    EndSelection(u16, u16),
+    SetSpritesheet(Size<u8>),
+    StartSelection(Point<i32>),
+    EndSelection(Point<i32>),
     ClearSelection,
     DeleteSelection,
-    MoveStart(u16, u16),
-    MoveEnd(u16, u16),
+    MoveStart(Point<i32>),
+    MoveEnd(Point<i32>),
     Copy,
-    Paste(u16, u16),
+    Paste(Point<i32>),
     FlipHorizontal,
     FlipVertical,
     Undo,
@@ -50,17 +50,17 @@ impl Event {
             Self::ClearCanvas
             | Self::DeleteSelection
             | Self::BrushStart
-            | Self::BrushStroke(_, _)
-            | Self::LineEnd(_, _)
-            | Self::RectEnd(_, _)
-            | Self::Bucket(_, _)
-            | Self::MoveStart(_, _)
-            | Self::MoveEnd(_, _)
-            | Self::Paste(_, _)
+            | Self::BrushStroke(_)
+            | Self::LineEnd(_)
+            | Self::RectEnd(_)
+            | Self::Bucket(_)
+            | Self::MoveStart(_)
+            | Self::MoveEnd(_)
+            | Self::Paste(_)
             | Self::FlipHorizontal
             | Self::FlipVertical
-            | Self::Erase(_, _) => CanvasEffect::Update,
-            Self::ResizeCanvas(_, _) | Self::OpenFile(_) => CanvasEffect::New,
+            | Self::Erase(_) => CanvasEffect::Update,
+            Self::ResizeCanvas(_) | Self::OpenFile(_) => CanvasEffect::New,
             Self::NewLayerAbove | Self::NewLayerBelow | Self::DeleteLayer(_) => CanvasEffect::Layer,
             x if x.triggers_anchoring() => CanvasEffect::Update,
             _ => CanvasEffect::None,
@@ -71,16 +71,16 @@ impl Event {
         match self {
             Self::BrushStart
             | Self::DeleteSelection
-            | Self::BrushStroke(_, _)
-            | Self::LineStart(_, _)
-            | Self::LineEnd(_, _)
-            | Self::RectStart(_, _)
-            | Self::RectEnd(_, _)
-            | Self::Bucket(_, _)
-            | Self::MoveStart(_, _)
-            | Self::MoveEnd(_, _)
-            | Self::Paste(_, _)
-            | Self::Erase(_, _) => true,
+            | Self::BrushStroke(_)
+            | Self::LineStart(_)
+            | Self::LineEnd(_)
+            | Self::RectStart(_)
+            | Self::RectEnd(_)
+            | Self::Bucket(_)
+            | Self::MoveStart(_)
+            | Self::MoveEnd(_)
+            | Self::Paste(_)
+            | Self::Erase(_) => true,
             _ => false,
         }
     }
@@ -100,19 +100,19 @@ impl Event {
         match self {
             Self::ClearCanvas
             | Self::DeleteSelection
-            | Self::ResizeCanvas(_, _)
+            | Self::ResizeCanvas(_)
             | Self::BrushStart
-            | Self::BrushStroke(_, _)
+            | Self::BrushStroke(_)
             | Self::BrushEnd
             | Self::SetMainColor(_)
             | Self::AddToPalette(_)
             | Self::RemoveFromPalette(_)
-            | Self::Bucket(_, _)
-            | Self::Erase(_, _)
-            | Self::LineStart(_, _)
-            | Self::LineEnd(_, _)
-            | Self::RectStart(_, _)
-            | Self::RectEnd(_, _)
+            | Self::Bucket(_)
+            | Self::Erase(_)
+            | Self::LineStart(_)
+            | Self::LineEnd(_)
+            | Self::RectStart(_)
+            | Self::RectEnd(_)
             | Self::NewLayerAbove
             | Self::NewLayerBelow
             | Self::FlipHorizontal
@@ -121,11 +121,11 @@ impl Event {
             | Self::ChangeLayerVisibility(_, _)
             | Self::ChangeLayerOpacity(_, _)
             | Self::DeleteLayer(_)
-            | Self::MoveStart(_, _)
-            | Self::MoveEnd(_, _)
-            | Self::StartSelection(_, _)
-            | Self::EndSelection(_, _)
-            | Self::Paste(_, _)
+            | Self::MoveStart(_)
+            | Self::MoveEnd(_)
+            | Self::StartSelection(_)
+            | Self::EndSelection(_)
+            | Self::Paste(_)
             | Self::LoadPalette(_)
             | Self::OpenFile(_) => true,
             _ => false,
@@ -147,11 +147,11 @@ impl Event {
 
     pub fn triggers_anchoring(&self) -> bool {
         match self {
-            Self::MoveStart(_, _)
-            | Self::MoveEnd(_, _)
+            Self::MoveStart(_)
+            | Self::MoveEnd(_)
             | Self::Copy
-            | Self::LineEnd(_, _)
-            | Self::RectEnd(_, _)
+            | Self::LineEnd(_)
+            | Self::RectEnd(_)
             | Self::FlipHorizontal
             | Self::FlipVertical
             | Self::DeleteSelection => false,

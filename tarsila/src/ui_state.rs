@@ -69,14 +69,14 @@ pub struct UiState {
 
 impl Default for UiState {
     fn default() -> Self {
-        let state = State::<WrappedImage>::new(CANVAS_W, CANVAS_H);
+        let state = State::<WrappedImage>::new((CANVAS_W as i32, CANVAS_H as i32).into());
         let drawing = Texture2D::from_image(&state.canvas().inner().0);
         drawing.set_filter(FilterMode::Nearest);
 
         Self {
             inner: state,
             gui: Gui::new((CANVAS_W, CANVAS_H).into()),
-            camera: (0., 0.).into(),
+            camera: Position::ZERO_F32,
             canvas_pos: (CANVAS_X, CANVAS_Y).into(),
             zoom: 8.,
             layer_textures: vec![drawing],
@@ -202,9 +202,10 @@ impl UiState {
     pub fn sync_mouse(&mut self) {
         let (x, y) = macroquad::prelude::mouse_position();
         let (x, y) = self.screen_to_canvas(x, y);
-        let in_canvas = self.canvas().is_in_bounds((x as i32, y as i32).into());
+        let p = (x as i32, y as i32).into();
+        let in_canvas = self.canvas().is_in_bounds(p);
         let visible_pixel = if in_canvas {
-            Some(self.visible_pixel(x as u16, y as u16))
+            Some(self.visible_pixel(p))
         } else {
             None
         };
@@ -259,13 +260,13 @@ impl UiState {
             UiEvent::Paste => {
                 let (x, y) = macroquad::prelude::mouse_position();
                 let (x, y) = self.screen_to_canvas(x, y);
-                self.execute(Event::Paste(x as u16, y as u16));
+                self.execute(Event::Paste((x, y).into()));
             }
         }
     }
 
-    pub fn visible_pixel(&self, x: u16, y: u16) -> [u8; 4] {
-        self.inner.visible_pixel(x, y).into()
+    pub fn visible_pixel(&self, p: Point<i32>) -> [u8; 4] {
+        self.inner.visible_pixel(p).into()
     }
 
     pub fn camera(&self) -> Position<f32> {

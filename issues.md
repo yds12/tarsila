@@ -17,7 +17,7 @@ Projects issues and bugs:
 15. When zooming out, camera needs to be readjusted [ENH][DONE]
 16. Eyedropper should get visible color, not the one on the layer [DONE]
 17. When the active layer is deleted, move active layer to the one below [DONE]
-18. Inconsistent use of types for 2D points and colors
+18. Inconsistent use of types for 2D points and colors [DONE]
 19. Optimize syncing of preview and palette images (don't need to generate every single frame [ENH]
 20. Create mouse manager, and store events to be ran on mouse release [DONE]
 21. Cannot type on spritesheet size textboxes if intermediate values are not valid spritesheet sizes[DONE]

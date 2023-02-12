@@ -1,4 +1,4 @@
-use crate::{Bitmap, Canvas};
+use crate::{Bitmap, Canvas, Size};
 
 pub struct Layer<IMG: Bitmap> {
     canvas: Canvas<IMG>,
@@ -7,9 +7,9 @@ pub struct Layer<IMG: Bitmap> {
 }
 
 impl<IMG: Bitmap> Layer<IMG> {
-    pub fn new(width: u16, height: u16) -> Self {
+    pub fn new(size: Size<i32>) -> Self {
         Self {
-            canvas: Canvas::new(width, height),
+            canvas: Canvas::new(size),
             visible: true,
             opacity: 255,
         }
@@ -31,8 +31,8 @@ impl<IMG: Bitmap> Layer<IMG> {
         self.opacity
     }
 
-    pub fn resize(&mut self, w: u16, h: u16) {
-        self.canvas.resize(w, h);
+    pub fn resize(&mut self, size: Size<i32>) {
+        self.canvas.resize(size);
     }
 
     pub fn set_visibility(&mut self, visible: bool) {

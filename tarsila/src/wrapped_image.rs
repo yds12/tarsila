@@ -1,38 +1,43 @@
-use lapix::{Bitmap, Color};
+use lapix::{Bitmap, Color, Point, Size};
 use macroquad::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct WrappedImage(pub Image);
 
 impl Bitmap for WrappedImage {
-    fn new(width: u16, height: u16, color: Color) -> Self {
-        let bytes = vec![0; width as usize * height as usize * 4];
+    fn new(size: Size<i32>, color: Color) -> Self {
+        let bytes = vec![0; size.x as usize * size.y as usize * 4];
         let mut img = Self(Image {
             bytes,
-            width,
-            height,
+            width: size.x as u16,
+            height: size.y as u16,
         });
 
-        for i in 0..width {
-            for j in 0..height {
-                img.set_pixel(i, j, color);
+        for i in 0..size.x {
+            for j in 0..size.y {
+                img.set_pixel((i, j).into(), color);
             }
         }
 
         img
     }
 
-    fn width(&self) -> u16 {
-        self.0.width() as u16
+    fn size(&self) -> Size<i32> {
+        (self.0.width as i32, self.0.height as i32).into()
     }
 
-    fn height(&self) -> u16 {
-        self.0.height() as u16
+    fn width(&self) -> i32 {
+        self.0.width as i32
     }
 
-    fn pixel(&self, x: u16, y: u16) -> Color {
-        let x = x as usize;
-        let y = y as usize;
+    fn height(&self) -> i32 {
+        self.0.height as i32
+    }
+
+    fn pixel(&self, p: Point<i32>) -> Color {
+        let x = p.x as usize;
+        let y = p.y as usize;
+
         let base_idx = y * 4 * self.width() as usize + x * 4;
         Color::new(
             self.0.bytes[base_idx],
@@ -42,9 +47,9 @@ impl Bitmap for WrappedImage {
         )
     }
 
-    fn set_pixel(&mut self, x: u16, y: u16, color: Color) {
-        let x = x as usize;
-        let y = y as usize;
+    fn set_pixel(&mut self, p: Point<i32>, color: Color) {
+        let x = p.x as usize;
+        let y = p.y as usize;
         let base_idx = y * 4 * self.width() as usize + x * 4;
         self.0.bytes[base_idx] = color.r;
         self.0.bytes[base_idx + 1] = color.g;
@@ -56,11 +61,11 @@ impl Bitmap for WrappedImage {
         &self.0.bytes
     }
 
-    fn from_parts(width: u16, height: u16, bytes: &[u8]) -> Self {
+    fn from_parts(size: Size<i32>, bytes: &[u8]) -> Self {
         Self(Image {
             bytes: bytes.to_owned(),
-            height,
-            width,
+            width: size.x as u16,
+            height: size.y as u16,
         })
     }
 
@@ -70,7 +75,7 @@ impl Bitmap for WrappedImage {
 
         for x in 0..w {
             for y in 0..h {
-                self.set_pixel(x, y, other.pixel(x, y));
+                self.set_pixel((x, y).into(), other.pixel((x, y).into()));
             }
         }
     }

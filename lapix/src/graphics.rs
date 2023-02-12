@@ -6,12 +6,10 @@ pub fn distance(p1: Point<i32>, p2: Point<i32>) -> f32 {
 
 pub fn line(p1: Point<i32>, p2: Point<i32>) -> Vec<Point<i32>> {
     let mut line = Vec::new();
-
-    let diff_x = p2.x - p1.x;
-    let diff_y = p2.y - p1.y;
+    let diff = p2 - p1;
     let dist = distance(p1, p2);
-    let dx = if dist < 0.1 { 0. } else { diff_x as f32 / dist };
-    let dy = if dist < 0.1 { 0. } else { diff_y as f32 / dist };
+    let dx = if dist < 0.1 { 0. } else { diff.x as f32 / dist };
+    let dy = if dist < 0.1 { 0. } else { diff.y as f32 / dist };
 
     for i in 0..=dist.round() as usize {
         let x = (p1.x as f32 + (i as f32 * dx)).round() as i32;

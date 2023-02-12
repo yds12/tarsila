@@ -28,6 +28,20 @@ pub struct Point<T: Number> {
 pub type Position<T> = Point<T>;
 pub type Size<T> = Point<T>;
 
+impl<T: Number> Sub for Point<T> {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self {
+        Self::new(self.x - other.x, self.y - other.y)
+    }
+}
+
+impl<T: Number> Add for Point<T> {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        Self::new(self.x + other.x, self.y + other.y)
+    }
+}
+
 impl<T: Number> From<(T, T)> for Point<T> {
     fn from(value: (T, T)) -> Self {
         Self {
@@ -37,9 +51,42 @@ impl<T: Number> From<(T, T)> for Point<T> {
     }
 }
 
+impl From<Point<i32>> for Point<f32> {
+    fn from(value: Point<i32>) -> Self {
+        Self {
+            x: value.x as f32,
+            y: value.y as f32,
+        }
+    }
+}
+
 impl<T: Number> Point<T> {
-    pub fn new(x: T, y: T) -> Self {
+    pub const fn new(x: T, y: T) -> Self {
         Self { x, y }
+    }
+}
+
+impl Point<f32> {
+    pub const ZERO_F32: Self = Point::new(0., 0.);
+    pub const ONE_F32: Self = Point::new(1., 1.);
+}
+
+impl Point<i32> {
+    pub const ZERO: Self = Point::new(0, 0);
+    pub const ONE: Self = Point::new(1, 1);
+
+    pub fn abs_diff(&self, p: Self) -> Self {
+        Self {
+            x: (self.x - p.x).abs(),
+            y: (self.y - p.y).abs(),
+        }
+    }
+
+    pub fn rect_min_corner(&self, p: Self) -> Self {
+        Self {
+            x: std::cmp::min(self.x, p.x),
+            y: std::cmp::min(self.y, p.y),
+        }
     }
 }
 
@@ -66,6 +113,34 @@ impl<T: Number> Rect<T> {
 
     pub fn contains(self, x: T, y: T) -> bool {
         self.x <= x && self.x + self.w >= x && self.y <= y && self.y + self.h >= y
+    }
+
+    pub fn pos(self) -> Position<T> {
+        Position {
+            x: self.x,
+            y: self.y,
+        }
+    }
+
+    pub fn size(self) -> Size<T> {
+        Size {
+            x: self.w,
+            y: self.h,
+        }
+    }
+
+    pub fn top_right(self) -> Point<T> {
+        Point {
+            x: self.x + self.w,
+            y: self.y,
+        }
+    }
+
+    pub fn bottom_left(self) -> Point<T> {
+        Point {
+            x: self.x,
+            y: self.y + self.h,
+        }
     }
 }
 
@@ -106,6 +181,17 @@ impl From<Rect<i32>> for Rect<u16> {
             y: val.y as u16,
             w: val.w as u16,
             h: val.h as u16,
+        }
+    }
+}
+
+impl<T: Number> From<(T, T, T, T)> for Rect<T> {
+    fn from(val: (T, T, T, T)) -> Self {
+        Self {
+            x: val.0,
+            y: val.1,
+            w: val.2,
+            h: val.3,
         }
     }
 }

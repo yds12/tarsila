@@ -3,14 +3,14 @@ use crate::{Bitmap, Canvas, Color, Point, Position, Rect, Size};
 
 pub struct FreeImage<IMG: Bitmap> {
     pub rect: Rect<i32>,
-    pub pivot: Option<Point<u16>>,
+    pub pivot: Option<Point<i32>>,
     pub texture: IMG,
 }
 
 impl<IMG: Bitmap> FreeImage<IMG> {
-    pub fn new(x: i32, y: i32, img: IMG) -> Self {
+    pub fn new(p: Position<i32>, img: IMG) -> Self {
         Self {
-            rect: Rect::new(x, y, img.width() as i32, img.height() as i32),
+            rect: Rect::new(p.x, p.y, img.width() as i32, img.height() as i32),
             texture: img,
             pivot: None,
         }
@@ -19,7 +19,7 @@ impl<IMG: Bitmap> FreeImage<IMG> {
     pub fn from_canvas_area(
         canvas: &Canvas<IMG>,
         area: Rect<i32>,
-        pivot: Option<Point<u16>>,
+        pivot: Option<Point<i32>>,
     ) -> Self {
         Self {
             rect: area,
@@ -29,19 +29,17 @@ impl<IMG: Bitmap> FreeImage<IMG> {
     }
 
     pub fn from_pixels(
-        size: Size<u16>,
+        size: Size<i32>,
         pixels: Vec<Point<i32>>,
         color: Color,
         offset: Position<i32>,
     ) -> Self {
-        let mut img = IMG::new(size.x, size.y, TRANSPARENT);
+        let mut img = IMG::new(size, TRANSPARENT);
         for point in pixels {
-            let x = (point.x - offset.x) as u16;
-            let y = (point.y - offset.y) as u16;
-            img.set_pixel(x, y, color);
+            img.set_pixel(point - offset, color);
         }
 
-        Self::new(offset.x, offset.y, img)
+        Self::new(offset, img)
     }
 
     pub fn move_by_pivot(&mut self, p: Point<i32>) {
@@ -54,11 +52,10 @@ impl<IMG: Bitmap> FreeImage<IMG> {
     pub fn flip_horizontally(&mut self) {
         for i in 0..(self.rect.w / 2) {
             for j in 0..self.rect.h {
-                let c1 = self.texture.pixel(i as u16, j as u16);
-                let c2 = self.texture.pixel((self.rect.w - i - 1) as u16, j as u16);
-                self.texture.set_pixel(i as u16, j as u16, c2);
-                self.texture
-                    .set_pixel((self.rect.w - i - 1) as u16, j as u16, c1);
+                let c1 = self.texture.pixel((i, j).into());
+                let c2 = self.texture.pixel((self.rect.w - i - 1, j).into());
+                self.texture.set_pixel((i, j).into(), c2);
+                self.texture.set_pixel((self.rect.w - i - 1, j).into(), c1);
             }
         }
     }
@@ -66,11 +63,10 @@ impl<IMG: Bitmap> FreeImage<IMG> {
     pub fn flip_vertically(&mut self) {
         for j in 0..(self.rect.h / 2) {
             for i in 0..self.rect.w {
-                let c1 = self.texture.pixel(i as u16, j as u16);
-                let c2 = self.texture.pixel(i as u16, (self.rect.h - j - 1) as u16);
-                self.texture.set_pixel(i as u16, j as u16, c2);
-                self.texture
-                    .set_pixel(i as u16, (self.rect.h - j - 1) as u16, c1);
+                let c1 = self.texture.pixel((i, j).into());
+                let c2 = self.texture.pixel((i, self.rect.h - j - 1).into());
+                self.texture.set_pixel((i, j).into(), c2);
+                self.texture.set_pixel((i, self.rect.h - j - 1).into(), c1);
             }
         }
     }

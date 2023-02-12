@@ -3,7 +3,7 @@ use crate::Effect;
 use lapix::{Bitmap, Event};
 use macroquad::prelude::Image as MqImage;
 
-const BTN_SIZE: u16 = 20;
+const BTN_SIZE: i32 = 20;
 
 pub struct Palette {
     colors: Vec<[u8; 4]>,
@@ -29,7 +29,7 @@ impl Palette {
             self.images = self
                 .colors
                 .iter()
-                .map(|c| WrappedImage::new(BTN_SIZE, BTN_SIZE, (*c).into()).0)
+                .map(|c| WrappedImage::new((BTN_SIZE, BTN_SIZE).into(), (*c).into()).0)
                 .collect();
             self.textures = (0..self.images.len()).map(|_| None).collect();
             self.egui_images = Vec::new();

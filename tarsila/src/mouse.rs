@@ -39,7 +39,7 @@ impl MouseManager {
     }
 
     pub fn update(&mut self) -> Vec<Effect> {
-        let (x, y) = (self.mouse_canvas.x, self.mouse_canvas.y);
+        let p = (self.mouse_canvas.x as i32, self.mouse_canvas.y as i32).into();
         let mut events = Vec::new();
 
         if is_mouse_button_pressed(MouseButton::Left) {
@@ -52,10 +52,10 @@ impl MouseManager {
                         events.push(Event::EraseStart.into());
                     }
                     Tool::Line => {
-                        events.push(Event::LineStart(x as u16, y as u16).into());
+                        events.push(Event::LineStart(p).into());
                     }
                     Tool::Rectangle => {
-                        events.push(Event::RectStart(x as u16, y as u16).into());
+                        events.push(Event::RectStart(p).into());
                     }
                     Tool::Eyedropper => {
                         let color = self.visible_pixel_on_mouse.unwrap();
@@ -63,14 +63,14 @@ impl MouseManager {
                         events.push(Event::SetTool(Tool::Brush).into());
                     }
                     Tool::Bucket => {
-                        events.push(Event::Bucket(x as u16, y as u16).into());
+                        events.push(Event::Bucket(p).into());
                     }
                     Tool::Selection => {
-                        events.push(Event::StartSelection(x as u16, y as u16).into());
+                        events.push(Event::StartSelection(p).into());
                     }
                     Tool::Move => {
                         if self.is_on_selection {
-                            events.push(Event::MoveStart(x as u16, y as u16).into());
+                            events.push(Event::MoveStart(p).into());
                         } else {
                             events.push(Event::ClearSelection.into());
                             self.on_left_release
@@ -87,10 +87,10 @@ impl MouseManager {
             if self.is_on_canvas {
                 match self.selected_tool {
                     Tool::Brush => {
-                        events.push(Event::BrushStroke(x as u16, y as u16).into());
+                        events.push(Event::BrushStroke(p).into());
                     }
                     Tool::Eraser => {
-                        events.push(Event::Erase(x as u16, y as u16).into());
+                        events.push(Event::Erase(p).into());
                     }
                     _ => (),
                 }
@@ -107,17 +107,17 @@ impl MouseManager {
                         events.push(Event::EraseEnd.into());
                     }
                     Tool::Line => {
-                        events.push(Event::LineEnd(x as u16, y as u16).into());
+                        events.push(Event::LineEnd(p).into());
                     }
                     Tool::Rectangle => {
-                        events.push(Event::RectEnd(x as u16, y as u16).into());
+                        events.push(Event::RectEnd(p).into());
                     }
                     Tool::Selection => {
-                        events.push(Event::EndSelection(x as u16, y as u16).into());
+                        events.push(Event::EndSelection(p).into());
                         events.push(Event::SetTool(Tool::Move).into());
                     }
                     Tool::Move => {
-                        events.push(Event::MoveEnd(x as u16, y as u16).into());
+                        events.push(Event::MoveEnd(p).into());
                     }
                     _ => (),
                 }
