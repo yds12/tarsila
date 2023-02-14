@@ -43,84 +43,81 @@ impl MouseManager {
         let mut events = Vec::new();
 
         if is_mouse_button_pressed(MouseButton::Left) {
-            if self.is_on_canvas {
-                match self.selected_tool {
-                    Tool::Brush => {
-                        events.push(Event::BrushStart.into());
-                    }
-                    Tool::Eraser => {
-                        events.push(Event::EraseStart.into());
-                    }
-                    Tool::Line => {
-                        events.push(Event::LineStart(p).into());
-                    }
-                    Tool::Rectangle => {
-                        events.push(Event::RectStart(p).into());
-                    }
-                    Tool::Eyedropper => {
-                        let color = self.visible_pixel_on_mouse.unwrap();
-                        events.push(Event::SetMainColor(color.into()).into());
-                        events.push(Event::SetTool(Tool::Brush).into());
-                    }
-                    Tool::Bucket => {
-                        events.push(Event::Bucket(p).into());
-                    }
-                    Tool::Selection => {
-                        events.push(Event::StartSelection(p).into());
-                    }
-                    Tool::Move => {
-                        if self.is_on_selection {
-                            events.push(Event::MoveStart(p).into());
-                        } else {
-                            events.push(Event::ClearSelection.into());
-                            self.on_left_release
-                                .push(Event::SetTool(Tool::Selection).into());
-                        }
+            match self.selected_tool {
+                Tool::Brush => {
+                    events.push(Event::BrushStart.into());
+                }
+                Tool::Eraser => {
+                    events.push(Event::EraseStart.into());
+                }
+                Tool::Line => {
+                    events.push(Event::LineStart(p).into());
+                }
+                Tool::Rectangle => {
+                    events.push(Event::RectStart(p).into());
+                }
+                Tool::Eyedropper => {
+                    let color = self.visible_pixel_on_mouse.unwrap();
+                    events.push(Event::SetMainColor(color.into()).into());
+                    events.push(Event::SetTool(Tool::Brush).into());
+                }
+                Tool::Bucket => {
+                    events.push(Event::Bucket(p).into());
+                }
+                Tool::Selection => {
+                    events.push(Event::StartSelection(p).into());
+                }
+                Tool::Move => {
+                    if self.is_on_selection {
+                        events.push(Event::MoveStart(p).into());
+                    } else {
+                        events.push(Event::ClearSelection.into());
+                        self.on_left_release
+                            .push(Event::SetTool(Tool::Selection).into());
                     }
                 }
-                // TODO: if there's a selection and click was out of it, cancel
-                // selection
             }
         }
 
         if is_mouse_button_down(MouseButton::Left) {
-            if self.is_on_canvas {
-                match self.selected_tool {
-                    Tool::Brush => {
-                        events.push(Event::BrushStroke(p).into());
-                    }
-                    Tool::Eraser => {
-                        events.push(Event::Erase(p).into());
-                    }
-                    _ => (),
+            match self.selected_tool {
+                Tool::Brush => {
+                    // TODO: there is a bug on macroquad or egui or miniquad
+                    // or miniquad-egui or macroquad-egui where the mouse
+                    // release event is not registered when it's done out of
+                    // the window (so `is_mouse_button_down` is true even
+                    // when the mouse is not pressed).
+                    events.push(Event::BrushStroke(p).into());
                 }
+                Tool::Eraser => {
+                    events.push(Event::Erase(p).into());
+                }
+                _ => (),
             }
         }
 
         if is_mouse_button_released(MouseButton::Left) {
-            if self.is_on_canvas {
-                match self.selected_tool {
-                    Tool::Brush => {
-                        events.push(Event::BrushEnd.into());
-                    }
-                    Tool::Eraser => {
-                        events.push(Event::EraseEnd.into());
-                    }
-                    Tool::Line => {
-                        events.push(Event::LineEnd(p).into());
-                    }
-                    Tool::Rectangle => {
-                        events.push(Event::RectEnd(p).into());
-                    }
-                    Tool::Selection => {
-                        events.push(Event::EndSelection(p).into());
-                        events.push(Event::SetTool(Tool::Move).into());
-                    }
-                    Tool::Move => {
-                        events.push(Event::MoveEnd(p).into());
-                    }
-                    _ => (),
+            match self.selected_tool {
+                Tool::Brush => {
+                    events.push(Event::BrushEnd.into());
                 }
+                Tool::Eraser => {
+                    events.push(Event::EraseEnd.into());
+                }
+                Tool::Line => {
+                    events.push(Event::LineEnd(p).into());
+                }
+                Tool::Rectangle => {
+                    events.push(Event::RectEnd(p).into());
+                }
+                Tool::Selection => {
+                    events.push(Event::EndSelection(p).into());
+                    events.push(Event::SetTool(Tool::Move).into());
+                }
+                Tool::Move => {
+                    events.push(Event::MoveEnd(p).into());
+                }
+                _ => (),
             }
 
             while let Some(event) = self.on_left_release.pop() {

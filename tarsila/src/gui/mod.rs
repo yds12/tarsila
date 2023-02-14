@@ -111,8 +111,7 @@ impl Gui {
             events.append(&mut layers_events);
 
             self.preview.update(egui_ctx);
-
-            egui_ctx.output().cursor_icon = egui::CursorIcon::None;
+            egui_ctx.output_mut(|o| o.cursor_icon = egui::CursorIcon::None);
         });
 
         if !events.is_empty() {

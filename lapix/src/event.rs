@@ -44,6 +44,10 @@ pub enum Event {
 }
 
 impl Event {
+    pub fn same_variant(&self, other: &Self) -> bool {
+        std::mem::discriminant(self) == std::mem::discriminant(other)
+    }
+
     // TODO: maybe this should return a vec of fx, not a single one
     pub fn canvas_effect(&self) -> CanvasEffect {
         match self {
@@ -96,6 +100,14 @@ impl Event {
             _ => false,
         }
     }
+
+    pub fn type_repeatable(&self) -> bool {
+        match self {
+            Self::LineStart(_) | Self::LineEnd(_) | Self::RectStart(_) | Self::RectEnd(_) => false,
+            _ => true,
+        }
+    }
+
     pub fn undoable(&self) -> bool {
         match self {
             Self::ClearCanvas

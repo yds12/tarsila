@@ -40,8 +40,12 @@ impl<IMG: Bitmap> State<IMG> {
     }
 
     pub fn execute(&mut self, event: Event) -> CanvasEffect {
-        if Some(&event) == self.events.last() && !event.repeatable() {
-            return CanvasEffect::None;
+        if let Some(prev_event) = self.events.last() {
+            if (prev_event == &event && !event.repeatable())
+                || (event.same_variant(prev_event) && !event.type_repeatable())
+            {
+                return CanvasEffect::None;
+            }
         }
 
         dbg!(&event);

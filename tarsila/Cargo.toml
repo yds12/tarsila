@@ -10,4 +10,4 @@ lapix = { path = "../lapix" }
 egui-macroquad = { path = "../egui-macroquad" }
 macroquad = "0.3.25"
 rfd = "0.10.0"
-egui = "0.20.1"
+egui = "0.21.0"
