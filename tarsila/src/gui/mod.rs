@@ -150,19 +150,17 @@ impl Gui {
             ui.heading("Spritesheet");
             ui.horizontal(|ui| {
                 let label = ui.label("cols:");
-                let t1 = ui
-                    .add(
-                        egui::widgets::TextEdit::singleline(&mut self.spritesheet.0)
-                            .desired_width(30.0),
-                    )
-                    .labelled_by(label.id);
+                ui.add(
+                    egui::widgets::TextEdit::singleline(&mut self.spritesheet.0)
+                        .desired_width(30.0),
+                )
+                .labelled_by(label.id);
                 let label = ui.label("rows:");
-                let t2 = ui
-                    .add(
-                        egui::widgets::TextEdit::singleline(&mut self.spritesheet.1)
-                            .desired_width(30.0),
-                    )
-                    .labelled_by(label.id);
+                ui.add(
+                    egui::widgets::TextEdit::singleline(&mut self.spritesheet.1)
+                        .desired_width(30.0),
+                )
+                .labelled_by(label.id);
                 let btn = ui.button("Ok");
                 if btn.clicked() {
                     if let (Ok(w), Ok(h)) = (self.spritesheet.0.parse(), self.spritesheet.1.parse())

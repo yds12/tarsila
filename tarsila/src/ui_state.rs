@@ -165,7 +165,7 @@ impl UiState {
 
             graphics::draw_free_image(
                 ctx,
-                &img,
+                img,
                 self.inner.layers().active().opacity(),
                 self.free_image_tex.unwrap(),
             );
@@ -202,7 +202,7 @@ impl UiState {
     pub fn sync_mouse(&mut self) {
         let (x, y) = macroquad::prelude::mouse_position();
         let (x, y) = self.screen_to_canvas(x, y);
-        let p = (x as i32, y as i32).into();
+        let p = (x, y).into();
         let in_canvas = self.canvas().is_in_bounds(p);
         let visible_pixel = if in_canvas {
             Some(self.visible_pixel(p))
@@ -367,7 +367,7 @@ impl UiState {
 
         let rect = match self.inner.selection() {
             Some(Selection::FreeImage) => self.inner.free_image().unwrap().rect,
-            Some(Selection::Canvas(rect)) => rect.into(),
+            Some(Selection::Canvas(rect)) => rect,
             _ => return false,
         };
 

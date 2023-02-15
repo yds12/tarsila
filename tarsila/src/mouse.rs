@@ -39,7 +39,7 @@ impl MouseManager {
     }
 
     pub fn update(&mut self) -> Vec<Effect> {
-        let p = (self.mouse_canvas.x as i32, self.mouse_canvas.y as i32).into();
+        let p = (self.mouse_canvas.x, self.mouse_canvas.y).into();
         let mut events = Vec::new();
 
         if is_mouse_button_pressed(MouseButton::Left) {

@@ -1,7 +1,7 @@
 use crate::color::{BLACK, TRANSPARENT};
 use crate::{
-    graphics, util, Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Layer, Layers, Palette,
-    Point, Position, Rect, Size, Tool,
+    util, Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Layers, Palette, Point, Position,
+    Rect, Size, Tool,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -143,7 +143,7 @@ impl<IMG: Bitmap> State<IMG> {
             }
             Event::Copy => match self.selection {
                 Some(Selection::Canvas(rect)) => {
-                    self.clipboard = Some(self.canvas().img_from_area(rect.into()))
+                    self.clipboard = Some(self.canvas().img_from_area(rect))
                 }
                 Some(Selection::FreeImage) => {
                     self.clipboard = Some(self.free_image.as_ref().unwrap().texture.clone())
@@ -179,7 +179,7 @@ impl<IMG: Bitmap> State<IMG> {
                 }
             }
             Event::Paste(p) => {
-                if let Some(img) = self.clipboard.as_ref().map(|c| c.clone()) {
+                if let Some(img) = self.clipboard.as_ref().cloned() {
                     let img = FreeImage::new(p, img);
                     self.free_image = Some(img);
                     self.set_selection(Some(Selection::FreeImage));
@@ -301,7 +301,7 @@ impl<IMG: Bitmap> State<IMG> {
         if let Some(free_image) = self.free_image.take() {
             self.canvas_mut().paste_obj(&free_image);
             self.set_selection(Some(Selection::Canvas(
-                free_image.rect.clip_to(self.canvas().rect().into()).into(),
+                free_image.rect.clip_to(self.canvas().rect()),
             )));
         }
     }
@@ -329,8 +329,8 @@ impl<IMG: Bitmap> State<IMG> {
     fn free_image_from_selection(&mut self, mouse_pos: Option<Point<i32>>) {
         if let Some(Selection::Canvas(rect)) = self.selection {
             self.free_image = Some(FreeImage::from_canvas_area(
-                &self.canvas(),
-                rect.into(),
+                self.canvas(),
+                rect,
                 mouse_pos.map(|p| p - rect.pos()),
             ));
             self.canvas_mut().set_area(rect, TRANSPARENT);

@@ -49,7 +49,7 @@ impl Palette {
         egui::Window::new("Palette").show(egui_ctx, |ui| {
             let btn = ui.button("Load");
             if btn.clicked() {
-                let mut dialog = rfd::FileDialog::new();
+                let dialog = rfd::FileDialog::new();
 
                 if let Some(path) = dialog.pick_file() {
                     fx.push(Event::LoadPalette(path).into());

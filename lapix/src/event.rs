@@ -72,102 +72,102 @@ impl Event {
     }
 
     pub fn is_drawing_event(&self) -> bool {
-        match self {
+        matches!(
+            self,
             Self::BrushStart
-            | Self::DeleteSelection
-            | Self::BrushStroke(_)
-            | Self::LineStart(_)
-            | Self::LineEnd(_)
-            | Self::RectStart(_)
-            | Self::RectEnd(_)
-            | Self::Bucket(_)
-            | Self::MoveStart(_)
-            | Self::MoveEnd(_)
-            | Self::Paste(_)
-            | Self::Erase(_) => true,
-            _ => false,
-        }
+                | Self::DeleteSelection
+                | Self::BrushStroke(_)
+                | Self::LineStart(_)
+                | Self::LineEnd(_)
+                | Self::RectStart(_)
+                | Self::RectEnd(_)
+                | Self::Bucket(_)
+                | Self::MoveStart(_)
+                | Self::MoveEnd(_)
+                | Self::Paste(_)
+                | Self::Erase(_)
+        )
     }
 
     pub fn repeatable(&self) -> bool {
-        match self {
+        matches!(
+            self,
             Self::Undo
-            | Self::NewLayerAbove
-            | Self::NewLayerBelow
-            | Self::DeleteLayer(_)
-            | Self::FlipHorizontal
-            | Self::FlipVertical => true,
-            _ => false,
-        }
+                | Self::NewLayerAbove
+                | Self::NewLayerBelow
+                | Self::DeleteLayer(_)
+                | Self::FlipHorizontal
+                | Self::FlipVertical
+        )
     }
 
     pub fn type_repeatable(&self) -> bool {
-        match self {
-            Self::LineStart(_) | Self::LineEnd(_) | Self::RectStart(_) | Self::RectEnd(_) => false,
-            _ => true,
-        }
+        !matches!(
+            self,
+            Self::LineStart(_) | Self::LineEnd(_) | Self::RectStart(_) | Self::RectEnd(_)
+        )
     }
 
     pub fn undoable(&self) -> bool {
-        match self {
+        matches!(
+            self,
             Self::ClearCanvas
-            | Self::DeleteSelection
-            | Self::ResizeCanvas(_)
-            | Self::BrushStart
-            | Self::BrushStroke(_)
-            | Self::BrushEnd
-            | Self::SetMainColor(_)
-            | Self::AddToPalette(_)
-            | Self::RemoveFromPalette(_)
-            | Self::Bucket(_)
-            | Self::Erase(_)
-            | Self::LineStart(_)
-            | Self::LineEnd(_)
-            | Self::RectStart(_)
-            | Self::RectEnd(_)
-            | Self::NewLayerAbove
-            | Self::NewLayerBelow
-            | Self::FlipHorizontal
-            | Self::FlipVertical
-            | Self::SwitchLayer(_)
-            | Self::ChangeLayerVisibility(_, _)
-            | Self::ChangeLayerOpacity(_, _)
-            | Self::DeleteLayer(_)
-            | Self::MoveStart(_)
-            | Self::MoveEnd(_)
-            | Self::StartSelection(_)
-            | Self::EndSelection(_)
-            | Self::Paste(_)
-            | Self::LoadPalette(_)
-            | Self::OpenFile(_) => true,
-            _ => false,
-        }
+                | Self::DeleteSelection
+                | Self::ResizeCanvas(_)
+                | Self::BrushStart
+                | Self::BrushStroke(_)
+                | Self::BrushEnd
+                | Self::SetMainColor(_)
+                | Self::AddToPalette(_)
+                | Self::RemoveFromPalette(_)
+                | Self::Bucket(_)
+                | Self::Erase(_)
+                | Self::LineStart(_)
+                | Self::LineEnd(_)
+                | Self::RectStart(_)
+                | Self::RectEnd(_)
+                | Self::NewLayerAbove
+                | Self::NewLayerBelow
+                | Self::FlipHorizontal
+                | Self::FlipVertical
+                | Self::SwitchLayer(_)
+                | Self::ChangeLayerVisibility(_, _)
+                | Self::ChangeLayerOpacity(_, _)
+                | Self::DeleteLayer(_)
+                | Self::MoveStart(_)
+                | Self::MoveEnd(_)
+                | Self::StartSelection(_)
+                | Self::EndSelection(_)
+                | Self::Paste(_)
+                | Self::LoadPalette(_)
+                | Self::OpenFile(_)
+        )
     }
 
     pub fn clears_selection(&self) -> bool {
-        match self {
+        matches!(
+            self,
             Self::SetTool(Tool::Brush)
-            | Self::ClearSelection
-            | Self::DeleteSelection
-            | Self::SetTool(Tool::Eyedropper)
-            | Self::SetTool(Tool::Eraser)
-            | Self::SetTool(Tool::Rectangle)
-            | Self::SetTool(Tool::Line) => true,
-            _ => false,
-        }
+                | Self::ClearSelection
+                | Self::DeleteSelection
+                | Self::SetTool(Tool::Eyedropper)
+                | Self::SetTool(Tool::Eraser)
+                | Self::SetTool(Tool::Rectangle)
+                | Self::SetTool(Tool::Line)
+        )
     }
 
     pub fn triggers_anchoring(&self) -> bool {
-        match self {
+        !matches!(
+            self,
             Self::MoveStart(_)
-            | Self::MoveEnd(_)
-            | Self::Copy
-            | Self::LineEnd(_)
-            | Self::RectEnd(_)
-            | Self::FlipHorizontal
-            | Self::FlipVertical
-            | Self::DeleteSelection => false,
-            _ => true,
-        }
+                | Self::MoveEnd(_)
+                | Self::Copy
+                | Self::LineEnd(_)
+                | Self::RectEnd(_)
+                | Self::FlipHorizontal
+                | Self::FlipVertical
+                | Self::DeleteSelection
+        )
     }
 }

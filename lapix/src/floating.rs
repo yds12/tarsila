@@ -10,7 +10,7 @@ pub struct FreeImage<IMG: Bitmap> {
 impl<IMG: Bitmap> FreeImage<IMG> {
     pub fn new(p: Position<i32>, img: IMG) -> Self {
         Self {
-            rect: Rect::new(p.x, p.y, img.width() as i32, img.height() as i32),
+            rect: Rect::new(p.x, p.y, img.width(), img.height()),
             texture: img,
             pivot: None,
         }
@@ -68,7 +68,7 @@ impl<IMG: Bitmap> FreeImage<IMG> {
 
     pub fn move_by_pivot(&mut self, p: Point<i32>) {
         let pivot = self.pivot.unwrap_or((0, 0).into());
-        let (dx, dy) = (p.x - pivot.x as i32, p.y - pivot.y as i32);
+        let (dx, dy) = (p.x - pivot.x, p.y - pivot.y);
         self.rect.x = dx;
         self.rect.y = dy;
     }

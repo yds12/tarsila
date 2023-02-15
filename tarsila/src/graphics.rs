@@ -37,10 +37,10 @@ pub fn draw_animated_dashed_line(p1: Point<i32>, p2: Point<i32>) {
     for i in 0..(segments as usize) {
         let color = if i % 2 == iteration { BLACK } else { WHITE };
         draw_line(
-            p1.x as f32 + i as f32 * dx as f32,
-            p1.y as f32 + i as f32 * dy as f32,
-            p1.x as f32 + (i as f32 + 1.) * dx as f32,
-            p1.y as f32 + (i as f32 + 1.) * dy as f32,
+            p1.x as f32 + i as f32 * dx,
+            p1.y as f32 + i as f32 * dy,
+            p1.x as f32 + (i as f32 + 1.) * dx,
+            p1.y as f32 + (i as f32 + 1.) * dy,
             1.,
             color,
         );
@@ -105,7 +105,7 @@ pub fn draw_canvas_bg(ctx: DrawContext) {
 pub fn draw_selection(ctx: DrawContext, free_image: Option<&FreeImage<WrappedImage>>) {
     let rect = match ctx.selection {
         Some(Selection::FreeImage) => free_image.unwrap().rect,
-        Some(Selection::Canvas(rect)) => rect.into(),
+        Some(Selection::Canvas(rect)) => rect,
         _ => return,
     };
 

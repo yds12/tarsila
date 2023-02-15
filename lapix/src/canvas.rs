@@ -238,13 +238,11 @@ impl<IMG: Bitmap> Canvas<IMG> {
                 marked[(vy as usize) * w + vx as usize] = true;
                 self.set_pixel((vx, vy).into(), color);
 
-                for n in self.neighbors(vx, vy) {
-                    if let Some((nx, ny)) = n {
-                        let ind = (ny as usize) * w + nx as usize;
-                        if self.inner.pixel((nx, ny).into()) == old_color && !marked[ind] {
-                            new_visit.push((nx, ny));
-                            marked[ind] = true;
-                        }
+                for (nx, ny) in self.neighbors(vx, vy).into_iter().flatten() {
+                    let ind = (ny as usize) * w + nx as usize;
+                    if self.inner.pixel((nx, ny).into()) == old_color && !marked[ind] {
+                        new_visit.push((nx, ny));
+                        marked[ind] = true;
                     }
                 }
             }
