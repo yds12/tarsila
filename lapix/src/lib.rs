@@ -15,7 +15,7 @@ pub use canvas::{Canvas, CanvasEffect};
 pub use color::Color;
 pub use event::Event;
 pub use floating::FreeImage;
-pub use layer::Layer;
+pub use layer::{Layer, Layers};
 use palette::Palette;
 pub use primitives::*;
 pub use state::{Selection, State};

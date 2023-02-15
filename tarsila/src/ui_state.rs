@@ -91,11 +91,11 @@ impl Default for UiState {
 
 impl UiState {
     pub fn drawing_mut(&mut self) -> &mut Texture2D {
-        &mut self.layer_textures[self.inner.active_layer()]
+        &mut self.layer_textures[self.inner.layers().active_index()]
     }
 
     pub fn drawing(&self) -> &Texture2D {
-        &self.layer_textures[self.inner.active_layer()]
+        &self.layer_textures[self.inner.layers().active_index()]
     }
 
     pub fn update(&mut self) {
@@ -166,7 +166,7 @@ impl UiState {
             graphics::draw_free_image(
                 ctx,
                 &img,
-                self.inner.layer(self.inner.active_layer()).opacity(),
+                self.inner.layers().active().opacity(),
                 self.free_image_tex.unwrap(),
             );
         } else {
@@ -179,16 +179,16 @@ impl UiState {
 
     /// Pass relevant UI state info to the GUI
     pub fn sync_gui(&mut self) {
-        let n_layers = self.inner.num_layers();
+        let n_layers = self.inner.layers().count();
         self.gui.sync(
             self.inner.main_color().into(),
             n_layers,
-            self.inner.active_layer(),
+            self.inner.layers().active_index(),
             (0..n_layers)
-                .map(|i| self.inner.layer(i).visible())
+                .map(|i| self.inner.layers().get(i).visible())
                 .collect(),
             (0..n_layers)
-                .map(|i| self.inner.layer(i).opacity())
+                .map(|i| self.inner.layers().get(i).opacity())
                 .collect(),
             self.inner
                 .sprite_images()
@@ -234,13 +234,13 @@ impl UiState {
     }
 
     pub fn sync_layer_textures(&mut self) {
-        for layer in 0..self.inner.num_layers() {
+        for layer in 0..self.inner.layers().count() {
             self.sync_layer_texture(layer);
         }
     }
 
     pub fn sync_layer_texture(&mut self, index: usize) {
-        let layer_img = &self.inner.layer_canvas(index).inner().0;
+        let layer_img = &self.inner.layers().canvas_at(index).inner().0;
         let texture = Texture2D::from_image(layer_img);
         texture.set_filter(FilterMode::Nearest);
 
@@ -266,7 +266,7 @@ impl UiState {
     }
 
     pub fn visible_pixel(&self, p: Point<i32>) -> [u8; 4] {
-        self.inner.visible_pixel(p).into()
+        self.inner.layers().visible_pixel(p).into()
     }
 
     pub fn camera(&self) -> Position<f32> {
@@ -298,11 +298,11 @@ impl UiState {
     }
 
     pub fn layer(&self, index: usize) -> &Layer<WrappedImage> {
-        self.inner.layer(index)
+        self.inner.layers().get(index)
     }
 
     pub fn num_layers(&self) -> usize {
-        self.inner.num_layers()
+        self.inner.layers().count()
     }
 
     pub fn layer_tex(&self, index: usize) -> Texture2D {

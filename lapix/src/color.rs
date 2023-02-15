@@ -102,4 +102,13 @@ impl Color {
         )
         .into()
     }
+
+    pub fn with_multiplied_alpha(&self, alpha: u8) -> Self {
+        Self {
+            r: self.r,
+            g: self.g,
+            b: self.b,
+            a: (((self.a as f32 / 255.) * (alpha as f32 / 255.)) * 255.) as u8,
+        }
+    }
 }

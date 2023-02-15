@@ -1,7 +1,7 @@
 use crate::color::{BLACK, TRANSPARENT};
 use crate::{
-    graphics, util, Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Layer, Palette, Point,
-    Position, Rect, Size, Tool,
+    graphics, util, Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Layer, Layers, Palette,
+    Point, Position, Rect, Size, Tool,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -11,8 +11,7 @@ pub enum Selection {
 }
 
 pub struct State<IMG: Bitmap> {
-    layers: Vec<Layer<IMG>>,
-    active_layer: usize,
+    layers: Layers<IMG>,
     events: Vec<Event>,
     tool: Tool,
     main_color: Color,
@@ -26,8 +25,7 @@ pub struct State<IMG: Bitmap> {
 impl<IMG: Bitmap> State<IMG> {
     pub fn new(size: Size<i32>) -> Self {
         Self {
-            layers: vec![Layer::new(size)],
-            active_layer: 0,
+            layers: Layers::new(size),
             events: Vec::new(),
             tool: Tool::Brush,
             main_color: BLACK,
@@ -124,10 +122,12 @@ impl<IMG: Bitmap> State<IMG> {
             Event::AddToPalette(color) => self.palette.add_color(color),
             Event::RemoveFromPalette(color) => self.palette.remove_color(color),
             Event::Bucket(p) => {
-                self.canvas_mut().start_editing_bundle();
-                let color = self.main_color;
-                self.canvas_mut().bucket(p, color);
-                self.canvas_mut().finish_editing_bundle();
+                if self.canvas().is_in_bounds(p) {
+                    self.canvas_mut().start_editing_bundle();
+                    let color = self.main_color;
+                    self.canvas_mut().bucket(p, color);
+                    self.canvas_mut().finish_editing_bundle();
+                }
             }
             Event::ClearSelection => (),
             Event::StartSelection(_) => (),
@@ -201,14 +201,14 @@ impl<IMG: Bitmap> State<IMG> {
                     free_img.flip_vertically();
                 }
             }
-            Event::NewLayerAbove => self.add_layer(),
+            Event::NewLayerAbove => self.layers.add_above(),
             Event::NewLayerBelow => todo!(),
-            Event::SwitchLayer(i) => self.active_layer = i,
-            Event::ChangeLayerVisibility(i, visible) => self.change_layer_visibility(i, visible),
-            Event::ChangeLayerOpacity(i, alpha) => self.change_layer_opacity(i, alpha),
+            Event::SwitchLayer(i) => self.layers.switch_to(i),
+            Event::ChangeLayerVisibility(i, visible) => self.layers.set_visibility(i, visible),
+            Event::ChangeLayerOpacity(i, alpha) => self.layers.set_opacity(i, alpha),
             // TODO: this should not only remove it, as we need to be able to
             // undo this
-            Event::DeleteLayer(i) => self.delete_layer(i),
+            Event::DeleteLayer(i) => self.layers.delete(i),
             Event::SetSpritesheet(size) => self.set_spritesheet(size),
             Event::Undo => {
                 // TODO: we should add UNDO to the events list
@@ -231,25 +231,19 @@ impl<IMG: Bitmap> State<IMG> {
     }
 
     pub fn resize_canvas(&mut self, size: Size<i32>) {
-        for layer in self.layers.iter_mut() {
-            layer.resize(size);
-        }
+        self.layers.resize_all(size);
     }
 
     pub fn canvas_mut(&mut self) -> &mut Canvas<IMG> {
-        self.layers[self.active_layer].canvas_mut()
+        self.layers.active_canvas_mut()
     }
 
     pub fn canvas(&self) -> &Canvas<IMG> {
-        self.layers[self.active_layer].canvas()
+        self.layers.active_canvas()
     }
 
-    pub fn layer(&self, index: usize) -> &Layer<IMG> {
-        &self.layers[index]
-    }
-
-    pub fn layer_canvas(&self, index: usize) -> &Canvas<IMG> {
-        self.layers[index].canvas()
+    pub fn layers(&self) -> &Layers<IMG> {
+        &self.layers
     }
 
     pub fn selected_tool(&self) -> Tool {
@@ -258,32 +252,6 @@ impl<IMG: Bitmap> State<IMG> {
 
     pub fn main_color(&self) -> Color {
         self.main_color
-    }
-
-    pub fn active_layer(&self) -> usize {
-        self.active_layer
-    }
-
-    pub fn num_layers(&self) -> usize {
-        self.layers.len()
-    }
-
-    fn add_layer(&mut self) {
-        let layer = Layer::<IMG>::new(self.canvas().size());
-        self.layers.push(layer);
-    }
-
-    fn delete_layer(&mut self, index: usize) {
-        // TODO: this should not only remove it, as we need to be able to undo this
-        self.layers.remove(index);
-    }
-
-    fn change_layer_visibility(&mut self, index: usize, visible: bool) {
-        self.layers[index].set_visibility(visible);
-    }
-
-    fn change_layer_opacity(&mut self, index: usize, opacity: u8) {
-        self.layers[index].set_opacity(opacity);
     }
 
     pub fn spritesheet(&self) -> Size<u8> {
@@ -379,7 +347,7 @@ impl<IMG: Bitmap> State<IMG> {
     }
 
     fn save_image(&self, path: &str) {
-        let blended = self.blended_layers();
+        let blended = self.layers.blended();
         util::save_image(blended, path);
     }
 
@@ -394,58 +362,21 @@ impl<IMG: Bitmap> State<IMG> {
         }
     }
 
-    pub fn blended_layers(&self) -> IMG {
-        let w = self.layer_canvas(0).width();
-        let h = self.layer_canvas(0).height();
-
-        self.blended_layers_rect((0, 0, w, h).into())
-    }
-
-    pub fn blended_layers_rect(&self, r: Rect<i32>) -> IMG {
-        let mut result = IMG::new((r.w, r.h).into(), TRANSPARENT);
-
-        for i in 0..r.w {
-            for j in 0..r.h {
-                let ij = Point::new(i, j);
-                result.set_pixel(ij, self.visible_pixel(ij + r.pos()));
-            }
-        }
-
-        result
-    }
-
     pub fn sprite_images(&self) -> Vec<IMG> {
         let mut imgs = Vec::new();
-        let w = self.layer_canvas(0).width() / self.spritesheet.x as i32;
-        let h = self.layer_canvas(0).height() / self.spritesheet.y as i32;
+        let w = self.layers.canvas_at(0).width() / self.spritesheet.x as i32;
+        let h = self.layers.canvas_at(0).height() / self.spritesheet.y as i32;
 
         for j in 0..self.spritesheet.y {
             for i in 0..self.spritesheet.x {
                 imgs.push(
                     // TODO: maybe this (and other) multiplication can overflow
-                    self.blended_layers_rect((i as i32 * w, j as i32 * h, w, h).into()),
+                    self.layers
+                        .blended_area((i as i32 * w, j as i32 * h, w, h).into()),
                 );
             }
         }
 
         imgs
-    }
-
-    pub fn visible_pixel(&self, p: Point<i32>) -> Color {
-        let mut result = if self.layer(0).visible() {
-            self.layer_canvas(0).pixel(p)
-        } else {
-            TRANSPARENT
-        };
-
-        for i in 1..self.layers.len() {
-            if !self.layer(i).visible() {
-                continue;
-            }
-
-            result = self.layer_canvas(i).pixel(p).blend_over(result);
-        }
-
-        result
     }
 }
