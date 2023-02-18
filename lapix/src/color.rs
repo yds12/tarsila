@@ -1,7 +1,9 @@
+use serde::{Deserialize, Serialize};
+
 pub const TRANSPARENT: Color = Color::new(0, 0, 0, 0);
 pub const BLACK: Color = Color::new(0, 0, 0, 255);
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Color {
     pub r: u8,
     pub g: u8,

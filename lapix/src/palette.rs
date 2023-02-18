@@ -1,7 +1,9 @@
 use crate::{util, Color};
+use serde::{Deserialize, Serialize};
 
 const MAX_PALETTE: usize = 200;
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Palette(Vec<Color>);
 
 impl Default for Palette {

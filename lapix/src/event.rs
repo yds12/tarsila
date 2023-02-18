@@ -1,7 +1,8 @@
 pub use crate::{Bitmap, CanvasEffect, Color, Point, Position, Size, Tool};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Event {
     ClearCanvas,
     ResizeCanvas(Size<i32>),
@@ -14,6 +15,10 @@ pub enum Event {
     RemoveFromPalette(Color),
     Save(PathBuf),
     OpenFile(PathBuf),
+    // TODO: these should be UI events, however we need to see what to do
+    // when it comes to UNDO
+    SaveProject(PathBuf),
+    LoadProject(PathBuf),
     LoadPalette(PathBuf),
     Bucket(Point<i32>),
     EraseStart,
@@ -71,7 +76,8 @@ impl Event {
             | Self::NewLayerBelow
             | Self::DeleteLayer(_)
             | Self::MoveLayerDown(_)
-            | Self::MoveLayerUp(_) => CanvasEffect::Layer,
+            | Self::MoveLayerUp(_)
+            | Self::LoadProject(_) => CanvasEffect::Layer,
             x if x.triggers_anchoring() => CanvasEffect::Update,
             _ => CanvasEffect::None,
         }

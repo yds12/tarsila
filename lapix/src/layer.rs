@@ -1,7 +1,9 @@
 use crate::color::TRANSPARENT;
 use crate::{Bitmap, Canvas, Color, Point, Rect, Size};
+use serde::{Deserialize, Serialize};
 
-pub struct Layers<IMG: Bitmap> {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Layers<IMG> {
     inner: Vec<Layer<IMG>>,
     active: usize,
 }
@@ -117,7 +119,8 @@ impl<IMG: Bitmap> Layers<IMG> {
     }
 }
 
-pub struct Layer<IMG: Bitmap> {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Layer<IMG> {
     canvas: Canvas<IMG>,
     visible: bool,
     opacity: u8,

@@ -1,8 +1,29 @@
 use lapix::{Bitmap, Color, Point, Size};
 use macroquad::prelude::*;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug, Clone)]
 pub struct WrappedImage(pub Image);
+
+impl<'a> Serialize for WrappedImage {
+    fn serialize<S>(&self, ser: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let bytes = self.into_png_bytes();
+        ser.serialize_bytes(&bytes)
+    }
+}
+
+impl<'a> Deserialize<'a> for WrappedImage {
+    fn deserialize<D>(d: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'a>,
+    {
+        let vec = Vec::<u8>::deserialize(d).expect("failed to deserialize Vec<u8>");
+        Ok(Self::from_file_bytes(vec))
+    }
+}
 
 impl Bitmap for WrappedImage {
     fn new(size: Size<i32>, color: Color) -> Self {

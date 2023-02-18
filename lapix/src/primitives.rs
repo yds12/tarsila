@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::cmp::PartialOrd;
 use std::fmt::Debug;
 use std::ops::{Add, Sub};
@@ -20,7 +21,9 @@ impl Number for usize {}
 impl Number for f32 {}
 impl Number for f64 {}
 
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+)]
 pub struct Point<T: Number> {
     pub x: T,
     pub y: T,
@@ -98,7 +101,7 @@ pub enum Direction {
     Right,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Rect<T: Number> {
     pub x: T,
     pub y: T,

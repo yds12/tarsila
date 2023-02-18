@@ -1,5 +1,6 @@
 use crate::color::TRANSPARENT;
 use crate::{graphics, Bitmap, Color, FreeImage, Point, Position, Rect, Size};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy)]
 pub enum CanvasEffect {
@@ -9,7 +10,7 @@ pub enum CanvasEffect {
     Layer,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum CanvasAtomicEdit {
     ChangePixel {
         position: Position<i32>,
@@ -35,7 +36,7 @@ impl CanvasAtomicEdit {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CanvasEdit(Vec<CanvasAtomicEdit>);
 
 impl CanvasEdit {
@@ -58,9 +59,12 @@ impl CanvasEdit {
     }
 }
 
-pub struct Canvas<IMG: Bitmap> {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Canvas<IMG> {
     inner: IMG,
+    #[serde(skip)]
     edits: Vec<CanvasEdit>,
+    #[serde(skip)]
     cur_edit_bundle: Option<CanvasEdit>,
 }
 

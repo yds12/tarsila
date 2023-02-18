@@ -11,7 +11,7 @@ Features (+ means done, (-) means least important):
   - Layers (+)
     - control visibility (+)
     - control editability (+)
-    - layer panel allow to change layer position, remove and add (+) layers
+    - layer panel allow to change layer position, remove and add layers (+)
     - group/ungroup layers (-)
   - Transparent (+) or solid background
   - Zoom in and out (+) and predefined zoom levels
@@ -29,14 +29,14 @@ Features (+ means done, (-) means least important):
     - works not only on brush, but all tools, including selection
 - Color palette (+)
   - Add and remove colors (+)
-  - Save and load (+) palettes [v0.1]
-  - Default palettes [v0.1]
+  - Save and load (+) palettes [v0.2]
+  - Default palettes [v0.2]
   - Sorting based on multiple possible properties (-)
   - possible to edit a color in the palette based on full color picker (-)
 - Save and load images (+)
   - Choose Scaled [v0.2]
   - Different formats (PNG (+), JPEG (+), GIF)
-  - save/load project files
+  - save/load project files (+)
 - Preview (+)
   - Real size (+)
   - Animation (+)
@@ -73,7 +73,7 @@ Features (+ means done, (-) means least important):
     - create selection based on what's on a layer (-)
   - Eyedrop to select colors (+)
   - Transform
-    - Resize [v0.1]
+    - Resize [v0.2]
     - Rotate [v0.2]
     - Flip (horizontal or vertical) (+)
   - Effects

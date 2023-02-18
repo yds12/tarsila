@@ -3,15 +3,19 @@ use crate::{
     util, Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Layers, Palette, Point, Position,
     Rect, Size, Tool,
 };
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Selection {
     Canvas(Rect<i32>),
     FreeImage,
 }
 
-pub struct State<IMG: Bitmap> {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct State<IMG> {
     layers: Layers<IMG>,
+    #[serde(skip)]
     events: Vec<Event>,
     tool: Tool,
     main_color: Color,
@@ -22,7 +26,7 @@ pub struct State<IMG: Bitmap> {
     clipboard: Option<IMG>,
 }
 
-impl<IMG: Bitmap> State<IMG> {
+impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
     pub fn new(size: Size<i32>) -> Self {
         Self {
             layers: Layers::new(size),
@@ -35,6 +39,23 @@ impl<IMG: Bitmap> State<IMG> {
             free_image: None,
             clipboard: None,
         }
+    }
+
+    pub fn to_file(&self, path: PathBuf) {
+        use std::io::Write;
+        let bytes = bincode::serialize(self).unwrap();
+        let mut file = std::fs::File::create(path).unwrap();
+        file.write(&bytes);
+    }
+
+    pub fn from_file(path: PathBuf) -> Self {
+        use std::io::Read;
+        let mut file = std::fs::File::open(path).unwrap();
+        let mut bytes = Vec::new();
+        file.read_to_end(&mut bytes).unwrap();
+        let state = bincode::deserialize(&bytes).unwrap();
+
+        state
     }
 
     pub fn execute(&mut self, event: Event) -> CanvasEffect {
@@ -116,6 +137,8 @@ impl<IMG: Bitmap> State<IMG> {
             Event::SetMainColor(color) => self.main_color = color,
             Event::Save(path) => self.save_image(path.to_string_lossy().as_ref()),
             Event::OpenFile(path) => self.open_image(path.to_string_lossy().as_ref()),
+            Event::SaveProject(path) => self.to_file(path),
+            Event::LoadProject(path) => *self = Self::from_file(path),
             Event::LoadPalette(path) => {
                 self.palette = Palette::from_file(path.to_string_lossy().as_ref())
             }

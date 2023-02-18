@@ -1,7 +1,10 @@
 use crate::color::TRANSPARENT;
 use crate::{graphics, Bitmap, Canvas, Color, Point, Position, Rect, Size};
+use serde::{Deserialize, Serialize};
+use std::marker::PhantomData;
 
-pub struct FreeImage<IMG: Bitmap> {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FreeImage<IMG> {
     pub rect: Rect<i32>,
     pub pivot: Option<Point<i32>>,
     pub texture: IMG,

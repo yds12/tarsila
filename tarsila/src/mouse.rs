@@ -57,9 +57,10 @@ impl MouseManager {
                     events.push(Event::RectStart(p).into());
                 }
                 Tool::Eyedropper => {
-                    let color = self.visible_pixel_on_mouse.unwrap();
-                    events.push(Event::SetMainColor(color.into()).into());
-                    events.push(Event::SetTool(Tool::Brush).into());
+                    if let Some(color) = self.visible_pixel_on_mouse {
+                        events.push(Event::SetMainColor(color.into()).into());
+                        events.push(Event::SetTool(Tool::Brush).into());
+                    }
                 }
                 Tool::Bucket => {
                     events.push(Event::Bucket(p).into());

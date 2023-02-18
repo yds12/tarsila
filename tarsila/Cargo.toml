@@ -11,3 +11,4 @@ egui-macroquad = { path = "../egui-macroquad" }
 macroquad = "0.3.25"
 rfd = "0.10.0"
 egui = "0.21.0"
+serde = { version = "1.0.152", features = ["derive"] }
