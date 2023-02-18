@@ -174,7 +174,7 @@ impl Gui {
             if btn.clicked() {
                 events.push(Event::ClearCanvas.into());
             }
-            let btn = ui.button("Save");
+            let btn = ui.button("Export");
             if btn.clicked() {
                 let mut dialog = rfd::FileDialog::new();
 
@@ -187,7 +187,7 @@ impl Gui {
                     events.push(Event::Save(path).into());
                 }
             }
-            let btn = ui.button("Open");
+            let btn = ui.button("Import");
             if btn.clicked() {
                 let mut dialog = rfd::FileDialog::new();
 

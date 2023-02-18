@@ -209,6 +209,8 @@ impl<IMG: Bitmap> State<IMG> {
             // TODO: this should not only remove it, as we need to be able to
             // undo this
             Event::DeleteLayer(i) => self.layers.delete(i),
+            Event::MoveLayerDown(i) => self.layers.swap(i, i - 1),
+            Event::MoveLayerUp(i) => self.layers.swap(i, i + 1),
             Event::SetSpritesheet(size) => self.set_spritesheet(size),
             Event::Undo => {
                 // TODO: we should add UNDO to the events list

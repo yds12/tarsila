@@ -90,6 +90,10 @@ impl<IMG: Bitmap> Layers<IMG> {
         self.inner[index].set_opacity(opacity);
     }
 
+    pub fn swap(&mut self, first: usize, second: usize) {
+        self.inner.swap(first, second);
+    }
+
     pub fn visible_pixel(&self, p: Point<i32>) -> Color {
         let mut result = if self.inner[0].visible() {
             self.canvas_at(0).pixel(p)

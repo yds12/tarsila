@@ -29,6 +29,8 @@ pub enum Event {
     ChangeLayerVisibility(usize, bool),
     ChangeLayerOpacity(usize, u8),
     DeleteLayer(usize),
+    MoveLayerDown(usize),
+    MoveLayerUp(usize),
     SetSpritesheet(Size<u8>),
     StartSelection(Point<i32>),
     EndSelection(Point<i32>),
@@ -65,7 +67,11 @@ impl Event {
             | Self::FlipVertical
             | Self::Erase(_) => CanvasEffect::Update,
             Self::ResizeCanvas(_) | Self::OpenFile(_) => CanvasEffect::New,
-            Self::NewLayerAbove | Self::NewLayerBelow | Self::DeleteLayer(_) => CanvasEffect::Layer,
+            Self::NewLayerAbove
+            | Self::NewLayerBelow
+            | Self::DeleteLayer(_)
+            | Self::MoveLayerDown(_)
+            | Self::MoveLayerUp(_) => CanvasEffect::Layer,
             x if x.triggers_anchoring() => CanvasEffect::Update,
             _ => CanvasEffect::None,
         }
@@ -98,6 +104,8 @@ impl Event {
                 | Self::DeleteLayer(_)
                 | Self::FlipHorizontal
                 | Self::FlipVertical
+                | Self::MoveLayerDown(_)
+                | Self::MoveLayerUp(_)
         )
     }
 
@@ -141,6 +149,8 @@ impl Event {
                 | Self::Paste(_)
                 | Self::LoadPalette(_)
                 | Self::OpenFile(_)
+                | Self::MoveLayerDown(_)
+                | Self::MoveLayerUp(_)
         )
     }
 
@@ -154,6 +164,8 @@ impl Event {
                 | Self::SetTool(Tool::Eraser)
                 | Self::SetTool(Tool::Rectangle)
                 | Self::SetTool(Tool::Line)
+                | Self::MoveLayerDown(_)
+                | Self::MoveLayerUp(_)
         )
     }
 
@@ -168,6 +180,8 @@ impl Event {
                 | Self::FlipHorizontal
                 | Self::FlipVertical
                 | Self::DeleteSelection
+                | Self::MoveLayerDown(_)
+                | Self::MoveLayerUp(_)
         )
     }
 }

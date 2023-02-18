@@ -54,6 +54,7 @@ impl LayersPanel {
                 });
 
                 for i in 0..self.num_layers {
+                    let i = self.num_layers - i - 1;
                     ui.horizontal(|ui| {
                         ui.label((i + 1).to_string());
                         ui.separator();
@@ -86,19 +87,36 @@ impl LayersPanel {
                                 events.push(Event::ChangeLayerOpacity(i, opacity).into());
                             }
                         }
-                        ui.set_enabled(self.num_layers > 1);
-                        let btn = ui.button("x");
-                        if btn.clicked() {
-                            events.push(Event::DeleteLayer(i).into());
+                        // Move layer below button
+                        ui.add_enabled_ui(i > 0, |ui| {
+                            let btn = ui.button("v");
+                            if btn.clicked() {
+                                events.push(Event::MoveLayerDown(i).into());
+                                events.push(Event::SwitchLayer(i - 1).into());
+                            }
+                        });
+                        // Move layer above button
+                        ui.add_enabled_ui(i < self.num_layers - 1, |ui| {
+                            let btn = ui.button("^");
+                            if btn.clicked() {
+                                events.push(Event::MoveLayerUp(i).into());
+                                events.push(Event::SwitchLayer(i + 1).into());
+                            }
+                        });
+                        // Delete layer button
+                        ui.add_enabled_ui(self.num_layers > 1, |ui| {
+                            let btn = ui.button("x");
+                            if btn.clicked() {
+                                events.push(Event::DeleteLayer(i).into());
 
-                            let select_layer = match self.active_layer {
-                                x if i > x => self.active_layer,
-                                x if i == x && i == 0 => 0,
-                                _ => self.active_layer - 1,
-                            };
-                            events.push(Event::SwitchLayer(select_layer).into());
-                        }
-                        ui.set_enabled(true);
+                                let select_layer = match self.active_layer {
+                                    x if i > x => self.active_layer,
+                                    x if i == x && i == 0 => 0,
+                                    _ => self.active_layer - 1,
+                                };
+                                events.push(Event::SwitchLayer(select_layer).into());
+                            }
+                        });
                     });
                 }
             });
