@@ -174,58 +174,65 @@ impl Gui {
             if btn.clicked() {
                 events.push(Event::ClearCanvas.into());
             }
-            let btn = ui.button("Export");
-            if btn.clicked() {
-                let mut dialog = rfd::FileDialog::new();
 
-                if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
-                    dialog = dialog.set_directory(dir);
-                }
+            ui.horizontal(|ui| {
+                let btn = ui.button("Export");
+                if btn.clicked() {
+                    let mut dialog = rfd::FileDialog::new();
 
-                if let Some(path) = dialog.save_file() {
-                    self.last_file = Some(path.clone());
-                    events.push(Event::Save(path).into());
-                }
-            }
-            let btn = ui.button("Import");
-            if btn.clicked() {
-                let mut dialog = rfd::FileDialog::new();
+                    if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
+                        dialog = dialog.set_directory(dir);
+                    }
 
-                if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
-                    dialog = dialog.set_directory(dir);
+                    if let Some(path) = dialog.save_file() {
+                        self.last_file = Some(path.clone());
+                        events.push(Event::Save(path).into());
+                    }
                 }
+                let btn = ui.button("Import");
+                if btn.clicked() {
+                    let mut dialog = rfd::FileDialog::new();
 
-                if let Some(path) = dialog.pick_file() {
-                    self.last_file = Some(path.clone());
-                    events.push(Event::OpenFile(path).into());
-                }
-            }
-            let btn = ui.button("Save Project");
-            if btn.clicked() {
-                let mut dialog = rfd::FileDialog::new();
+                    if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
+                        dialog = dialog.set_directory(dir);
+                    }
 
-                if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
-                    dialog = dialog.set_directory(dir).set_file_name("project.tarsila");
+                    if let Some(path) = dialog.pick_file() {
+                        self.last_file = Some(path.clone());
+                        events.push(Event::OpenFile(path).into());
+                        events.push(Event::SetTool(Tool::Move).into());
+                    }
                 }
+            });
 
-                if let Some(path) = dialog.save_file() {
-                    self.last_file = Some(path.clone());
-                    events.push(Event::SaveProject(path).into());
-                }
-            }
-            let btn = ui.button("Load Project");
-            if btn.clicked() {
-                let mut dialog = rfd::FileDialog::new();
+            ui.horizontal(|ui| {
+                let btn = ui.button("Save Project");
+                if btn.clicked() {
+                    let mut dialog = rfd::FileDialog::new();
 
-                if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
-                    dialog = dialog.set_directory(dir);
-                }
+                    if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
+                        dialog = dialog.set_directory(dir).set_file_name("project.tarsila");
+                    }
 
-                if let Some(path) = dialog.pick_file() {
-                    self.last_file = Some(path.clone());
-                    events.push(Event::LoadProject(path).into());
+                    if let Some(path) = dialog.save_file() {
+                        self.last_file = Some(path.clone());
+                        events.push(Event::SaveProject(path).into());
+                    }
                 }
-            }
+                let btn = ui.button("Load Project");
+                if btn.clicked() {
+                    let mut dialog = rfd::FileDialog::new();
+
+                    if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
+                        dialog = dialog.set_directory(dir);
+                    }
+
+                    if let Some(path) = dialog.pick_file() {
+                        self.last_file = Some(path.clone());
+                        events.push(Event::LoadProject(path).into());
+                    }
+                }
+            });
         });
 
         if egui_ctx.is_pointer_over_area() {

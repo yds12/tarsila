@@ -136,7 +136,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
             Event::SetTool(tool) => self.tool = tool,
             Event::SetMainColor(color) => self.main_color = color,
             Event::Save(path) => self.save_image(path.to_string_lossy().as_ref()),
-            Event::OpenFile(path) => self.open_image(path.to_string_lossy().as_ref()),
+            Event::OpenFile(path) => self.import_image(path.to_string_lossy().as_ref()),
             Event::SaveProject(path) => self.to_file(path),
             Event::LoadProject(path) => *self = Self::from_file(path),
             Event::LoadPalette(path) => {
@@ -324,6 +324,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
 
     fn anchor(&mut self) {
         if let Some(free_image) = self.free_image.take() {
+            println!("Anchoring");
             self.canvas_mut().paste_obj(&free_image);
             self.set_selection(Some(Selection::Canvas(
                 free_image.rect.clip_to(self.canvas().rect()),
@@ -376,15 +377,19 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         util::save_image(blended, path);
     }
 
-    fn open_image(&mut self, path: &str) {
+    fn import_image(&mut self, path: &str) {
         let img = util::load_img_from_file(path);
-        self.resize_canvas((img.width() as i32, img.height() as i32).into());
 
-        for (x, y, pixel) in img.enumerate_pixels() {
-            let color = Color::new(pixel.0[0], pixel.0[1], pixel.0[2], pixel.0[3]);
-            self.canvas_mut()
-                .set_pixel((x as i32, y as i32).into(), color);
+        if img.width() as i32 > self.canvas().width()
+            || img.height() as i32 > self.canvas().height()
+        {
+            self.resize_canvas((img.width() as i32, img.height() as i32).into());
         }
+
+        let img: IMG = util::img_from_raw(img);
+        let img = FreeImage::new(Point::ZERO, img);
+        self.free_image = Some(img);
+        self.set_selection(Some(Selection::FreeImage));
     }
 
     pub fn sprite_images(&self) -> Vec<IMG> {

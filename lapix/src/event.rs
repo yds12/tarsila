@@ -180,6 +180,7 @@ impl Event {
             self,
             Self::MoveStart(_)
                 | Self::MoveEnd(_)
+                | Self::SetTool(Tool::Move)
                 | Self::Copy
                 | Self::LineEnd(_)
                 | Self::RectEnd(_)
