@@ -8,6 +8,7 @@ mod palette;
 pub mod primitives;
 mod state;
 mod util;
+mod tool;
 
 pub use canvas::{Canvas, CanvasEffect};
 pub use color::Color;
@@ -19,18 +20,7 @@ pub use primitives::*;
 use serde::{Deserialize, Serialize};
 pub use state::{Selection, State};
 use std::fmt::Debug;
-
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Tool {
-    Brush,
-    Eraser,
-    Eyedropper,
-    Bucket,
-    Line,
-    Selection,
-    Move,
-    Rectangle,
-}
+pub use tool::Tool;
 
 // TODO: move this to own file
 pub trait Bitmap: Clone {

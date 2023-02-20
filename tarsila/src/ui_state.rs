@@ -180,6 +180,19 @@ impl UiState {
     /// Pass relevant UI state info to the GUI
     pub fn sync_gui(&mut self) {
         let n_layers = self.inner.layers().count();
+        let (x, y) = macroquad::prelude::mouse_position();
+        let (x, y) = self.screen_to_canvas(x, y);
+        let p = (x, y).into();
+        let in_canvas = self.canvas().is_in_bounds(p);
+        let visible_pixel = if in_canvas {
+            Some(self.visible_pixel(p))
+        } else {
+            None
+        };
+
+        // TODO: we desperately need to improve this... every new parameter that
+        // needs to be sync'ed, becomes an extra argument here, which in turn
+        // needs to be passed down to the specific GUI component
         self.gui.sync(
             self.inner.main_color().into(),
             n_layers,
@@ -196,6 +209,10 @@ impl UiState {
                 .map(|i| i.0)
                 .collect(),
             self.inner.palette().iter().map(|c| (*c).into()).collect(),
+            (x, y).into(),
+            in_canvas,
+            self.selected_tool(),
+            visible_pixel,
         );
     }
 

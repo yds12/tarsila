@@ -7,11 +7,13 @@ use std::path::PathBuf;
 mod layers;
 mod palette;
 mod preview;
+mod status;
 mod toolbar;
 
 use layers::LayersPanel;
 use palette::Palette;
 use preview::Preview;
+use status::StatusBar;
 use toolbar::Toolbar;
 
 pub struct Resources;
@@ -55,6 +57,7 @@ pub struct Gui {
     spritesheet: (String, String),
     preview: Preview,
     palette: Palette,
+    status_bar: StatusBar,
 }
 
 impl Gui {
@@ -68,6 +71,7 @@ impl Gui {
             spritesheet: ("1".to_owned(), "1".to_owned()),
             preview: Preview::new(),
             palette: Palette::new(),
+            status_bar: StatusBar::new(),
         }
     }
 
@@ -86,12 +90,22 @@ impl Gui {
         layers_alpha: Vec<u8>,
         preview_imgs: Vec<macroquad::prelude::Image>,
         palette: Vec<[u8; 4]>,
+        mouse_canvas: Position<i32>,
+        is_on_canvas: bool,
+        selected_tool: Tool,
+        visible_pixel_on_mouse: Option<[u8; 4]>,
     ) {
         self.toolbar.sync(main_color);
         self.layers_panel
             .sync(num_layers, active_layer, layers_vis, layers_alpha);
         self.preview.sync(preview_imgs);
         self.palette.sync(palette);
+        self.status_bar.sync(
+            mouse_canvas,
+            is_on_canvas,
+            selected_tool,
+            visible_pixel_on_mouse,
+        );
     }
 
     pub fn update(&mut self) -> Vec<Effect> {
@@ -111,6 +125,7 @@ impl Gui {
             events.append(&mut layers_events);
 
             self.preview.update(egui_ctx);
+            self.status_bar.update(egui_ctx);
             egui_ctx.output_mut(|o| o.cursor_icon = egui::CursorIcon::None);
         });
 

@@ -83,6 +83,6 @@ Features (+ means done, (-) means least important):
   - assume we may change GUI, so make everything generic if possible (+)
   - preferences menu
   - help menu [v0.1]
-  - status bar showing general info
+  - status bar showing general info (+)
 - Tile mode: show tiles around canvas to show how it would look as a tile [v0.2]
 
