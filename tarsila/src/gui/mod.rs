@@ -5,12 +5,14 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 mod layers;
+mod menu;
 mod palette;
 mod preview;
 mod status;
 mod toolbar;
 
 use layers::LayersPanel;
+use menu::MenuBar;
 use palette::Palette;
 use preview::Preview;
 use status::StatusBar;
@@ -58,6 +60,7 @@ pub struct Gui {
     preview: Preview,
     palette: Palette,
     status_bar: StatusBar,
+    menu: MenuBar,
 }
 
 impl Gui {
@@ -72,6 +75,7 @@ impl Gui {
             preview: Preview::new(),
             palette: Palette::new(),
             status_bar: StatusBar::new(),
+            menu: MenuBar::new(),
         }
     }
 
@@ -106,12 +110,39 @@ impl Gui {
             selected_tool,
             visible_pixel_on_mouse,
         );
+        self.menu.sync();
     }
 
     pub fn update(&mut self) -> Vec<Effect> {
         let mut events = Vec::new();
 
+        let widget_color = egui::Color32::from_rgb(150, 150, 150);
+        let widget_weak_color = egui::Color32::from_rgb(150, 150, 150);
+        let bg_color = egui::Color32::from_rgb(175, 175, 175);
+        let bg_strong_color = egui::Color32::from_rgb(230, 230, 230);
+        let bg_weak_color = egui::Color32::from_rgb(150, 150, 150);
+        let text_color = Some(egui::Color32::from_rgb(0, 0, 0));
+
         egui_macroquad::ui(|egui_ctx| {
+            let mut visuals = egui_ctx.style().visuals.clone();
+            visuals.dark_mode = false;
+            visuals.menu_rounding = 2.0.into();
+            visuals.window_rounding = 2.0.into();
+            visuals.widgets.noninteractive.bg_fill = bg_color;
+            visuals.widgets.noninteractive.weak_bg_fill = bg_weak_color;
+            visuals.widgets.active.bg_fill = widget_color;
+            visuals.widgets.active.weak_bg_fill = widget_weak_color;
+            visuals.widgets.inactive.bg_fill = widget_color;
+            visuals.widgets.inactive.weak_bg_fill = widget_weak_color;
+            visuals.widgets.hovered.bg_fill = widget_color;
+            visuals.widgets.hovered.weak_bg_fill = widget_weak_color;
+            visuals.faint_bg_color = bg_weak_color;
+            visuals.extreme_bg_color = bg_strong_color;
+            visuals.panel_fill = bg_color;
+            visuals.window_fill = bg_color;
+            visuals.override_text_color = text_color;
+            egui_ctx.set_visuals(visuals);
+
             let mut canvas_panel_events = self.update_canvas_panel(egui_ctx);
             events.append(&mut canvas_panel_events);
 
@@ -123,6 +154,9 @@ impl Gui {
 
             let mut layers_events = self.layers_panel.update(egui_ctx);
             events.append(&mut layers_events);
+
+            let mut menu_events = self.menu.update(egui_ctx);
+            events.append(&mut menu_events);
 
             self.preview.update(egui_ctx);
             self.status_bar.update(egui_ctx);
@@ -139,116 +173,56 @@ impl Gui {
     fn update_canvas_panel(&mut self, egui_ctx: &egui::Context) -> Vec<Effect> {
         let mut events = Vec::new();
 
-        egui::Window::new("Canvas").show(egui_ctx, |ui| {
-            ui.horizontal(|ui| {
-                let label = ui.label("w:");
-                ui.add(
-                    egui::widgets::TextEdit::singleline(&mut self.canvas_size.0)
-                        .desired_width(30.0),
-                )
-                .labelled_by(label.id);
-                let label = ui.label("h:");
-                ui.add(
-                    egui::widgets::TextEdit::singleline(&mut self.canvas_size.1)
-                        .desired_width(30.0),
-                )
-                .labelled_by(label.id);
+        egui::Window::new("Canvas")
+            .default_pos((15., 30.))
+            .show(egui_ctx, |ui| {
+                ui.horizontal(|ui| {
+                    let label = ui.label("w:");
+                    ui.add(
+                        egui::widgets::TextEdit::singleline(&mut self.canvas_size.0)
+                            .desired_width(30.0),
+                    )
+                    .labelled_by(label.id);
+                    let label = ui.label("h:");
+                    ui.add(
+                        egui::widgets::TextEdit::singleline(&mut self.canvas_size.1)
+                            .desired_width(30.0),
+                    )
+                    .labelled_by(label.id);
+
+                    if ui.button("resize").clicked() {
+                        if let (Ok(w), Ok(h)) =
+                            (self.canvas_size.0.parse(), self.canvas_size.1.parse())
+                        {
+                            events.push(Event::ResizeCanvas((w, h).into()).into());
+                        }
+                    }
+                });
+
+                ui.heading("Spritesheet");
+                ui.horizontal(|ui| {
+                    let label = ui.label("cols:");
+                    ui.add(
+                        egui::widgets::TextEdit::singleline(&mut self.spritesheet.0)
+                            .desired_width(30.0),
+                    )
+                    .labelled_by(label.id);
+                    let label = ui.label("rows:");
+                    ui.add(
+                        egui::widgets::TextEdit::singleline(&mut self.spritesheet.1)
+                            .desired_width(30.0),
+                    )
+                    .labelled_by(label.id);
+                    let btn = ui.button("Ok");
+                    if btn.clicked() {
+                        if let (Ok(w), Ok(h)) =
+                            (self.spritesheet.0.parse(), self.spritesheet.1.parse())
+                        {
+                            events.push(Event::SetSpritesheet((w, h).into()).into());
+                        }
+                    }
+                });
             });
-
-            let btn = ui.button("Resize canvas");
-            if btn.clicked() {
-                if let (Ok(w), Ok(h)) = (self.canvas_size.0.parse(), self.canvas_size.1.parse()) {
-                    events.push(Event::ResizeCanvas((w, h).into()).into());
-                }
-            }
-
-            ui.heading("Spritesheet");
-            ui.horizontal(|ui| {
-                let label = ui.label("cols:");
-                ui.add(
-                    egui::widgets::TextEdit::singleline(&mut self.spritesheet.0)
-                        .desired_width(30.0),
-                )
-                .labelled_by(label.id);
-                let label = ui.label("rows:");
-                ui.add(
-                    egui::widgets::TextEdit::singleline(&mut self.spritesheet.1)
-                        .desired_width(30.0),
-                )
-                .labelled_by(label.id);
-                let btn = ui.button("Ok");
-                if btn.clicked() {
-                    if let (Ok(w), Ok(h)) = (self.spritesheet.0.parse(), self.spritesheet.1.parse())
-                    {
-                        events.push(Event::SetSpritesheet((w, h).into()).into());
-                    }
-                }
-            });
-
-            let btn = ui.button("Erase canvas");
-            if btn.clicked() {
-                events.push(Event::ClearCanvas.into());
-            }
-
-            ui.horizontal(|ui| {
-                let btn = ui.button("Export");
-                if btn.clicked() {
-                    let mut dialog = rfd::FileDialog::new();
-
-                    if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
-                        dialog = dialog.set_directory(dir);
-                    }
-
-                    if let Some(path) = dialog.save_file() {
-                        self.last_file = Some(path.clone());
-                        events.push(Event::Save(path).into());
-                    }
-                }
-                let btn = ui.button("Import");
-                if btn.clicked() {
-                    let mut dialog = rfd::FileDialog::new();
-
-                    if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
-                        dialog = dialog.set_directory(dir);
-                    }
-
-                    if let Some(path) = dialog.pick_file() {
-                        self.last_file = Some(path.clone());
-                        events.push(Event::OpenFile(path).into());
-                        events.push(Event::SetTool(Tool::Move).into());
-                    }
-                }
-            });
-
-            ui.horizontal(|ui| {
-                let btn = ui.button("Save Project");
-                if btn.clicked() {
-                    let mut dialog = rfd::FileDialog::new();
-
-                    if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
-                        dialog = dialog.set_directory(dir).set_file_name("project.tarsila");
-                    }
-
-                    if let Some(path) = dialog.save_file() {
-                        self.last_file = Some(path.clone());
-                        events.push(Event::SaveProject(path).into());
-                    }
-                }
-                let btn = ui.button("Load Project");
-                if btn.clicked() {
-                    let mut dialog = rfd::FileDialog::new();
-
-                    if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
-                        dialog = dialog.set_directory(dir);
-                    }
-
-                    if let Some(path) = dialog.pick_file() {
-                        self.last_file = Some(path.clone());
-                        events.push(Event::LoadProject(path).into());
-                    }
-                }
-            });
-        });
 
         if egui_ctx.is_pointer_over_area() {
             events.push(Effect::UiEvent(UiEvent::MouseOverGui));

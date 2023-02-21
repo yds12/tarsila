@@ -7,8 +7,8 @@ mod layer;
 mod palette;
 pub mod primitives;
 mod state;
-mod util;
 mod tool;
+mod util;
 
 pub use canvas::{Canvas, CanvasEffect};
 pub use color::Color;

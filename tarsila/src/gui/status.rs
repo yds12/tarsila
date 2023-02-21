@@ -1,4 +1,4 @@
-use lapix::{Position, Tool, Color};
+use lapix::{Color, Position, Tool};
 
 pub struct StatusBar {
     mouse_canvas: Position<i32>,
@@ -31,31 +31,26 @@ impl StatusBar {
     }
 
     pub fn update(&mut self, egui_ctx: &egui::Context) {
-        egui::TopBottomPanel::bottom("my_panel")
-            .frame(egui::Frame::none().fill(egui::Color32::from_rgb(200, 200, 200)))
-            .show(egui_ctx, |ui| {
-                ui.horizontal(|ui| {
-                    let text_color = egui::Color32::from_rgb(0, 0, 0);
+        egui::TopBottomPanel::bottom("my_panel").show(egui_ctx, |ui| {
+            ui.horizontal(|ui| {
+                let text_color = egui::Color32::from_rgb(0, 0, 0);
 
+                ui.colored_label(text_color, self.selected_tool.to_string());
+
+                if self.is_mouse_on_canvas {
                     ui.colored_label(
                         text_color,
-                        self.selected_tool.to_string()
+                        format!("({},{})", self.mouse_canvas.x + 1, self.mouse_canvas.y + 1),
                     );
 
-                    if self.is_mouse_on_canvas {
+                    if let Some(color) = self.visible_pixel_on_mouse {
                         ui.colored_label(
                             text_color,
-                            format!("({},{})", self.mouse_canvas.x + 1, self.mouse_canvas.y + 1),
+                            format!("color: {}", Color::from(color).hex()),
                         );
-
-                        if let Some(color) = self.visible_pixel_on_mouse {
-                            ui.colored_label(
-                                text_color,
-                                format!("color: {}", Color::from(color).hex())
-                            );
-                        }
                     }
-                });
+                }
             });
+        });
     }
 }

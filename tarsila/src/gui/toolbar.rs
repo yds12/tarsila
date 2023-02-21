@@ -45,7 +45,7 @@ impl Toolbar {
         let mut events = Vec::new();
 
         egui::Window::new("Toolbox")
-            .default_pos((15., 360.))
+            .default_pos((15., 280.))
             .show(egui_ctx, |ui| {
                 ui.horizontal(|ui| {
                     let colorpicker = ui.color_edit_button_srgb(&mut self.brush);

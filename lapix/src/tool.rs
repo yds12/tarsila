@@ -1,5 +1,5 @@
-use std::fmt::Display;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Tool {
@@ -29,4 +29,3 @@ impl Display for Tool {
         f.write_str(st)
     }
 }
-
