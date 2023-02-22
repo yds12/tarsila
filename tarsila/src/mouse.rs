@@ -1,8 +1,10 @@
-use crate::Effect;
-use lapix::{Event, Position, Tool};
+use crate::{graphics, Effect, Resources};
+use lapix::{Event, Point, Position, Tool};
 use macroquad::prelude::*;
+use std::collections::HashMap;
 
 pub struct MouseManager {
+    cursors: CursorSet,
     mouse_canvas: Position<i32>,
     selected_tool: Tool,
     visible_pixel_on_mouse: Option<[u8; 4]>,
@@ -14,6 +16,7 @@ pub struct MouseManager {
 impl MouseManager {
     pub fn new() -> Self {
         Self {
+            cursors: CursorSet::new(),
             mouse_canvas: Default::default(),
             selected_tool: Tool::Brush,
             visible_pixel_on_mouse: None,
@@ -36,6 +39,14 @@ impl MouseManager {
         self.mouse_canvas = mouse_canvas;
         self.selected_tool = selected_tool;
         self.visible_pixel_on_mouse = visible_pixel_on_mouse;
+    }
+
+    pub fn draw(&self, selected_tool: Tool) {
+        if let Some(cursor) = self.cursors.0.get(&selected_tool) {
+            if self.is_on_canvas {
+                cursor.draw();
+            }
+        }
     }
 
     pub fn update(&mut self) -> Vec<Effect> {
@@ -127,5 +138,52 @@ impl MouseManager {
         }
 
         events
+    }
+}
+
+pub struct CursorSet(HashMap<Tool, ToolCursor>);
+
+impl CursorSet {
+    pub fn new() -> Self {
+        let tools = [
+            (Tool::Brush, (0., -16.).into()),
+            (Tool::Bucket, (0., -13.).into()),
+            (Tool::Eraser, (0., -16.).into()),
+            (Tool::Eyedropper, (0., -16.).into()),
+            (Tool::Line, (0., -16.).into()),
+            (Tool::Selection, (0., 0.).into()),
+            (Tool::Move, (0., -16.).into()),
+            (Tool::Rectangle, (0., -16.).into()),
+        ];
+
+        Self(
+            tools
+                .iter()
+                .map(|(t, offset)| (*t, ToolCursor::new(*t, *offset)))
+                .collect(),
+        )
+    }
+}
+
+pub struct ToolCursor {
+    texture: Texture2D,
+    offset: Point<f32>,
+}
+
+impl ToolCursor {
+    pub fn new(tool: Tool, offset: Point<f32>) -> Self {
+        let bytes = Resources::tool_icon(tool);
+        let texture = Texture2D::from_file_with_format(bytes, None);
+
+        Self { texture, offset }
+    }
+
+    pub fn draw(&self) {
+        let (x, y) = mouse_position();
+        graphics::draw_texture_helper(
+            self.texture,
+            (x + self.offset.x, y + self.offset.y).into(),
+            1.,
+        )
     }
 }

@@ -21,6 +21,21 @@ pub struct DrawContext {
     pub selection: Option<Selection>,
 }
 
+pub fn draw_texture_helper(texture: Texture2D, p: Position<f32>, scale: f32) {
+    let w = texture.width();
+    let h = texture.height();
+
+    let params = DrawTextureParams {
+        dest_size: Some(Vec2 {
+            x: w * scale,
+            y: h * scale,
+        }),
+        ..Default::default()
+    };
+
+    draw_texture_ex(texture, p.x, p.y, WHITE, params);
+}
+
 pub fn draw_animated_dashed_line(p1: Point<i32>, p2: Point<i32>) {
     let len = graphics::distance(p1, p2);
     let dist: Point<f32> = (p2 - p1).into();

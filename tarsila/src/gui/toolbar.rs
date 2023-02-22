@@ -1,6 +1,4 @@
-use super::Resources;
-use crate::util;
-use crate::Effect;
+use crate::{util, Effect, Resources};
 use lapix::{Event, Size, Tool};
 use macroquad::prelude::*;
 use std::collections::HashMap;

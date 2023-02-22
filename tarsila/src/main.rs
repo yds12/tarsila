@@ -4,10 +4,12 @@ mod graphics;
 mod gui;
 mod keyboard;
 mod mouse;
+mod resource;
 mod ui_state;
 mod util;
 mod wrapped_image;
 
+use resource::Resources;
 use ui_state::{Effect, UiEvent, UiState, WINDOW_H, WINDOW_W};
 use util::*;
 

@@ -174,7 +174,7 @@ impl UiState {
         }
 
         egui_macroquad::draw();
-        self.gui.draw_cursor(self.selected_tool());
+        self.mouse.draw(self.selected_tool());
     }
 
     /// Pass relevant UI state info to the GUI

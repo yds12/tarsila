@@ -18,42 +18,9 @@ use preview::Preview;
 use status::StatusBar;
 use toolbar::Toolbar;
 
-pub struct Resources;
-
-impl Resources {
-    pub fn tool_icon(tool: Tool) -> &'static [u8] {
-        match tool {
-            Tool::Brush => include_bytes!("../../res/icon/pencil.png"),
-            Tool::Bucket => include_bytes!("../../res/icon/bucket.png"),
-            Tool::Eraser => include_bytes!("../../res/icon/eraser.png"),
-            Tool::Eyedropper => include_bytes!("../../res/icon/eyedropper.png"),
-            Tool::Line => include_bytes!("../../res/icon/line.png"),
-            Tool::Selection => include_bytes!("../../res/icon/selection.png"),
-            Tool::Move => include_bytes!("../../res/icon/move.png"),
-            Tool::Rectangle => include_bytes!("../../res/icon/rectangle.png"),
-        }
-    }
-}
-
-fn draw_texture_helper(texture: Texture2D, p: Position<f32>, scale: f32) {
-    let w = texture.width();
-    let h = texture.height();
-
-    let params = DrawTextureParams {
-        dest_size: Some(Vec2 {
-            x: w * scale,
-            y: h * scale,
-        }),
-        ..Default::default()
-    };
-
-    draw_texture_ex(texture, p.x, p.y, WHITE, params);
-}
-
 pub struct Gui {
     toolbar: Toolbar,
     layers_panel: LayersPanel,
-    cursors: CursorSet,
     canvas_size: (String, String),
     last_file: Option<PathBuf>,
     spritesheet: (String, String),
@@ -61,6 +28,7 @@ pub struct Gui {
     palette: Palette,
     status_bar: StatusBar,
     menu: MenuBar,
+    mouse_on_canvas: bool,
 }
 
 impl Gui {
@@ -68,7 +36,6 @@ impl Gui {
         Self {
             toolbar: Toolbar::new(),
             layers_panel: LayersPanel::new(),
-            cursors: CursorSet::new(),
             canvas_size: (canvas_size.x.to_string(), canvas_size.y.to_string()),
             last_file: None,
             spritesheet: ("1".to_owned(), "1".to_owned()),
@@ -76,12 +43,7 @@ impl Gui {
             palette: Palette::new(),
             status_bar: StatusBar::new(),
             menu: MenuBar::new(),
-        }
-    }
-
-    pub fn draw_cursor(&self, selected_tool: Tool) {
-        if let Some(cursor) = self.cursors.0.get(&selected_tool) {
-            cursor.draw();
+            mouse_on_canvas: false,
         }
     }
 
@@ -101,6 +63,8 @@ impl Gui {
         canvas_size: Size<i32>,
         spritesheet: Size<u8>,
     ) {
+        self.mouse_on_canvas = is_on_canvas;
+
         self.toolbar.sync(main_color);
         self.layers_panel
             .sync(num_layers, active_layer, layers_vis, layers_alpha);
@@ -162,7 +126,10 @@ impl Gui {
 
             self.preview.update(egui_ctx);
             self.status_bar.update(egui_ctx);
-            egui_ctx.output_mut(|o| o.cursor_icon = egui::CursorIcon::None);
+
+            if self.mouse_on_canvas {
+                egui_ctx.output_mut(|o| o.cursor_icon = egui::CursorIcon::None);
+            }
         });
 
         if !events.is_empty() {
@@ -180,52 +147,5 @@ impl Gui {
         }
 
         events
-    }
-}
-
-pub struct CursorSet(HashMap<Tool, ToolCursor>);
-
-impl CursorSet {
-    pub fn new() -> Self {
-        let tools = [
-            (Tool::Brush, (0., -16.).into()),
-            (Tool::Bucket, (0., -13.).into()),
-            (Tool::Eraser, (0., -16.).into()),
-            (Tool::Eyedropper, (0., -16.).into()),
-            (Tool::Line, (0., -16.).into()),
-            (Tool::Selection, (0., 0.).into()),
-            (Tool::Move, (0., -16.).into()),
-            (Tool::Rectangle, (0., -16.).into()),
-        ];
-
-        Self(
-            tools
-                .iter()
-                .map(|(t, offset)| (*t, ToolCursor::new(*t, *offset)))
-                .collect(),
-        )
-    }
-}
-
-pub struct ToolCursor {
-    texture: Texture2D,
-    offset: Point<f32>,
-}
-
-impl ToolCursor {
-    pub fn new(tool: Tool, offset: Point<f32>) -> Self {
-        let bytes = Resources::tool_icon(tool);
-        let texture = Texture2D::from_file_with_format(bytes, None);
-
-        Self { texture, offset }
-    }
-
-    pub fn draw(&self) {
-        let (x, y) = mouse_position();
-        draw_texture_helper(
-            self.texture,
-            (x + self.offset.x, y + self.offset.y).into(),
-            1.,
-        )
     }
 }

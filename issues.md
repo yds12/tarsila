@@ -23,6 +23,6 @@ Projects issues and bugs:
 21. Cannot type on spritesheet size textboxes if intermediate values are not valid spritesheet sizes[DONE]
 22. Preview window gets too big and cannot be closed or resized [DONE]
 23. Add tooltips to everything [ENH]
-24. Use default mouse pointer out of canvas
+24. Use default mouse pointer out of canvas [DONE]
 25. Preview animation not affected by layer's alpha [DONE]
 26. When leaving the window, tool is not released and continues drawing
