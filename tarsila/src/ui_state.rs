@@ -213,6 +213,8 @@ impl UiState {
             in_canvas,
             self.selected_tool(),
             visible_pixel,
+            self.canvas().size(),
+            self.inner.spritesheet(),
         );
     }
 

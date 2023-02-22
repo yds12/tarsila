@@ -98,6 +98,8 @@ impl Gui {
         is_on_canvas: bool,
         selected_tool: Tool,
         visible_pixel_on_mouse: Option<[u8; 4]>,
+        canvas_size: Size<i32>,
+        spritesheet: Size<u8>,
     ) {
         self.toolbar.sync(main_color);
         self.layers_panel
@@ -110,7 +112,7 @@ impl Gui {
             selected_tool,
             visible_pixel_on_mouse,
         );
-        self.menu.sync();
+        self.menu.sync(canvas_size, spritesheet);
     }
 
     pub fn update(&mut self) -> Vec<Effect> {
@@ -172,57 +174,6 @@ impl Gui {
 
     fn update_canvas_panel(&mut self, egui_ctx: &egui::Context) -> Vec<Effect> {
         let mut events = Vec::new();
-
-        egui::Window::new("Canvas")
-            .default_pos((15., 30.))
-            .show(egui_ctx, |ui| {
-                ui.horizontal(|ui| {
-                    let label = ui.label("w:");
-                    ui.add(
-                        egui::widgets::TextEdit::singleline(&mut self.canvas_size.0)
-                            .desired_width(30.0),
-                    )
-                    .labelled_by(label.id);
-                    let label = ui.label("h:");
-                    ui.add(
-                        egui::widgets::TextEdit::singleline(&mut self.canvas_size.1)
-                            .desired_width(30.0),
-                    )
-                    .labelled_by(label.id);
-
-                    if ui.button("resize").clicked() {
-                        if let (Ok(w), Ok(h)) =
-                            (self.canvas_size.0.parse(), self.canvas_size.1.parse())
-                        {
-                            events.push(Event::ResizeCanvas((w, h).into()).into());
-                        }
-                    }
-                });
-
-                ui.heading("Spritesheet");
-                ui.horizontal(|ui| {
-                    let label = ui.label("cols:");
-                    ui.add(
-                        egui::widgets::TextEdit::singleline(&mut self.spritesheet.0)
-                            .desired_width(30.0),
-                    )
-                    .labelled_by(label.id);
-                    let label = ui.label("rows:");
-                    ui.add(
-                        egui::widgets::TextEdit::singleline(&mut self.spritesheet.1)
-                            .desired_width(30.0),
-                    )
-                    .labelled_by(label.id);
-                    let btn = ui.button("Ok");
-                    if btn.clicked() {
-                        if let (Ok(w), Ok(h)) =
-                            (self.spritesheet.0.parse(), self.spritesheet.1.parse())
-                        {
-                            events.push(Event::SetSpritesheet((w, h).into()).into());
-                        }
-                    }
-                });
-            });
 
         if egui_ctx.is_pointer_over_area() {
             events.push(Effect::UiEvent(UiEvent::MouseOverGui));
