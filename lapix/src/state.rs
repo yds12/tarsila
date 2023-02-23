@@ -1,7 +1,7 @@
 use crate::color::{BLACK, TRANSPARENT};
 use crate::{
-    util, Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Layers, Palette, Point, Position,
-    Rect, Size, Tool,
+    util, Action, AtomicAction, Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Layers,
+    Palette, Point, Position, Rect, Size, Tool, Transform,
 };
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -24,6 +24,10 @@ pub struct State<IMG> {
     selection: Option<Selection>,
     free_image: Option<FreeImage<IMG>>,
     clipboard: Option<IMG>,
+    #[serde(skip, default = "Vec::new")]
+    reversals: Vec<Action<IMG>>,
+    #[serde(skip, default = "Option::default")]
+    cur_reversal: Option<Action<IMG>>,
 }
 
 impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
@@ -38,6 +42,8 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
             selection: None,
             free_image: None,
             clipboard: None,
+            reversals: Vec::new(),
+            cur_reversal: None,
         }
     }
 
@@ -56,6 +62,30 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         let state = bincode::deserialize(&bytes).unwrap();
 
         state
+    }
+
+    pub fn start_action(&mut self) {
+        self.cur_reversal = Some(Action::new(self.layers.active_index()));
+    }
+
+    pub fn add_to_action(&mut self, actions: Vec<AtomicAction<IMG>>) {
+        if self.cur_reversal.is_none() {
+            self.start_action();
+        }
+        self.cur_reversal.as_mut().unwrap().append(actions);
+    }
+
+    pub fn end_action(&mut self) {
+        if let Some(action) = self.cur_reversal.take() {
+            self.reversals.push(action);
+        }
+    }
+
+    pub fn single_action(&mut self, actions: Vec<AtomicAction<IMG>>) {
+        self.end_action();
+        self.start_action();
+        self.add_to_action(actions);
+        self.end_action();
     }
 
     pub fn execute(&mut self, event: Event) -> CanvasEffect {
@@ -77,10 +107,9 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         match event.clone() {
             Event::ClearCanvas => self.canvas_mut().clear(),
             Event::ResizeCanvas(size) => self.resize_canvas(size),
-            Event::BrushStart | Event::LineStart(_) | Event::EraseStart | Event::RectStart(_) => {
-                self.canvas_mut().start_editing_bundle()
-            }
-            Event::BrushEnd | Event::EraseEnd => self.canvas_mut().finish_editing_bundle(),
+            Event::LineStart(_) | Event::RectStart(_) => (),
+            Event::BrushStart | Event::EraseStart => self.start_action(),
+            Event::BrushEnd | Event::EraseEnd => self.end_action(),
             Event::LineEnd(p) => {
                 let last_event = self.events.last();
                 let p0 = match last_event {
@@ -88,8 +117,8 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                     _ => panic!("line not started!"),
                 };
                 let color = self.main_color;
-                self.canvas_mut().line(p0, p, color);
-                self.canvas_mut().finish_editing_bundle();
+                let reversals = self.canvas_mut().line(p0, p, color);
+                self.single_action(reversals);
                 self.free_image = None;
             }
             Event::RectEnd(p) => {
@@ -99,39 +128,43 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                     _ => panic!("rectangle not started!"),
                 };
                 let color = self.main_color;
-                self.canvas_mut().rectangle(p0, p, color);
-                self.canvas_mut().finish_editing_bundle();
+                let reversals = self.canvas_mut().rectangle(p0, p, color);
+                self.single_action(reversals);
                 self.free_image = None;
             }
             Event::BrushStroke(p) => {
                 let last_event = self.events.last();
 
-                match last_event {
+                let reversals = match last_event {
                     Some(Event::BrushStroke(p0)) => {
                         let color = self.main_color;
                         let p0 = *p0;
-                        self.canvas_mut().line(p0, p, color);
+                        self.canvas_mut().line(p0, p, color)
                     }
                     Some(Event::BrushStart) => {
                         let color = self.main_color;
-                        self.canvas_mut().set_pixel(p, color);
+                        self.canvas_mut().set_pixel(p, color).into_iter().collect()
                     }
-                    _ => (),
-                }
+                    _ => Vec::new(),
+                };
+                self.add_to_action(reversals);
             }
             Event::Erase(p) => {
                 let last_event = self.events.last();
 
-                match last_event {
+                let reversals = match last_event {
                     Some(Event::Erase(p0)) => {
                         let p0 = *p0;
-                        self.canvas_mut().line(p0, p, TRANSPARENT);
+                        self.canvas_mut().line(p0, p, TRANSPARENT)
                     }
-                    Some(Event::EraseStart) => {
-                        self.canvas_mut().set_pixel(p, TRANSPARENT);
-                    }
-                    _ => (),
-                }
+                    Some(Event::EraseStart) => self
+                        .canvas_mut()
+                        .set_pixel(p, TRANSPARENT)
+                        .into_iter()
+                        .collect(),
+                    _ => Vec::new(),
+                };
+                self.add_to_action(reversals);
             }
             Event::SetTool(tool) => self.tool = tool,
             Event::SetMainColor(color) => self.main_color = color,
@@ -146,10 +179,9 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
             Event::RemoveFromPalette(color) => self.palette.remove_color(color),
             Event::Bucket(p) => {
                 if self.canvas().is_in_bounds(p) {
-                    self.canvas_mut().start_editing_bundle();
                     let color = self.main_color;
-                    self.canvas_mut().bucket(p, color);
-                    self.canvas_mut().finish_editing_bundle();
+                    let reversals = self.canvas_mut().bucket(p, color);
+                    self.single_action(reversals);
                 }
             }
             Event::ClearSelection => (),
@@ -175,7 +207,8 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
             },
             Event::DeleteSelection => match self.selection {
                 Some(Selection::Canvas(rect)) => {
-                    self.canvas_mut().set_area(rect, TRANSPARENT);
+                    let reversals = self.canvas_mut().set_area(rect, TRANSPARENT);
+                    self.single_action(reversals);
                 }
                 Some(Selection::FreeImage) => {
                     self.free_image = None;
@@ -223,8 +256,17 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 if let Some(free_img) = self.free_image.as_mut() {
                     free_img.flip_vertically();
                 }
+                //Transform::Silhouete.apply(&mut self.free_image.as_mut().unwrap().texture);
             }
-            Event::NewLayerAbove => self.layers.add_above(),
+            Event::NewLayerAbove => {
+                self.layers.add_above();
+                self.end_action();
+                self.cur_reversal = Some(Action::new(self.layers.count() - 1));
+                self.cur_reversal
+                    .as_mut()
+                    .unwrap()
+                    .push(AtomicAction::DestroyLayer);
+            }
             Event::NewLayerBelow => todo!(),
             Event::SwitchLayer(i) => self.layers.switch_to(i),
             Event::ChangeLayerVisibility(i, visible) => self.layers.set_visibility(i, visible),
@@ -325,7 +367,8 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
     fn anchor(&mut self) {
         if let Some(free_image) = self.free_image.take() {
             println!("Anchoring");
-            self.canvas_mut().paste_obj(&free_image);
+            let reversals = self.canvas_mut().paste_obj(&free_image);
+            self.single_action(reversals);
             self.set_selection(Some(Selection::Canvas(
                 free_image.rect.clip_to(self.canvas().rect()),
             )));
@@ -333,7 +376,11 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
     }
 
     fn undo(&mut self) -> CanvasEffect {
-        self.canvas_mut().undo_last()
+        if let Some(action) = self.reversals.pop() {
+            return action.apply(&mut self.layers);
+        }
+
+        CanvasEffect::None
     }
 
     pub fn update_free_image(&mut self, mouse_canvas: Position<i32>) {
@@ -359,7 +406,8 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 rect,
                 mouse_pos.map(|p| p - rect.pos()),
             ));
-            self.canvas_mut().set_area(rect, TRANSPARENT);
+            let reversals = self.canvas_mut().set_area(rect, TRANSPARENT);
+            self.single_action(reversals);
             self.selection = Some(Selection::FreeImage);
         }
     }

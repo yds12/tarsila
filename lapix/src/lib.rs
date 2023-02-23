@@ -1,3 +1,4 @@
+mod action;
 mod canvas;
 mod color;
 mod event;
@@ -8,8 +9,10 @@ mod palette;
 pub mod primitives;
 mod state;
 mod tool;
+mod transform;
 mod util;
 
+use action::{Action, AtomicAction};
 pub use canvas::{Canvas, CanvasEffect};
 pub use color::Color;
 pub use event::Event;
@@ -21,6 +24,7 @@ use serde::{Deserialize, Serialize};
 pub use state::{Selection, State};
 use std::fmt::Debug;
 pub use tool::Tool;
+use transform::Transform;
 
 // TODO: move this to own file
 pub trait Bitmap: Clone {

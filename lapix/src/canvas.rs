@@ -1,5 +1,5 @@
 use crate::color::TRANSPARENT;
-use crate::{graphics, Bitmap, Color, FreeImage, Point, Position, Rect, Size};
+use crate::{graphics, AtomicAction, Bitmap, Color, FreeImage, Point, Position, Rect, Size};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy)]
@@ -11,69 +11,14 @@ pub enum CanvasEffect {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum CanvasAtomicEdit {
-    ChangePixel {
-        position: Position<i32>,
-        old: Color,
-        new: Color,
-    },
-    ChangeSize {
-        old: Size<i32>,
-        new: Size<i32>,
-    },
-}
-
-impl CanvasAtomicEdit {
-    pub fn undo(&self) -> CanvasAtomicEdit {
-        match self {
-            CanvasAtomicEdit::ChangePixel { position, old, new } => CanvasAtomicEdit::ChangePixel {
-                position: *position,
-                old: *new,
-                new: *old,
-            },
-            _ => todo!(),
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CanvasEdit(Vec<CanvasAtomicEdit>);
-
-impl CanvasEdit {
-    pub fn new() -> Self {
-        Self(Vec::new())
-    }
-    pub fn push(&mut self, edit: CanvasAtomicEdit) {
-        self.0.push(edit);
-    }
-    pub fn set_pixel(position: Position<i32>, old: Color, new: Color) -> Self {
-        Self(vec![CanvasAtomicEdit::ChangePixel { position, old, new }])
-    }
-    pub fn undo(&self) -> CanvasEdit {
-        let mut edits = Vec::new();
-        for edit in &self.0 {
-            edits.push(edit.undo());
-        }
-
-        Self(edits)
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct Canvas<IMG> {
     inner: IMG,
-    #[serde(skip)]
-    edits: Vec<CanvasEdit>,
-    #[serde(skip)]
-    cur_edit_bundle: Option<CanvasEdit>,
 }
 
 impl<IMG: Bitmap> Canvas<IMG> {
     pub fn new(size: Size<i32>) -> Self {
         Self {
             inner: IMG::new(size, TRANSPARENT),
-            edits: Vec::new(),
-            cur_edit_bundle: None,
         }
     }
 
@@ -105,40 +50,6 @@ impl<IMG: Bitmap> Canvas<IMG> {
         p.x >= 0 && p.y >= 0 && p.x < self.width() && p.y < self.height()
     }
 
-    fn undo_edit(&mut self, edit: CanvasAtomicEdit) -> CanvasEffect {
-        // TODO: isn't this supposed to be in CanvasAtomicEdit?
-        match edit {
-            CanvasAtomicEdit::ChangePixel { position, old, .. } => {
-                self.inner.set_pixel(position, old);
-
-                CanvasEffect::Update
-            }
-            _ => todo!(),
-        }
-    }
-
-    pub fn undo_last(&mut self) -> CanvasEffect {
-        // TODO: here we just try undo the last, but we need to keep popping
-        // until a undo-relevant event is found (e.g. we need to remove UNDO
-        // events from the stack)
-        let edit = self.edits.pop();
-        let mut effect = CanvasEffect::None;
-
-        if let Some(edit) = edit {
-            for atomic_edit in edit.0 {
-                effect = self.undo_edit(atomic_edit);
-            }
-        }
-
-        effect
-    }
-
-    fn register_set_pixel(&mut self, position: Position<i32>, old: Color, new: Color) {
-        if let Some(edit_bundle) = self.cur_edit_bundle.as_mut() {
-            edit_bundle.push(CanvasAtomicEdit::ChangePixel { position, old, new });
-        }
-    }
-
     pub fn clear(&mut self) {
         self.inner = IMG::new(self.size(), TRANSPARENT);
     }
@@ -149,61 +60,69 @@ impl<IMG: Bitmap> Canvas<IMG> {
         self.inner.set_from(old_img);
     }
 
-    pub fn start_editing_bundle(&mut self) {
-        self.cur_edit_bundle = Some(CanvasEdit::new());
-    }
-
-    pub fn finish_editing_bundle(&mut self) {
-        if let Some(edit_bundle) = self.cur_edit_bundle.take() {
-            self.edits.push(edit_bundle);
-        } else {
-            eprintln!("WARN: Trying to finish tool action when there's no edit bundle.");
-        }
-    }
-
     pub fn pixel(&self, p: Point<i32>) -> Color {
         self.inner.pixel(p)
     }
 
-    pub fn set_pixel(&mut self, p: Point<i32>, color: Color) {
+    pub fn set_pixel(&mut self, p: Point<i32>, color: Color) -> Option<AtomicAction<IMG>> {
         if self.is_in_bounds(p) {
             let old = self.inner.pixel(p);
 
             if color == old {
-                return;
+                return None;
             }
 
-            self.register_set_pixel(p, old, color);
             self.inner.set_pixel(p, color);
+            return Some(AtomicAction::SetPixel(p, old));
         }
+        return None;
     }
 
-    pub fn line(&mut self, p1: Point<i32>, p2: Point<i32>, color: Color) {
+    pub fn line(&mut self, p1: Point<i32>, p2: Point<i32>, color: Color) -> Vec<AtomicAction<IMG>> {
         let line = graphics::line(p1, p2);
+        let mut reversals = Vec::new();
 
         for p in line {
-            self.set_pixel(p, color);
-        }
-    }
-
-    pub fn rectangle(&mut self, p1: Point<i32>, p2: Point<i32>, color: Color) {
-        let rect = graphics::rectangle(p1, p2);
-
-        for p in rect {
-            self.set_pixel(p, color);
-        }
-    }
-
-    pub fn set_area(&mut self, area: Rect<i32>, color: Color) {
-        for i in 0..area.w {
-            for j in 0..area.h {
-                self.set_pixel((i + area.x, j + area.y).into(), color);
+            if let Some(action) = self.set_pixel(p, color) {
+                reversals.push(action);
             }
         }
+        reversals
     }
 
-    pub fn paste_obj(&mut self, obj: &FreeImage<IMG>) {
-        self.start_editing_bundle();
+    pub fn rectangle(
+        &mut self,
+        p1: Point<i32>,
+        p2: Point<i32>,
+        color: Color,
+    ) -> Vec<AtomicAction<IMG>> {
+        let rect = graphics::rectangle(p1, p2);
+        let mut reversals = Vec::new();
+
+        for p in rect {
+            if let Some(action) = self.set_pixel(p, color) {
+                reversals.push(action);
+            }
+        }
+        reversals
+    }
+
+    pub fn set_area(&mut self, area: Rect<i32>, color: Color) -> Vec<AtomicAction<IMG>> {
+        let mut reversals = Vec::new();
+
+        for i in 0..area.w {
+            for j in 0..area.h {
+                if let Some(action) = self.set_pixel((i + area.x, j + area.y).into(), color) {
+                    reversals.push(action);
+                }
+            }
+        }
+
+        reversals
+    }
+
+    pub fn paste_obj(&mut self, obj: &FreeImage<IMG>) -> Vec<AtomicAction<IMG>> {
+        let mut reversals = Vec::new();
         for i in 0..obj.rect.w {
             for j in 0..obj.rect.h {
                 let ij = Point::new(i, j);
@@ -212,18 +131,21 @@ impl<IMG: Bitmap> Canvas<IMG> {
 
                 if self.is_in_bounds(p) {
                     let blended = color.blend_over(self.pixel(p));
-                    self.set_pixel(p, blended);
+                    if let Some(action) = self.set_pixel(p, blended) {
+                        reversals.push(action);
+                    }
                 }
             }
         }
-        self.finish_editing_bundle();
+
+        reversals
     }
 
-    pub fn bucket(&mut self, p: Point<i32>, color: Color) {
+    pub fn bucket(&mut self, p: Point<i32>, color: Color) -> Vec<AtomicAction<IMG>> {
         let old_color = self.inner.pixel(p);
 
         if color == old_color {
-            return;
+            return Vec::new();
         }
 
         let w = self.inner.width() as usize;
@@ -231,6 +153,8 @@ impl<IMG: Bitmap> Canvas<IMG> {
 
         let mut marked = vec![false; w * h];
         let mut visit = vec![(p.x, p.y)];
+
+        let mut reversals = Vec::new();
 
         loop {
             if visit.is_empty() {
@@ -240,7 +164,10 @@ impl<IMG: Bitmap> Canvas<IMG> {
             let mut new_visit = Vec::new();
             while let Some((vx, vy)) = visit.pop() {
                 marked[(vy as usize) * w + vx as usize] = true;
-                self.set_pixel((vx, vy).into(), color);
+
+                if let Some(action) = self.set_pixel((vx, vy).into(), color) {
+                    reversals.push(action);
+                }
 
                 for (nx, ny) in self.neighbors(vx, vy).into_iter().flatten() {
                     let ind = (ny as usize) * w + nx as usize;
@@ -253,6 +180,8 @@ impl<IMG: Bitmap> Canvas<IMG> {
 
             visit.append(&mut new_visit);
         }
+
+        reversals
     }
 
     fn neighbors(&self, x: i32, y: i32) -> [Option<(i32, i32)>; 4] {

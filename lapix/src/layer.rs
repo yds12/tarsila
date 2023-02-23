@@ -1,5 +1,5 @@
 use crate::color::TRANSPARENT;
-use crate::{Bitmap, Canvas, Color, Point, Rect, Size};
+use crate::{AtomicAction, Bitmap, Canvas, Color, Point, Rect, Size};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -60,6 +60,14 @@ impl<IMG: Bitmap> Layers<IMG> {
         result
     }
 
+    pub fn get_mut(&mut self, index: usize) -> &mut Layer<IMG> {
+        &mut self.inner[index]
+    }
+
+    pub fn canvas_at_mut(&mut self, index: usize) -> &mut Canvas<IMG> {
+        self.inner[index].canvas_mut()
+    }
+
     pub fn active_canvas_mut(&mut self) -> &mut Canvas<IMG> {
         self.inner[self.active].canvas_mut()
     }
@@ -80,8 +88,8 @@ impl<IMG: Bitmap> Layers<IMG> {
     }
 
     pub fn delete(&mut self, index: usize) {
-        // TODO: this should not only remove it, as we need to be able to undo this
         self.inner.remove(index);
+        self.active = self.active.clamp(0, self.count() - 1);
     }
 
     pub fn set_visibility(&mut self, index: usize, visible: bool) {
