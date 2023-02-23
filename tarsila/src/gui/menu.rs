@@ -44,15 +44,19 @@ impl MenuBar {
                         }
                     });*/
                     if ui.button("Resize canvas").clicked() {
+                        ui.close_menu();
                         self.show_resize_window = true;
                     }
                     if ui.button("Change spritesheet").clicked() {
+                        ui.close_menu();
                         self.show_spritesheet_window = true;
                     }
                     if ui.button("Erase canvas").clicked() {
+                        ui.close_menu();
                         events.push(Event::ClearCanvas.into());
                     }
                     if ui.button("Save Project").clicked() {
+                        ui.close_menu();
                         let mut dialog = rfd::FileDialog::new();
 
                         if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
@@ -65,6 +69,7 @@ impl MenuBar {
                         }
                     }
                     if ui.button("Load Project").clicked() {
+                        ui.close_menu();
                         let mut dialog = rfd::FileDialog::new();
 
                         if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
@@ -77,6 +82,7 @@ impl MenuBar {
                         }
                     }
                     if ui.button("Export Image").clicked() {
+                        ui.close_menu();
                         let mut dialog = rfd::FileDialog::new();
 
                         if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
@@ -89,6 +95,7 @@ impl MenuBar {
                         }
                     }
                     if ui.button("Import Image").clicked() {
+                        ui.close_menu();
                         let mut dialog = rfd::FileDialog::new();
 
                         if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {

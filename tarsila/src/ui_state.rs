@@ -241,8 +241,6 @@ impl UiState {
     pub fn execute(&mut self, event: Event) {
         let effect = self.inner.execute(event);
 
-        // TODO: resize and new canvas events now need to affect all layers
-
         match effect {
             // TODO: Texture2D is copy, so we don't need `drawing_mut` here, but
             // it would be better.
