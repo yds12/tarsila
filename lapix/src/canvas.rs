@@ -50,21 +50,32 @@ impl<IMG: Bitmap> Canvas<IMG> {
         p.x >= 0 && p.y >= 0 && p.x < self.width() && p.y < self.height()
     }
 
+    pub fn set_img(&mut self, img: IMG) {
+        self.inner = img;
+    }
+
+    pub fn take_inner(&mut self) -> IMG {
+        let old = std::mem::replace(&mut self.inner, IMG::new(Size::new(0, 0), TRANSPARENT));
+        old
+    }
+
     pub fn clear(&mut self) {
         self.inner = IMG::new(self.size(), TRANSPARENT);
     }
 
-    pub fn resize(&mut self, size: Size<i32>) {
+    pub fn resize(&mut self, size: Size<i32>) -> IMG {
         let new_img = IMG::new(size, TRANSPARENT);
         let old_img = std::mem::replace(&mut self.inner, new_img);
-        self.inner.set_from(old_img);
+        self.inner.set_from(&old_img);
+
+        old_img
     }
 
     pub fn pixel(&self, p: Point<i32>) -> Color {
         self.inner.pixel(p)
     }
 
-    pub fn set_pixel(&mut self, p: Point<i32>, color: Color) -> Option<AtomicAction<IMG>> {
+    pub fn set_pixel(&mut self, p: Point<i32>, color: Color) -> Option<(Point<i32>, Color)> {
         if self.is_in_bounds(p) {
             let old = self.inner.pixel(p);
 
@@ -73,12 +84,12 @@ impl<IMG: Bitmap> Canvas<IMG> {
             }
 
             self.inner.set_pixel(p, color);
-            return Some(AtomicAction::SetPixel(p, old));
+            return Some((p, old));
         }
         return None;
     }
 
-    pub fn line(&mut self, p1: Point<i32>, p2: Point<i32>, color: Color) -> Vec<AtomicAction<IMG>> {
+    pub fn line(&mut self, p1: Point<i32>, p2: Point<i32>, color: Color) -> Vec<(Point<i32>, Color)> {
         let line = graphics::line(p1, p2);
         let mut reversals = Vec::new();
 
@@ -95,7 +106,7 @@ impl<IMG: Bitmap> Canvas<IMG> {
         p1: Point<i32>,
         p2: Point<i32>,
         color: Color,
-    ) -> Vec<AtomicAction<IMG>> {
+    ) -> Vec<(Point<i32>, Color)> {
         let rect = graphics::rectangle(p1, p2);
         let mut reversals = Vec::new();
 
@@ -107,7 +118,7 @@ impl<IMG: Bitmap> Canvas<IMG> {
         reversals
     }
 
-    pub fn set_area(&mut self, area: Rect<i32>, color: Color) -> Vec<AtomicAction<IMG>> {
+    pub fn set_area(&mut self, area: Rect<i32>, color: Color) -> Vec<(Point<i32>, Color)> {
         let mut reversals = Vec::new();
 
         for i in 0..area.w {
@@ -121,7 +132,7 @@ impl<IMG: Bitmap> Canvas<IMG> {
         reversals
     }
 
-    pub fn paste_obj(&mut self, obj: &FreeImage<IMG>) -> Vec<AtomicAction<IMG>> {
+    pub fn paste_obj(&mut self, obj: &FreeImage<IMG>) -> Vec<(Point<i32>, Color)> {
         let mut reversals = Vec::new();
         for i in 0..obj.rect.w {
             for j in 0..obj.rect.h {
@@ -141,7 +152,7 @@ impl<IMG: Bitmap> Canvas<IMG> {
         reversals
     }
 
-    pub fn bucket(&mut self, p: Point<i32>, color: Color) -> Vec<AtomicAction<IMG>> {
+    pub fn bucket(&mut self, p: Point<i32>, color: Color) -> Vec<(Point<i32>, Color)> {
         let old_color = self.inner.pixel(p);
 
         if color == old_color {

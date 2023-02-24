@@ -36,7 +36,7 @@ pub trait Bitmap: Clone {
     fn set_pixel(&mut self, point: Point<i32>, color: Color);
     fn bytes(&self) -> &[u8];
     fn from_parts(size: Size<i32>, bytes: &[u8]) -> Self;
-    fn set_from(&mut self, other: Self);
+    fn set_from(&mut self, other: &Self);
     // TODO: use this and next methods to save/load files
     fn into_png_bytes(&self) -> Vec<u8> {
         let img = image::RgbaImage::from_raw(

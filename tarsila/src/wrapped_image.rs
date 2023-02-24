@@ -90,7 +90,7 @@ impl Bitmap for WrappedImage {
         })
     }
 
-    fn set_from(&mut self, other: Self) {
+    fn set_from(&mut self, other: &Self) {
         let w = std::cmp::min(self.width(), other.width());
         let h = std::cmp::min(self.height(), other.height());
 

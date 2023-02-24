@@ -72,24 +72,34 @@ impl<IMG: Bitmap> Layers<IMG> {
         self.inner[self.active].canvas_mut()
     }
 
-    pub fn resize_all(&mut self, size: Size<i32>) {
+    pub fn resize_all(&mut self, size: Size<i32>) -> Vec<IMG> {
+        let mut imgs = Vec::new();
         for layer in self.inner.iter_mut() {
-            layer.resize(size);
+            let img = layer.resize(size);
+            imgs.push(img);
         }
+
+        imgs
     }
 
     pub fn switch_to(&mut self, index: usize) {
         self.active = index;
     }
 
-    pub fn add_above(&mut self) {
+    pub fn add_new_above(&mut self) {
         let layer = Layer::new(self.active_canvas().size());
         self.inner.push(layer);
     }
 
-    pub fn delete(&mut self, index: usize) {
-        self.inner.remove(index);
+    pub fn add_at(&mut self, index: usize, layer: Layer<IMG>) {
+        self.inner.insert(index, layer);
+    }
+
+    pub fn delete(&mut self, index: usize) -> Layer<IMG> {
+        let layer = self.inner.remove(index);
         self.active = self.active.clamp(0, self.count() - 1);
+
+        layer
     }
 
     pub fn set_visibility(&mut self, index: usize, visible: bool) {
@@ -159,8 +169,12 @@ impl<IMG: Bitmap> Layer<IMG> {
         self.opacity
     }
 
-    pub fn resize(&mut self, size: Size<i32>) {
-        self.canvas.resize(size);
+    pub fn take_img(&mut self) -> IMG {
+        self.canvas.take_inner()
+    }
+
+    pub fn resize(&mut self, size: Size<i32>) -> IMG {
+        self.canvas.resize(size)
     }
 
     pub fn set_visibility(&mut self, visible: bool) {
