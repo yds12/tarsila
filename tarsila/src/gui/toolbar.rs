@@ -134,7 +134,7 @@ impl ToolButton {
             Tool::Line => "line tool (L)",
             Tool::Selection => "selection tool (S)",
             Tool::Move => "move tool (M)",
-            Tool::Rectangle => "move tool (R)",
+            Tool::Rectangle => "rectangle tool (R)",
         }
     }
 }

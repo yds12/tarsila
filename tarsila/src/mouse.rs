@@ -84,8 +84,10 @@ impl MouseManager {
                         events.push(Event::MoveStart(p).into());
                     } else {
                         events.push(Event::ClearSelection.into());
+                        /*
                         self.on_left_release
                             .push(Event::SetTool(Tool::Selection).into());
+                            */
                     }
                 }
             }

@@ -8,7 +8,7 @@ Projects issues and bugs:
 6. Need some way of controlling the repetition of keydown time [DONE]
 7. Eraser: group edits while mouse is pressed, end edit when mouse released [ENH][DONE]
 8. Eraser: similar issue as with brush, non-contiguous strokes [DONE]
-9. When ending a line outside of canvas, cannot undo
+9. When ending a line outside of canvas, cannot undo [DONE]
 10. Sometimes when leaving the canvas, tool is not released and continue drawing [DONE]
 11. Improve the visibility of the tool cursors (e.g. on black) [ENH][DONE]
 12. Data about tools is too spread around: Tool enum, data about icons, etc.
@@ -26,6 +26,6 @@ Projects issues and bugs:
 24. Use default mouse pointer out of canvas [DONE]
 25. Preview animation not affected by layer's alpha [DONE]
 26. When leaving the window, tool is not released and continues drawing
-27. When pasting in another layer, floating object is anchored and selection is on canvas
-28. When pasting in another layer, tool is set to selection instead of move
+27. When pasting in another layer, floating object is anchored and selection is on canvas [DONE]
+28. When pasting in another layer, tool is set to selection instead of move [DONE]
 29. Limit the amount of data on Undo list [ENH]
