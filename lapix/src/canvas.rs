@@ -89,7 +89,12 @@ impl<IMG: Bitmap> Canvas<IMG> {
         return None;
     }
 
-    pub fn line(&mut self, p1: Point<i32>, p2: Point<i32>, color: Color) -> Vec<(Point<i32>, Color)> {
+    pub fn line(
+        &mut self,
+        p1: Point<i32>,
+        p2: Point<i32>,
+        color: Color,
+    ) -> Vec<(Point<i32>, Color)> {
         let line = graphics::line(p1, p2);
         let mut reversals = Vec::new();
 

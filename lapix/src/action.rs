@@ -59,7 +59,12 @@ pub enum AtomicAction<IMG> {
 impl<IMG> Debug for AtomicAction<IMG> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            Self::SetPixel(i, p, c) => f.debug_tuple("SetPixel").field(&i).field(&p).field(&c).finish(),
+            Self::SetPixel(i, p, c) => f
+                .debug_tuple("SetPixel")
+                .field(&i)
+                .field(&p)
+                .field(&c)
+                .finish(),
             Self::DestroyLayer(i) => f.debug_tuple("DestroyLayer").field(&i).finish(),
             Self::CreateLayer(i, _) => f.debug_tuple("CreateLayer").field(&i).finish(),
             Self::SetLayerCanvas(i, _) => f.debug_tuple("SetLayerCanvas").field(&i).finish(),
@@ -69,8 +74,10 @@ impl<IMG> Debug for AtomicAction<IMG> {
 
 impl<IMG: Bitmap> AtomicAction<IMG> {
     pub fn set_pixel_vec(i: LayerIndex, values: Vec<(Point<i32>, Color)>) -> Vec<Self> {
-        values.into_iter().map(
-            |(p, c)| AtomicAction::SetPixel(i, p, c)).collect()
+        values
+            .into_iter()
+            .map(|(p, c)| AtomicAction::SetPixel(i, p, c))
+            .collect()
     }
 
     pub fn apply(self, layers: &mut Layers<IMG>) -> CanvasEffect {

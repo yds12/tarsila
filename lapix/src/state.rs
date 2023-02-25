@@ -47,23 +47,6 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         }
     }
 
-    pub fn to_file(&self, path: PathBuf) {
-        use std::io::Write;
-        let bytes = bincode::serialize(self).unwrap();
-        let mut file = std::fs::File::create(path).unwrap();
-        file.write(&bytes);
-    }
-
-    pub fn from_file(path: PathBuf) -> Self {
-        use std::io::Read;
-        let mut file = std::fs::File::open(path).unwrap();
-        let mut bytes = Vec::new();
-        file.read_to_end(&mut bytes).unwrap();
-        let state = bincode::deserialize(&bytes).unwrap();
-
-        state
-    }
-
     pub fn start_action(&mut self) {
         self.cur_reversal = Some(Action::new());
     }
@@ -117,9 +100,14 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
             Event::ResizeCanvas(size) => {
                 self.start_action();
                 let imgs = self.resize_canvas(size);
-                self.add_to_action(imgs.into_iter().enumerate().map(|(i, img)| AtomicAction::SetLayerCanvas(i, img)).collect());
+                self.add_to_action(
+                    imgs.into_iter()
+                        .enumerate()
+                        .map(|(i, img)| AtomicAction::SetLayerCanvas(i, img))
+                        .collect(),
+                );
                 self.end_action();
-            },
+            }
             Event::LineStart(_) | Event::RectStart(_) => (),
             Event::BrushStart | Event::EraseStart => self.start_action(),
             Event::BrushEnd | Event::EraseEnd => self.end_action(),
@@ -183,8 +171,14 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
             Event::SetMainColor(color) => self.main_color = color,
             Event::Save(path) => self.save_image(path.to_string_lossy().as_ref()),
             Event::OpenFile(path) => self.import_image(path.to_string_lossy().as_ref()),
-            Event::SaveProject(path) => self.to_file(path),
-            Event::LoadProject(path) => *self = Self::from_file(path),
+            Event::SaveProject(path, f) => {
+                let bytes = bincode::serialize(&self).unwrap();
+                (f.0)(path, bytes);
+            }
+            Event::LoadProject(path, f) => {
+                let bytes = (f.0)(path);
+                *self = bincode::deserialize(&bytes).unwrap();
+            }
             Event::LoadPalette(path) => {
                 self.palette = Palette::from_file(path.to_string_lossy().as_ref())
             }
@@ -297,7 +291,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                     .unwrap()
                     .push(AtomicAction::CreateLayer(i, img));
                 self.end_action();
-            },
+            }
             Event::MoveLayerDown(i) => self.layers.swap(i, i - 1),
             Event::MoveLayerUp(i) => self.layers.swap(i, i + 1),
             Event::SetSpritesheet(size) => self.set_spritesheet(size),

@@ -26,3 +26,5 @@ Projects issues and bugs:
 24. Use default mouse pointer out of canvas [DONE]
 25. Preview animation not affected by layer's alpha [DONE]
 26. When leaving the window, tool is not released and continues drawing
+27. When pasting in another layer, floating object is anchored and selection is on canvas
+28. When pasting in another layer, tool is set to selection instead of move

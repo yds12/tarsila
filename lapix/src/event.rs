@@ -1,8 +1,46 @@
 pub use crate::{Bitmap, CanvasEffect, Color, Point, Position, Size, Tool};
-use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LoadProject(pub fn(PathBuf) -> Vec<u8>);
+impl Debug for LoadProject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.write_str("LoadProject(fn(PathBuf) -> Vec<u8>>)")
+    }
+}
+impl PartialEq for LoadProject {
+    fn eq(&self, other: &Self) -> bool {
+        true
+    }
+}
+impl Clone for LoadProject {
+    fn clone(&self) -> Self {
+        Self((self.0).clone())
+    }
+}
+impl From<fn(PathBuf) -> Vec<u8>> for LoadProject {
+    fn from(val: fn(PathBuf) -> Vec<u8>) -> Self {
+        Self(val)
+    }
+}
+pub struct SaveProject(pub fn(PathBuf, Vec<u8>));
+impl Debug for SaveProject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.write_str("SaveProject(fn(PathBuf, Vec<u8>))")
+    }
+}
+impl PartialEq for SaveProject {
+    fn eq(&self, other: &Self) -> bool {
+        true
+    }
+}
+impl Clone for SaveProject {
+    fn clone(&self) -> Self {
+        Self((self.0).clone())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Event {
     ClearCanvas,
     ResizeCanvas(Size<i32>),
@@ -17,8 +55,8 @@ pub enum Event {
     OpenFile(PathBuf),
     // TODO: these should be UI events, however we need to see what to do
     // when it comes to UNDO
-    SaveProject(PathBuf),
-    LoadProject(PathBuf),
+    SaveProject(PathBuf, SaveProject),
+    LoadProject(PathBuf, LoadProject),
     LoadPalette(PathBuf),
     Bucket(Point<i32>),
     EraseStart,
@@ -77,7 +115,7 @@ impl Event {
             | Self::DeleteLayer(_)
             | Self::MoveLayerDown(_)
             | Self::MoveLayerUp(_)
-            | Self::LoadProject(_) => CanvasEffect::Layer,
+            | Self::LoadProject(_, _) => CanvasEffect::Layer,
             x if x.triggers_anchoring() => CanvasEffect::Update,
             _ => CanvasEffect::None,
         }

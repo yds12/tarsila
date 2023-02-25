@@ -15,7 +15,7 @@ mod util;
 use action::{Action, AtomicAction};
 pub use canvas::{Canvas, CanvasEffect};
 pub use color::Color;
-pub use event::Event;
+pub use event::{Event, LoadProject, SaveProject};
 pub use floating::FreeImage;
 pub use layer::{Layer, Layers};
 use palette::Palette;

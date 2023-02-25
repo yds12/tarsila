@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::time::SystemTime;
 
 pub fn rgba_to_rgb_u8(color: [u8; 4]) -> [u8; 3] {
@@ -28,4 +29,19 @@ impl Timer {
             Some(t) => t.elapsed().unwrap().as_millis() as u64 > self.duration,
         }
     }
+}
+
+pub fn save_project(path: PathBuf, bytes: Vec<u8>) {
+    use std::io::Write;
+    let mut file = std::fs::File::create(path).unwrap();
+    file.write(&bytes);
+}
+
+pub fn load_project(path: PathBuf) -> Vec<u8> {
+    use std::io::Read;
+    let mut file = std::fs::File::open(path).unwrap();
+    let mut bytes = Vec::new();
+    file.read_to_end(&mut bytes).unwrap();
+
+    bytes
 }

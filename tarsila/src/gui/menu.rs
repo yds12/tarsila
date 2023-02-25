@@ -1,5 +1,5 @@
-use crate::Effect;
-use lapix::{Color, Event, Position, Size, Tool};
+use crate::{util, Effect};
+use lapix::{Color, Event, LoadProject, Position, SaveProject, Size, Tool};
 use std::path::PathBuf;
 
 pub struct MenuBar {
@@ -65,7 +65,9 @@ impl MenuBar {
 
                         if let Some(path) = dialog.save_file() {
                             self.last_file = Some(path.clone());
-                            events.push(Event::SaveProject(path).into());
+                            events.push(
+                                Event::SaveProject(path, SaveProject(util::save_project)).into(),
+                            );
                         }
                     }
                     if ui.button("Load Project").clicked() {
@@ -78,7 +80,9 @@ impl MenuBar {
 
                         if let Some(path) = dialog.pick_file() {
                             self.last_file = Some(path.clone());
-                            events.push(Event::LoadProject(path).into());
+                            events.push(
+                                Event::LoadProject(path, LoadProject(util::load_project)).into(),
+                            );
                         }
                     }
                     if ui.button("Export Image").clicked() {
