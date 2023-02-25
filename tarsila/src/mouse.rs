@@ -10,7 +10,7 @@ pub struct MouseManager {
     visible_pixel_on_mouse: Option<[u8; 4]>,
     is_on_selection: bool,
     is_on_canvas: bool,
-    on_left_release: Vec<Effect>,
+    on_left_release: Vec<Box<fn(&Self) -> Effect>>,
 }
 
 impl MouseManager {
@@ -77,17 +77,20 @@ impl MouseManager {
                     events.push(Event::Bucket(p).into());
                 }
                 Tool::Selection => {
-                    events.push(Event::StartSelection(p).into());
+                    if self.is_on_canvas {
+                        events.push(Event::StartSelection(p).into());
+                        self.on_left_release.push(Box::new(|mouse: &Self| {
+                            let point = (mouse.mouse_canvas.x, mouse.mouse_canvas.y).into();
+                            Event::EndSelection(point).into()
+                        }));
+                        self.on_left_release.push(Box::new(|_| Event::SetTool(Tool::Move).into()));
+                    }
                 }
                 Tool::Move => {
                     if self.is_on_selection {
                         events.push(Event::MoveStart(p).into());
                     } else {
                         events.push(Event::ClearSelection.into());
-                        /*
-                        self.on_left_release
-                            .push(Event::SetTool(Tool::Selection).into());
-                            */
                     }
                 }
             }
@@ -124,17 +127,15 @@ impl MouseManager {
                 Tool::Rectangle => {
                     events.push(Event::RectEnd(p).into());
                 }
-                Tool::Selection => {
-                    events.push(Event::EndSelection(p).into());
-                    events.push(Event::SetTool(Tool::Move).into());
-                }
                 Tool::Move => {
                     events.push(Event::MoveEnd(p).into());
                 }
                 _ => (),
             }
 
-            while let Some(event) = self.on_left_release.pop() {
+            while self.on_left_release.len() > 0 {
+                let f = self.on_left_release.remove(0);
+                let event = (f)(self);
                 events.push(event);
             }
         }

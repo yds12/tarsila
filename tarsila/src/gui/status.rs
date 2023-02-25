@@ -55,10 +55,7 @@ impl StatusBar {
 
                     if let Some(color) = self.visible_pixel_on_mouse {
                         ui.separator();
-                        ui.colored_label(
-                            text_color,
-                            format!("{}", Color::from(color).hex()),
-                        );
+                        ui.colored_label(text_color, format!("{}", Color::from(color).hex()));
                     }
                 }
             });
