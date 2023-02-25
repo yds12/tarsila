@@ -75,6 +75,7 @@ impl Gui {
             is_on_canvas,
             selected_tool,
             visible_pixel_on_mouse,
+            canvas_size,
         );
         self.menu.sync(canvas_size, spritesheet);
     }
