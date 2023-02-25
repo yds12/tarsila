@@ -59,8 +59,10 @@ impl<IMG: Bitmap> Canvas<IMG> {
         old
     }
 
-    pub fn clear(&mut self) {
-        self.inner = IMG::new(self.size(), TRANSPARENT);
+    pub fn clear(&mut self) -> IMG {
+        let size = self.size();
+        let old = std::mem::replace(&mut self.inner, IMG::new(size, TRANSPARENT));
+        old
     }
 
     pub fn resize(&mut self, size: Size<i32>) -> IMG {

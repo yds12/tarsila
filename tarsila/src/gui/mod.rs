@@ -62,6 +62,7 @@ impl Gui {
         visible_pixel_on_mouse: Option<[u8; 4]>,
         canvas_size: Size<i32>,
         spritesheet: Size<u8>,
+        zoom: f32,
     ) {
         self.mouse_on_canvas = is_on_canvas;
 
@@ -76,6 +77,7 @@ impl Gui {
             selected_tool,
             visible_pixel_on_mouse,
             canvas_size,
+            zoom,
         );
         self.menu.sync(canvas_size, spritesheet);
     }

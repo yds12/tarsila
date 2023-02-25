@@ -96,7 +96,13 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         }
 
         match event.clone() {
-            Event::ClearCanvas => self.canvas_mut().clear(),
+            Event::ClearCanvas => {
+                let img = self.canvas_mut().clear();
+                let reversal = AtomicAction::SetLayerCanvas(self.layers.active_index(), img);
+                self.start_action();
+                self.add_to_action(vec![reversal]);
+                self.end_action();
+            }
             Event::ResizeCanvas(size) => {
                 self.start_action();
                 let imgs = self.resize_canvas(size);

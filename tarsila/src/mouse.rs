@@ -83,7 +83,8 @@ impl MouseManager {
                             let point = (mouse.mouse_canvas.x, mouse.mouse_canvas.y).into();
                             Event::EndSelection(point).into()
                         }));
-                        self.on_left_release.push(Box::new(|_| Event::SetTool(Tool::Move).into()));
+                        self.on_left_release
+                            .push(Box::new(|_| Event::SetTool(Tool::Move).into()));
                     }
                 }
                 Tool::Move => {

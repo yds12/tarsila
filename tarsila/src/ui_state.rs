@@ -215,6 +215,7 @@ impl UiState {
             visible_pixel,
             self.canvas().size(),
             self.inner.spritesheet(),
+            self.zoom,
         );
     }
 
