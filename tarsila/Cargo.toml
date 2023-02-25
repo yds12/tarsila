@@ -1,7 +1,15 @@
 [package]
 name = "tarsila"
+authors = ["Y. D. Santos <yds12@protonmail.com>"]
 version = "0.1.0"
 edition = "2021"
+description = "GUI image editor for pixel art"
+homepage = "https://github.com/yds12/tarsila"
+repository = "https://github.com/yds12/tarsila"
+readme = "README.md"
+documentation = "https://docs.rs/tarsila/latest/"
+keywords = ["image", "pixel", "pixel-art", "image-editor", "editor"]
+categories = ["game-development", "graphics", "multimedia", "multimedia::images", "rendering"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

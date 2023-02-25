@@ -1,7 +1,15 @@
 [package]
 name = "lapix"
+authors = ["Y. D. Santos <yds12@protonmail.com>"]
 version = "0.1.0"
 edition = "2021"
+description = "Image editor backend library for pixel art"
+homepage = "https://github.com/yds12/tarsila"
+repository = "https://github.com/yds12/tarsila"
+readme = "README.md"
+documentation = "https://docs.rs/lapix/latest/"
+keywords = ["image", "pixel", "pixel-art", "image-editor", "editor"]
+categories = ["game-development", "graphics", "multimedia", "multimedia::images", "rendering"]
 
 [dependencies]
 bincode = "1.3.3"
