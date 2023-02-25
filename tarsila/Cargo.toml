@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 lapix = { path = "../lapix" }
-egui-macroquad = { version = "0.1.0", path = "../egui-macroquad" }
+egui-macroquad = { package = "egui-macroquad-fork", version = "0.1.0", path = "../egui-macroquad" }
 macroquad = "0.3.25"
 rfd = "0.10.0"
 egui = "0.21.0"

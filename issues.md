@@ -28,3 +28,4 @@ Projects issues and bugs:
 26. When leaving the window, tool is not released and continues drawing
 27. When pasting in another layer, floating object is anchored and selection is on canvas
 28. When pasting in another layer, tool is set to selection instead of move
+29. Limit the amount of data on Undo list [ENH]

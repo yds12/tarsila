@@ -323,7 +323,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "egui-macroquad"
+name = "egui-macroquad-fork"
 version = "0.1.0"
 dependencies = [
  "egui",
@@ -1282,7 +1282,7 @@ name = "tarsila"
 version = "0.1.0"
 dependencies = [
  "egui",
- "egui-macroquad",
+ "egui-macroquad-fork",
  "lapix",
  "macroquad",
  "rfd",

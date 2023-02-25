@@ -1,1 +1,1 @@
-Copied from https://github.com/optozorax/egui-macroquad
+A fork of https://github.com/optozorax/egui-macroquad
