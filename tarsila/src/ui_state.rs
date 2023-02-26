@@ -52,6 +52,7 @@ pub enum UiEvent {
     GuiInteraction,
     Paste,
     Exit,
+    NewProject,
 }
 
 pub struct UiState {
@@ -288,6 +289,7 @@ impl UiState {
                 self.execute(Event::Paste((x, y).into()));
             }
             UiEvent::Exit => self.must_exit = true,
+            UiEvent::NewProject => *self = UiState::default(),
         }
     }
 

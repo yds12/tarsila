@@ -7,6 +7,7 @@ pub struct MenuBar {
     show_resize_window: bool,
     show_spritesheet_window: bool,
     show_confirm_exit_window: bool,
+    show_confirm_new_window: bool,
     canvas_size: Size<i32>,
     spritesheet: Size<u8>,
     canvas_size_str: Option<(String, String)>,
@@ -20,6 +21,7 @@ impl MenuBar {
             show_resize_window: false,
             show_spritesheet_window: false,
             show_confirm_exit_window: false,
+            show_confirm_new_window: false,
             canvas_size: Size::ZERO,
             spritesheet: (1, 1).into(),
             canvas_size_str: None,
@@ -37,6 +39,7 @@ impl MenuBar {
         events.append(&mut self.update_resize_window(egui_ctx));
         events.append(&mut self.update_spritesheet_window(egui_ctx));
         events.append(&mut self.update_confirm_exit_window(egui_ctx));
+        events.append(&mut self.update_confirm_new_window(egui_ctx));
         events
     }
 
@@ -46,6 +49,10 @@ impl MenuBar {
         egui::TopBottomPanel::top("menu_bar").show(egui_ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
+                    if ui.button("New").clicked() {
+                        self.show_confirm_new_window = true;
+                        ui.close_menu();
+                    }
                     if ui.button("Save Project").clicked() {
                         ui.close_menu();
                         let mut dialog = rfd::FileDialog::new();
@@ -257,6 +264,33 @@ impl MenuBar {
                     }
                     if ui.button("cancel").clicked() {
                         self.show_confirm_exit_window = false;
+                    }
+                });
+            });
+
+        events
+    }
+
+    fn update_confirm_new_window(&mut self, egui_ctx: &egui::Context) -> Vec<Effect> {
+        let mut events = Vec::new();
+
+        if !self.show_confirm_new_window {
+            return events;
+        }
+
+        egui::Window::new("New Project")
+            .default_pos((200., 30.))
+            .show(egui_ctx, |ui| {
+                ui.label(
+                    "Are you sure you want to start a new project? \
+                    All your unsaved changes will be lost",
+                );
+                ui.horizontal(|ui| {
+                    if ui.button("Ok").clicked() {
+                        events.push(UiEvent::NewProject.into());
+                    }
+                    if ui.button("cancel").clicked() {
+                        self.show_confirm_new_window = false;
                     }
                 });
             });
