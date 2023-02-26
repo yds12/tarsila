@@ -33,6 +33,10 @@ async fn main() {
     loop {
         state.update();
         state.draw();
-        next_frame().await
+        next_frame().await;
+
+        if state.must_exit() {
+            break;
+        }
     }
 }

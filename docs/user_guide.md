@@ -25,8 +25,8 @@ You can move the camera by pressing and holding the arrow keys in the keyboard.
 
 You can zoom in with `=` and out with `-`.
 
-The canvas can be resized by clicking on the menu on `File > Resize canvas`. It
-can also be erased completely via `File > Erase canvas`.
+The canvas can be resized by clicking on the menu on `File > Resize Canvas`. It
+can also be erased completely via `File > Erase Canvas`.
 
 ## Drawing
 
@@ -126,12 +126,12 @@ continue working via the `File > Load project` menu item.
 > possibly happen with new major versions.
 
 Eventually you will want your finished work to be usable as a regular image
-outside of Tarsila. For this, chose the `File > Export image` option. You can
+outside of Tarsila. For this, chose the `File > Export Image` option. You can
 choose the `.png` or `.jpg` extensions while naming your file.
 
 Similarly, to import an image into your canvas, use the menu item
-`File > Import image`. The image will appear as a selected floating image, that
+`File > Import Image`. The image will appear as a selected floating image, that
 can be moved, deleted, copied etc. If the image is too big, it will resize your
 canvas so that it can fit. If you don't want that, you can resize your canvas
-back to its previous size with the `File > Resize canvas` option.
+back to its previous size with the `File > Resize Canvas` option.
 

@@ -1,4 +1,4 @@
-use crate::{project, Effect};
+use crate::{project, Effect, UiEvent};
 use lapix::{Color, Event, LoadProject, Position, SaveProject, Size, Tool};
 use std::path::PathBuf;
 
@@ -6,6 +6,7 @@ pub struct MenuBar {
     last_file: Option<PathBuf>,
     show_resize_window: bool,
     show_spritesheet_window: bool,
+    show_confirm_exit_window: bool,
     canvas_size: Size<i32>,
     spritesheet: Size<u8>,
     canvas_size_str: Option<(String, String)>,
@@ -18,6 +19,7 @@ impl MenuBar {
             last_file: None,
             show_resize_window: false,
             show_spritesheet_window: false,
+            show_confirm_exit_window: false,
             canvas_size: Size::ZERO,
             spritesheet: (1, 1).into(),
             canvas_size_str: None,
@@ -31,30 +33,19 @@ impl MenuBar {
     }
 
     pub fn update(&mut self, egui_ctx: &egui::Context) -> Vec<Effect> {
+        let mut events = self.update_menu(egui_ctx);
+        events.append(&mut self.update_resize_window(egui_ctx));
+        events.append(&mut self.update_spritesheet_window(egui_ctx));
+        events.append(&mut self.update_confirm_exit_window(egui_ctx));
+        events
+    }
+
+    fn update_menu(&mut self, egui_ctx: &egui::Context) -> Vec<Effect> {
         let mut events = Vec::new();
 
         egui::TopBottomPanel::top("menu_bar").show(egui_ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
-                    /*
-                    ui.menu_button("Category", |ui| {
-                        if ui.button("Item 1").clicked() {
-                        }
-                        if ui.button("Item 2").clicked() {
-                        }
-                    });*/
-                    if ui.button("Resize canvas").clicked() {
-                        ui.close_menu();
-                        self.show_resize_window = true;
-                    }
-                    if ui.button("Change spritesheet").clicked() {
-                        ui.close_menu();
-                        self.show_spritesheet_window = true;
-                    }
-                    if ui.button("Erase canvas").clicked() {
-                        ui.close_menu();
-                        events.push(Event::ClearCanvas.into());
-                    }
                     if ui.button("Save Project").clicked() {
                         ui.close_menu();
                         let mut dialog = rfd::FileDialog::new();
@@ -110,9 +101,40 @@ impl MenuBar {
                             events.push(Event::SetTool(Tool::Move).into());
                         }
                     }
+                    if ui.button("Exit").clicked() {
+                        self.show_confirm_exit_window = true;
+                        ui.close_menu();
+                    }
+                });
+                ui.menu_button("Canvas", |ui| {
+                    /*
+                    ui.menu_button("Category", |ui| {
+                        if ui.button("Item 1").clicked() {
+                        }
+                        if ui.button("Item 2").clicked() {
+                        }
+                    });*/
+                    if ui.button("Resize Canvas").clicked() {
+                        ui.close_menu();
+                        self.show_resize_window = true;
+                    }
+                    if ui.button("Change Spritesheet").clicked() {
+                        ui.close_menu();
+                        self.show_spritesheet_window = true;
+                    }
+                    if ui.button("Erase Canvas").clicked() {
+                        ui.close_menu();
+                        events.push(Event::ClearCanvas.into());
+                    }
                 });
             });
         });
+
+        events
+    }
+
+    fn update_resize_window(&mut self, egui_ctx: &egui::Context) -> Vec<Effect> {
+        let mut events = Vec::new();
 
         if self.show_resize_window {
             if self.canvas_size_str.is_none() {
@@ -163,6 +185,12 @@ impl MenuBar {
                 });
         }
 
+        events
+    }
+
+    fn update_spritesheet_window(&mut self, egui_ctx: &egui::Context) -> Vec<Effect> {
+        let mut events = Vec::new();
+
         if self.show_spritesheet_window {
             if self.spritesheet_str.is_none() {
                 self.spritesheet_str = Some((
@@ -208,6 +236,30 @@ impl MenuBar {
                     });
                 });
         }
+
+        events
+    }
+
+    fn update_confirm_exit_window(&mut self, egui_ctx: &egui::Context) -> Vec<Effect> {
+        let mut events = Vec::new();
+
+        if !self.show_confirm_exit_window {
+            return events;
+        }
+
+        egui::Window::new("Exit")
+            .default_pos((200., 30.))
+            .show(egui_ctx, |ui| {
+                ui.label("Are you sure you want to exit?");
+                ui.horizontal(|ui| {
+                    if ui.button("Ok").clicked() {
+                        events.push(UiEvent::Exit.into());
+                    }
+                    if ui.button("cancel").clicked() {
+                        self.show_confirm_exit_window = false;
+                    }
+                });
+            });
 
         events
     }

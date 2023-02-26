@@ -51,6 +51,7 @@ pub enum UiEvent {
     MouseOverGui,
     GuiInteraction,
     Paste,
+    Exit,
 }
 
 pub struct UiState {
@@ -65,6 +66,7 @@ pub struct UiState {
     mouse_over_gui: bool,
     gui_interaction_rest: Timer,
     free_image_tex: Option<Texture2D>,
+    must_exit: bool,
 }
 
 impl Default for UiState {
@@ -85,11 +87,16 @@ impl Default for UiState {
             mouse_over_gui: false,
             gui_interaction_rest: Timer::new(),
             free_image_tex: None,
+            must_exit: false,
         }
     }
 }
 
 impl UiState {
+    pub fn must_exit(&self) -> bool {
+        self.must_exit
+    }
+
     pub fn drawing_mut(&mut self) -> &mut Texture2D {
         &mut self.layer_textures[self.inner.layers().active_index()]
     }
@@ -280,6 +287,7 @@ impl UiState {
                 let (x, y) = self.screen_to_canvas(x, y);
                 self.execute(Event::Paste((x, y).into()));
             }
+            UiEvent::Exit => self.must_exit = true,
         }
     }
 
