@@ -1,5 +1,7 @@
 use macroquad::prelude::*;
+use std::time::Duration;
 
+mod bg;
 mod graphics;
 mod gui;
 mod keyboard;
@@ -29,14 +31,17 @@ fn window_conf() -> Conf {
 #[macroquad::main(window_conf)]
 async fn main() {
     let mut state = UiState::default();
+    let mut frame = 0;
 
     loop {
-        state.update();
+        state.update(frame);
         state.draw();
         next_frame().await;
 
         if state.must_exit() {
             break;
         }
+
+        frame += 1;
     }
 }

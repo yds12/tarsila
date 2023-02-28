@@ -1,10 +1,9 @@
 use crate::color::{BLACK, TRANSPARENT};
 use crate::{
     util, Action, AtomicAction, Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Layers,
-    Palette, Point, Position, Rect, Size, Tool, Transform,
+    Palette, Point, Position, Rect, Size, Tool,
 };
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Selection {
@@ -94,6 +93,8 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         if event.triggers_anchoring() {
             self.anchor();
         }
+
+        let mut skip_event = false;
 
         match event.clone() {
             Event::ClearCanvas => {
@@ -245,6 +246,8 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
 
                 if let Some(Event::MoveStart(_)) = last_event {
                     self.move_free_image(p);
+                } else {
+                    skip_event = true;
                 }
             }
             Event::Paste(p) => {
@@ -315,10 +318,15 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
 
         dbg!(t0.elapsed().unwrap());
 
-        let effect = event.canvas_effect();
-        self.events.push(event);
+        if skip_event {
+            println!("Event skipped");
+            CanvasEffect::None
+        } else {
+            let effect = event.canvas_effect();
+            self.events.push(event);
 
-        effect
+            effect
+        }
     }
 
     pub fn resize_canvas(&mut self, size: Size<i32>) -> Vec<IMG> {
@@ -464,6 +472,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         self.set_selection(Some(Selection::FreeImage));
     }
 
+    /*
     pub fn sprite_images(&self) -> Vec<IMG> {
         let mut imgs = Vec::new();
         let w = self.layers.canvas_at(0).width() / self.spritesheet.x as i32;
@@ -481,4 +490,5 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
 
         imgs
     }
+    */
 }

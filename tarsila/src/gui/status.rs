@@ -7,6 +7,7 @@ pub struct StatusBar {
     visible_pixel_on_mouse: Option<[u8; 4]>,
     canvas_size: Size<i32>,
     zoom: f32,
+    fps: f32,
 }
 
 impl StatusBar {
@@ -18,6 +19,7 @@ impl StatusBar {
             visible_pixel_on_mouse: None,
             canvas_size: Size::ZERO,
             zoom: 1.,
+            fps: 60.,
         }
     }
 
@@ -29,6 +31,7 @@ impl StatusBar {
         visible_pixel_on_mouse: Option<[u8; 4]>,
         canvas_size: Size<i32>,
         zoom: f32,
+        fps: f32,
     ) {
         self.mouse_canvas = mouse_canvas;
         self.is_mouse_on_canvas = is_mouse_on_canvas;
@@ -36,6 +39,7 @@ impl StatusBar {
         self.visible_pixel_on_mouse = visible_pixel_on_mouse;
         self.canvas_size = canvas_size;
         self.zoom = zoom;
+        self.fps = fps;
     }
 
     pub fn update(&mut self, egui_ctx: &egui::Context) {
@@ -43,6 +47,9 @@ impl StatusBar {
             ui.horizontal(|ui| {
                 let text_color = egui::Color32::from_rgb(0, 0, 0);
 
+                ui.colored_label(text_color, format!("{:.1} FPS", self.fps))
+                    .on_hover_text("frames per second");
+                ui.separator();
                 ui.colored_label(
                     text_color,
                     format!("{}x{}", self.canvas_size.x, self.canvas_size.y),

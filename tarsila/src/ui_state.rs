@@ -1,3 +1,4 @@
+use crate::bg::Background;
 use crate::graphics::DrawContext;
 use crate::gui::Gui;
 use crate::keyboard::KeyboardManager;
@@ -9,6 +10,7 @@ use lapix::{Canvas, CanvasEffect, Event, Layer, Selection, State, Tool};
 use macroquad::prelude::Color as MqColor;
 use macroquad::prelude::{FilterMode, Texture2D, SKYBLUE};
 use std::default::Default;
+use std::time::SystemTime;
 
 pub const WINDOW_W: i32 = 1000;
 pub const WINDOW_H: i32 = 600;
@@ -19,6 +21,7 @@ const LEFT_TOOLBAR_W: u16 = 300;
 const CAMERA_SPEED: f32 = 12.;
 const BG_COLOR: MqColor = SKYBLUE;
 const GUI_REST_MS: u64 = 100;
+const FPS_INTERVAL: usize = 15;
 
 // Center on the space after the toolbar
 const CANVAS_X: f32 = LEFT_TOOLBAR_W as f32 + ((WINDOW_W as u16 - LEFT_TOOLBAR_W) / 2) as f32
@@ -68,6 +71,10 @@ pub struct UiState {
     gui_interaction_rest: Timer,
     free_image_tex: Option<Texture2D>,
     must_exit: bool,
+    t0: SystemTime,
+    fps: f32,
+    refresh_preview: bool,
+    bg: Background,
 }
 
 impl Default for UiState {
@@ -89,6 +96,10 @@ impl Default for UiState {
             gui_interaction_rest: Timer::new(),
             free_image_tex: None,
             must_exit: false,
+            t0: SystemTime::now(),
+            fps: 60.,
+            refresh_preview: true,
+            bg: Background::new(),
         }
     }
 }
@@ -106,7 +117,13 @@ impl UiState {
         &self.layer_textures[self.inner.layers().active_index()]
     }
 
-    pub fn update(&mut self) {
+    pub fn update(&mut self, frame: usize) {
+        if frame % FPS_INTERVAL == (FPS_INTERVAL - 1) {
+            let elapsed_ms = self.t0.elapsed().unwrap().as_millis();
+            self.fps = FPS_INTERVAL as f32 / (elapsed_ms as f32 / 1000.);
+            self.t0 = SystemTime::now();
+        }
+
         self.mouse_over_gui = false;
 
         self.sync_gui();
@@ -152,13 +169,18 @@ impl UiState {
     pub fn draw(&mut self) {
         macroquad::prelude::clear_background(BG_COLOR);
 
+        let t0 = SystemTime::now();
         let ctx = self.draw_ctx();
-        graphics::draw_canvas_bg(ctx);
+
+        self.bg.draw(ctx);
+
         graphics::draw_canvas(&*self);
+
         graphics::draw_spritesheet_boundaries(ctx);
 
         let (x, y) = macroquad::prelude::mouse_position();
         let mouse_canvas = self.screen_to_canvas(x, y).into();
+
         self.inner.update_free_image(mouse_canvas);
 
         if self.inner.selection().is_some() {
@@ -198,6 +220,13 @@ impl UiState {
             None
         };
 
+        let sprite_img = if self.refresh_preview {
+            self.refresh_preview = false;
+            Some(self.inner.layers().blended())
+        } else {
+            None
+        };
+
         // TODO: we desperately need to improve this... every new parameter that
         // needs to be sync'ed, becomes an extra argument here, which in turn
         // needs to be passed down to the specific GUI component
@@ -211,11 +240,7 @@ impl UiState {
             (0..n_layers)
                 .map(|i| self.inner.layers().get(i).opacity())
                 .collect(),
-            self.inner
-                .sprite_images()
-                .into_iter()
-                .map(|i| i.0)
-                .collect(),
+            sprite_img,
             self.inner.palette().iter().map(|c| (*c).into()).collect(),
             (x, y).into(),
             in_canvas,
@@ -224,6 +249,7 @@ impl UiState {
             self.canvas().size(),
             self.inner.spritesheet(),
             self.zoom,
+            self.fps,
         );
     }
 
@@ -253,8 +279,14 @@ impl UiState {
         match effect {
             // TODO: Texture2D is copy, so we don't need `drawing_mut` here, but
             // it would be better.
-            CanvasEffect::Update => self.drawing().update(&self.canvas().inner().0),
-            CanvasEffect::New | CanvasEffect::Layer => self.sync_layer_textures(),
+            CanvasEffect::Update => {
+                self.drawing().update(&self.canvas().inner().0);
+                self.refresh_preview = true;
+            }
+            CanvasEffect::New | CanvasEffect::Layer => {
+                self.sync_layer_textures();
+                self.refresh_preview = true;
+            }
             CanvasEffect::None => (),
         };
     }

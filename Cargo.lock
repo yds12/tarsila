@@ -334,8 +334,7 @@ dependencies = [
 [[package]]
 name = "egui-miniquad"
 version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c93b1e7505c5a4f7c362555758b8feb3ab5dc3bb3cda5e9a6805d46374d1428"
+source = "git+https://github.com/not-fl3/egui-miniquad?rev=474b8c825887dbe93dd7d28c62266a31ef55a6e8#474b8c825887dbe93dd7d28c62266a31ef55a6e8"
 dependencies = [
  "bytemuck",
  "copypasta",

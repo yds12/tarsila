@@ -1,6 +1,6 @@
 mod action;
 mod canvas;
-mod color;
+pub mod color;
 mod event;
 mod floating;
 pub mod graphics;
@@ -20,9 +20,7 @@ pub use floating::FreeImage;
 pub use layer::{Layer, Layers};
 use palette::Palette;
 pub use primitives::*;
-use serde::{Deserialize, Serialize};
 pub use state::{Selection, State};
-use std::fmt::Debug;
 pub use tool::Tool;
 use transform::Transform;
 

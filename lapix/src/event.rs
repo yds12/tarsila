@@ -9,7 +9,7 @@ impl Debug for LoadProject {
     }
 }
 impl PartialEq for LoadProject {
-    fn eq(&self, other: &Self) -> bool {
+    fn eq(&self, _: &Self) -> bool {
         true
     }
 }
@@ -30,7 +30,7 @@ impl Debug for SaveProject {
     }
 }
 impl PartialEq for SaveProject {
-    fn eq(&self, other: &Self) -> bool {
+    fn eq(&self, _: &Self) -> bool {
         true
     }
 }

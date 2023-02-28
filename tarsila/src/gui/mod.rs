@@ -1,3 +1,4 @@
+use crate::wrapped_image::WrappedImage;
 use crate::{Effect, UiEvent};
 use lapix::{Event, Point, Position, Size, Tool};
 use macroquad::prelude::*;
@@ -54,7 +55,7 @@ impl Gui {
         active_layer: usize,
         layers_vis: Vec<bool>,
         layers_alpha: Vec<u8>,
-        preview_imgs: Vec<macroquad::prelude::Image>,
+        preview_img: Option<WrappedImage>,
         palette: Vec<[u8; 4]>,
         mouse_canvas: Position<i32>,
         is_on_canvas: bool,
@@ -63,14 +64,19 @@ impl Gui {
         canvas_size: Size<i32>,
         spritesheet: Size<u8>,
         zoom: f32,
+        fps: f32,
     ) {
         self.mouse_on_canvas = is_on_canvas;
 
         self.toolbar.sync(main_color);
+
         self.layers_panel
             .sync(num_layers, active_layer, layers_vis, layers_alpha);
-        self.preview.sync(preview_imgs);
+
+        self.preview.sync(spritesheet, preview_img);
+
         self.palette.sync(palette);
+
         self.status_bar.sync(
             mouse_canvas,
             is_on_canvas,
@@ -78,7 +84,9 @@ impl Gui {
             visible_pixel_on_mouse,
             canvas_size,
             zoom,
+            fps,
         );
+
         self.menu.sync(canvas_size, spritesheet);
     }
 

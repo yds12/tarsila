@@ -1,3 +1,6 @@
+** NOTE: this project is a work in progress, if you want to use it, please save
+your work as frequently as possible to avoid data losses. **
+
 Tarsila is a pixel art and spritesheet editor written in Rust with
 [macroquad](https://macroquad.rs/) as graphics backend and
 [egui](https://www.egui.rs/) for GUI. The project is consists of 3 crates:
@@ -15,11 +18,7 @@ To contribute, take a look at [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Getting Started
 
-If you have rust installed, you can install this by cloning this repository and
-running `cargo install --path .` from the repository's root. If you want to
-compile it yourself, make sure to use `cargo build --release` for performance's
-sake. If you are in a Debian-based Linux distro, you can install our `.deb`
-package.
+Check out our [installation instructions](docs/install.md).
 
 To learn how to use, take a look at the [user guide](docs/user_guide.md).
 
@@ -31,8 +30,7 @@ Some of the main gaps currently are:
 
 * No error handling, everything panics;
 * Lack of tests;
-* Almost no attention has been given to performance (but it performs well enough
-  in most cases)
+* There is much to improve when it comes to performance
 
 Visit our [issues page](https://github.com/yds12/tarsila/issues) for known
 problems/bugs.

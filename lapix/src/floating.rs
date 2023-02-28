@@ -1,7 +1,6 @@
 use crate::color::TRANSPARENT;
 use crate::{graphics, Bitmap, Canvas, Color, Point, Position, Rect, Size};
 use serde::{Deserialize, Serialize};
-use std::marker::PhantomData;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FreeImage<IMG> {

@@ -93,30 +93,6 @@ pub fn draw_free_image(
     macroquad::prelude::draw_texture_ex(free_image_tex, x, y, color.into(), params);
 }
 
-pub fn draw_canvas_bg(ctx: DrawContext) {
-    let p = ctx.canvas_pos - ctx.camera;
-    let w = ctx.canvas_size.x * ctx.scale;
-    let h = ctx.canvas_size.y * ctx.scale;
-
-    let side = 4. * ctx.scale;
-
-    // TODO: optimize this by storing a rendered texture that contains all
-    // BG rectangles
-    let bg1 = MqColor::new(0.875, 0.875, 0.875, 1.);
-    let bg2 = MqColor::new(0.75, 0.75, 0.75, 1.);
-    for i in 0..(w / side + 1.) as usize {
-        for j in 0..(h / side + 1.) as usize {
-            let cur = Size::new(i as f32 * side, j as f32 * side);
-            let next = Size::new((i + 1) as f32 * side, (j + 1) as f32 * side);
-            let p = Point::new(p.x + i as f32 * side, p.y + j as f32 * side);
-            let w = if next.x <= w { side } else { w - cur.x };
-            let h = if next.y <= h { side } else { h - cur.y };
-            let color = if (i + j) % 2 == 0 { bg1 } else { bg2 };
-            macroquad::prelude::draw_rectangle(p.x, p.y, w, h, color);
-        }
-    }
-}
-
 pub fn draw_selection(ctx: DrawContext, free_image: Option<&FreeImage<WrappedImage>>) {
     let rect = match ctx.selection {
         Some(Selection::FreeImage) => free_image.unwrap().rect,

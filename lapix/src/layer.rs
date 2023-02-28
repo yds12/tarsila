@@ -1,5 +1,5 @@
 use crate::color::TRANSPARENT;
-use crate::{AtomicAction, Bitmap, Canvas, Color, Point, Rect, Size};
+use crate::{Bitmap, Canvas, Color, Point, Rect, Size};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

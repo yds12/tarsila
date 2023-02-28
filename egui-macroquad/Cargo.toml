@@ -13,5 +13,6 @@ keywords = ["gui", "imgui", "immediate", "portable", "gamedev"]
 
 [dependencies]
 egui = "0.21.0"
-egui-miniquad = "0.14.0"
+# TODO use a crates.io version when 0.15 is released
+egui-miniquad = { git = "https://github.com/not-fl3/egui-miniquad", rev = "474b8c825887dbe93dd7d28c62266a31ef55a6e8" }
 macroquad = "0.3.25"
