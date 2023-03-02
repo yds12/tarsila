@@ -220,9 +220,15 @@ impl UiState {
             None
         };
 
-        let sprite_img = if self.refresh_preview {
+        let sprite_imgs = if self.refresh_preview {
             self.refresh_preview = false;
-            Some(self.inner.layers().blended())
+
+            Some(
+                (0..n_layers)
+                    .map(|i| self.inner.layers().get(i).canvas().inner())
+                    .cloned()
+                    .collect(),
+            )
         } else {
             None
         };
@@ -240,7 +246,7 @@ impl UiState {
             (0..n_layers)
                 .map(|i| self.inner.layers().get(i).opacity())
                 .collect(),
-            sprite_img,
+            sprite_imgs,
             self.inner.palette().iter().map(|c| (*c).into()).collect(),
             (x, y).into(),
             in_canvas,

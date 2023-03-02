@@ -6,9 +6,8 @@ const MS_PER_FRAME: usize = 100;
 
 pub struct Preview {
     spritesheet: Size<u8>,
-    image: Option<WrappedImage>,
-    egui_image: Option<egui::ColorImage>,
-    texture: Option<egui::TextureHandle>,
+    images: Vec<egui::ColorImage>,
+    textures: Vec<Option<egui::TextureHandle>>,
     scale: String,
 }
 
@@ -16,25 +15,25 @@ impl Preview {
     pub fn new() -> Self {
         Self {
             spritesheet: (1, 1).into(),
-            image: None,
-            egui_image: None,
-            texture: None,
+            images: Vec::new(),
+            textures: Vec::new(),
             scale: "1".to_owned(),
         }
     }
 
-    pub fn sync(&mut self, spritesheet: Size<u8>, image: Option<WrappedImage>) {
+    pub fn sync(&mut self, spritesheet: Size<u8>, images: Option<Vec<WrappedImage>>) {
         self.spritesheet = spritesheet;
 
-        if let Some(image) = image {
-            self.texture = None;
-            self.egui_image = None;
+        if let Some(imgs) = images {
+            self.textures = (0..imgs.len()).map(|_| None).collect();
+            self.images = Vec::new();
 
-            let w = image.width() as usize;
-            let h = image.height() as usize;
-            let img = egui::ColorImage::from_rgba_unmultiplied([w, h], &image.bytes());
-            self.egui_image = Some(img);
-            self.image = Some(image);
+            for image in imgs {
+                let w = image.width() as usize;
+                let h = image.height() as usize;
+                let img = egui::ColorImage::from_rgba_unmultiplied([w, h], &image.bytes());
+                self.images.push(img);
+            }
         }
     }
 
@@ -52,21 +51,34 @@ impl Preview {
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
                     .as_millis();
-                let i = (t as usize / MS_PER_FRAME) % len;
+                let frame = (t as usize / MS_PER_FRAME) % len;
+                let uv = self.get_spritesheet_rect(frame);
+                let frame_ratios = self.frame_ratios();
 
-                if let Some(image) = &self.egui_image {
-                    let uv = self.get_spritesheet_rect(i);
-                    let frame_ratios = self.frame_ratios();
-                    let tex: &egui::TextureHandle = self.texture.get_or_insert_with(|| {
-                        ui.ctx()
-                            .load_texture("", image.clone(), egui::TextureOptions::NEAREST)
+                let mut rect = None;
+                for i in 0..self.images.len() {
+                    let tex: &egui::TextureHandle = self.textures[i].get_or_insert_with(|| {
+                        ui.ctx().load_texture(
+                            "",
+                            self.images[i].clone(),
+                            egui::TextureOptions::NEAREST,
+                        )
                     });
                     let frame_size = frame_ratios * tex.size_vec2();
                     let scale = self.scale.parse().unwrap_or(1.);
-                    let image = egui::Image::new(tex, frame_size * scale)
-                        .bg_fill(egui::Color32::LIGHT_GRAY)
-                        .uv(uv);
-                    ui.add(image);
+
+                    match rect {
+                        None => {
+                            let image = egui::Image::new(tex, frame_size * scale)
+                                .bg_fill(egui::Color32::LIGHT_GRAY)
+                                .uv(uv);
+                            rect = Some(ui.add(image).rect);
+                        }
+                        Some(r) => {
+                            let image2 = egui::Image::new(tex, frame_size * scale).uv(uv);
+                            ui.put(r, image2);
+                        }
+                    }
                 }
             });
     }

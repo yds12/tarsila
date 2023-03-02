@@ -471,24 +471,4 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         self.free_image = Some(img);
         self.set_selection(Some(Selection::FreeImage));
     }
-
-    /*
-    pub fn sprite_images(&self) -> Vec<IMG> {
-        let mut imgs = Vec::new();
-        let w = self.layers.canvas_at(0).width() / self.spritesheet.x as i32;
-        let h = self.layers.canvas_at(0).height() / self.spritesheet.y as i32;
-
-        for j in 0..self.spritesheet.y {
-            for i in 0..self.spritesheet.x {
-                imgs.push(
-                    // TODO: maybe this (and other) multiplication can overflow
-                    self.layers
-                        .blended_area((i as i32 * w, j as i32 * h, w, h).into()),
-                );
-            }
-        }
-
-        imgs
-    }
-    */
 }
