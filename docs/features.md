@@ -71,6 +71,7 @@ Features (+ means done, (-) means least important):
     - Move (+)
     - When selection is active, might affect other tools, like bucket
     - create selection based on what's on a layer (-)
+    - select things in multiple layers at a time
   - Eyedrop to select colors (+)
   - Transform
     - Resize [v0.2]

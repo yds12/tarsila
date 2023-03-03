@@ -207,7 +207,8 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                     let size = p.abs_diff(*p0);
                     let corner = p.rect_min_corner(*p0);
                     let rect = Rect::new(corner.x, corner.y, size.x + 1, size.y + 1);
-                    self.set_selection(Some(Selection::Canvas(rect)));
+                    let r = rect.clip_to(self.canvas().rect());
+                    self.set_selection(Some(Selection::Canvas(r)));
                 }
             }
             Event::Copy => match self.selection {

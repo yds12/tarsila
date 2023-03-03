@@ -59,7 +59,7 @@ impl Bitmap for WrappedImage {
         let x = p.x as usize;
         let y = p.y as usize;
 
-        let base_idx = y * 4 * self.width() as usize + x * 4;
+        let base_idx = y * 4 * (self.width() as usize) + x * 4;
         Color::new(
             self.0.bytes[base_idx],
             self.0.bytes[base_idx + 1],
@@ -71,7 +71,7 @@ impl Bitmap for WrappedImage {
     fn set_pixel(&mut self, p: Point<i32>, color: Color) {
         let x = p.x as usize;
         let y = p.y as usize;
-        let base_idx = y * 4 * self.width() as usize + x * 4;
+        let base_idx = y * 4 * (self.width() as usize) + x * 4;
         self.0.bytes[base_idx] = color.r;
         self.0.bytes[base_idx + 1] = color.g;
         self.0.bytes[base_idx + 2] = color.b;

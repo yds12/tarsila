@@ -29,3 +29,4 @@ Projects issues and bugs:
 27. When pasting in another layer, floating object is anchored and selection is on canvas [DONE]
 28. When pasting in another layer, tool is set to selection instead of move [DONE]
 29. Limit the amount of data on Undo list [ENH]
+30. If selection is not fully in canvas, panic [DONE]
