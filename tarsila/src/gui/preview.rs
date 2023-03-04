@@ -9,6 +9,8 @@ pub struct Preview {
     images: Vec<egui::ColorImage>,
     textures: Vec<Option<egui::TextureHandle>>,
     scale: String,
+    layers_vis: Vec<bool>,
+    layers_alpha: Vec<u8>,
 }
 
 impl Preview {
@@ -18,11 +20,21 @@ impl Preview {
             images: Vec::new(),
             textures: Vec::new(),
             scale: "1".to_owned(),
+            layers_vis: Vec::new(),
+            layers_alpha: Vec::new(),
         }
     }
 
-    pub fn sync(&mut self, spritesheet: Size<u8>, images: Option<Vec<WrappedImage>>) {
+    pub fn sync(
+        &mut self,
+        spritesheet: Size<u8>,
+        images: Option<Vec<WrappedImage>>,
+        layers_vis: Vec<bool>,
+        layers_alpha: Vec<u8>,
+    ) {
         self.spritesheet = spritesheet;
+        self.layers_vis = layers_vis;
+        self.layers_alpha = layers_alpha;
 
         if let Some(imgs) = images {
             self.textures = (0..imgs.len()).map(|_| None).collect();
@@ -57,6 +69,10 @@ impl Preview {
 
                 let mut rect = None;
                 for i in 0..self.images.len() {
+                    if !self.layers_vis[i] {
+                        continue;
+                    }
+
                     let tex: &egui::TextureHandle = self.textures[i].get_or_insert_with(|| {
                         ui.ctx().load_texture(
                             "",

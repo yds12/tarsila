@@ -69,9 +69,14 @@ impl Gui {
         self.mouse_on_canvas = is_on_canvas;
 
         self.toolbar.sync(main_color);
-        self.layers_panel
-            .sync(num_layers, active_layer, layers_vis, layers_alpha);
-        self.preview.sync(spritesheet, preview_imgs);
+        self.layers_panel.sync(
+            num_layers,
+            active_layer,
+            layers_vis.clone(),
+            layers_alpha.clone(),
+        );
+        self.preview
+            .sync(spritesheet, preview_imgs, layers_vis, layers_alpha);
         self.palette.sync(palette);
         self.status_bar.sync(
             mouse_canvas,

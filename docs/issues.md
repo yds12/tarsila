@@ -24,7 +24,7 @@ Projects issues and bugs:
 22. Preview window gets too big and cannot be closed or resized [DONE]
 23. Add tooltips to everything [ENH]
 24. Use default mouse pointer out of canvas [DONE]
-25. Preview animation not affected by layer's alpha [DONE]
+25. Preview animation not affected by layer's alpha
 26. When leaving the window, tool is not released and continues drawing
 27. When pasting in another layer, floating object is anchored and selection is on canvas [DONE]
 28. When pasting in another layer, tool is set to selection instead of move [DONE]
