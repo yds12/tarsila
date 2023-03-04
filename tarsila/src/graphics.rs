@@ -8,7 +8,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 const DASHED_LINE_SEGMENT: f32 = 5.;
 const DASHED_LINE_ANIMATION_MS: u128 = 250;
-const SPRSHEET_LINE_THICK: f32 = 1.;
+const SPRSHEET_LINE_THICKNESS: f32 = 1.;
 const SPRSHEET_LINE_COLOR: MqColor = BLACK;
 
 #[derive(Debug, Copy, Clone)]
@@ -124,7 +124,7 @@ pub fn draw_spritesheet_boundaries(ctx: DrawContext) {
                 y,
                 w,
                 h,
-                SPRSHEET_LINE_THICK,
+                SPRSHEET_LINE_THICKNESS,
                 SPRSHEET_LINE_COLOR,
             );
         }

@@ -1,5 +1,5 @@
 use crate::wrapped_image::WrappedImage;
-use crate::{Effect, UiEvent};
+use crate::{Effect, UiEvent, UiState};
 use lapix::{Event, Point, Position, Size, Tool};
 use macroquad::prelude::*;
 use std::collections::HashMap;
@@ -55,7 +55,6 @@ impl Gui {
         active_layer: usize,
         layers_vis: Vec<bool>,
         layers_alpha: Vec<u8>,
-        preview_imgs: Option<Vec<WrappedImage>>,
         palette: Vec<[u8; 4]>,
         mouse_canvas: Position<i32>,
         is_on_canvas: bool,
@@ -76,7 +75,7 @@ impl Gui {
             layers_alpha.clone(),
         );
         self.preview
-            .sync(spritesheet, preview_imgs, layers_vis, layers_alpha);
+            .sync(spritesheet, canvas_size, layers_vis, layers_alpha);
         self.palette.sync(palette);
         self.status_bar.sync(
             mouse_canvas,
@@ -143,11 +142,11 @@ impl Gui {
             }
         });
 
-        if !events.is_empty() {
-            events.push(UiEvent::GuiInteraction.into());
-        }
-
         events
+    }
+
+    pub fn draw_preview(&self, state: &UiState) {
+        self.preview.draw(state);
     }
 
     fn update_canvas_panel(&mut self, egui_ctx: &egui::Context) -> Vec<Effect> {

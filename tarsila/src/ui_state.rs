@@ -58,6 +58,15 @@ pub enum UiEvent {
     NewProject,
 }
 
+impl UiEvent {
+    pub fn is_gui_interaction(&self) -> bool {
+        match self {
+            Self::MouseOverGui | Self::GuiInteraction => true,
+            _ => false,
+        }
+    }
+}
+
 pub struct UiState {
     inner: State<WrappedImage>,
     gui: Gui,
@@ -73,7 +82,6 @@ pub struct UiState {
     must_exit: bool,
     t0: SystemTime,
     fps: f32,
-    refresh_preview: bool,
     bg: Background,
 }
 
@@ -98,7 +106,6 @@ impl Default for UiState {
             must_exit: false,
             t0: SystemTime::now(),
             fps: 60.,
-            refresh_preview: true,
             bg: Background::new(),
         }
     }
@@ -204,6 +211,7 @@ impl UiState {
         }
 
         egui_macroquad::draw();
+        self.gui.draw_preview(self);
         self.mouse.draw(self.selected_tool());
     }
 
@@ -216,19 +224,6 @@ impl UiState {
         let in_canvas = self.canvas().is_in_bounds(p);
         let visible_pixel = if in_canvas {
             Some(self.visible_pixel(p))
-        } else {
-            None
-        };
-
-        let sprite_imgs = if self.refresh_preview {
-            self.refresh_preview = false;
-
-            Some(
-                (0..n_layers)
-                    .map(|i| self.inner.layers().get(i).canvas().inner())
-                    .cloned()
-                    .collect(),
-            )
         } else {
             None
         };
@@ -246,7 +241,6 @@ impl UiState {
             (0..n_layers)
                 .map(|i| self.inner.layers().get(i).opacity())
                 .collect(),
-            sprite_imgs,
             self.inner.palette().iter().map(|c| (*c).into()).collect(),
             (x, y).into(),
             in_canvas,
@@ -287,11 +281,9 @@ impl UiState {
             // it would be better.
             CanvasEffect::Update => {
                 self.drawing().update(&self.canvas().inner().0);
-                self.refresh_preview = true;
             }
             CanvasEffect::New | CanvasEffect::Layer => {
                 self.sync_layer_textures();
-                self.refresh_preview = true;
             }
             CanvasEffect::None => (),
         };
@@ -315,12 +307,15 @@ impl UiState {
     }
 
     pub fn process_event(&mut self, event: UiEvent) {
+        if event.is_gui_interaction() {
+            self.gui_interaction_rest.start(GUI_REST_MS);
+        }
         match event {
             UiEvent::ZoomIn => self.zoom_in(),
             UiEvent::ZoomOut => self.zoom_out(),
             UiEvent::MoveCamera(dir) => self.move_camera(dir),
             UiEvent::MouseOverGui => self.mouse_over_gui = true,
-            UiEvent::GuiInteraction => self.gui_interaction_rest.start(GUI_REST_MS),
+            UiEvent::GuiInteraction => (),
             UiEvent::Paste => {
                 let (x, y) = macroquad::prelude::mouse_position();
                 let (x, y) = self.screen_to_canvas(x, y);

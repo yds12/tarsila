@@ -188,6 +188,28 @@ impl From<Rect<i32>> for Rect<u16> {
     }
 }
 
+impl From<Rect<f32>> for Rect<i32> {
+    fn from(val: Rect<f32>) -> Self {
+        Self {
+            x: val.x as i32,
+            y: val.y as i32,
+            w: val.w as i32,
+            h: val.h as i32,
+        }
+    }
+}
+
+impl From<Rect<i32>> for Rect<f32> {
+    fn from(val: Rect<i32>) -> Self {
+        Self {
+            x: val.x as f32,
+            y: val.y as f32,
+            w: val.w as f32,
+            h: val.h as f32,
+        }
+    }
+}
+
 impl<T: Number> From<(T, T, T, T)> for Rect<T> {
     fn from(val: (T, T, T, T)) -> Self {
         Self {
