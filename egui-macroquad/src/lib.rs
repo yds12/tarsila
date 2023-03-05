@@ -19,7 +19,7 @@
 //!
 //!         // Process keys, mouse etc.
 //!
-//!         egui_macroquad::ui(|egui_ctx| {
+//!         egui_macroquad_fork::ui(|egui_ctx| {
 //!             egui::Window::new("egui ❤ macroquad")
 //!                 .show(egui_ctx, |ui| {
 //!                     ui.label("Test");
@@ -28,8 +28,8 @@
 //!
 //!         // Draw things before egui
 //!
-//!         egui_macroquad::draw();
-//!         
+//!         egui_macroquad_fork::draw();
+//!
 //!         // Draw things after egui
 //!
 //!         next_frame().await;

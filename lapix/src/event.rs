@@ -15,7 +15,7 @@ impl PartialEq for LoadProject {
 }
 impl Clone for LoadProject {
     fn clone(&self) -> Self {
-        Self((self.0).clone())
+        Self(self.0)
     }
 }
 impl From<fn(PathBuf) -> Vec<u8>> for LoadProject {
@@ -36,7 +36,7 @@ impl PartialEq for SaveProject {
 }
 impl Clone for SaveProject {
     fn clone(&self) -> Self {
-        Self((self.0).clone())
+        Self(self.0)
     }
 }
 

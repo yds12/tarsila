@@ -55,14 +55,12 @@ impl<IMG: Bitmap> Canvas<IMG> {
     }
 
     pub fn take_inner(&mut self) -> IMG {
-        let old = std::mem::replace(&mut self.inner, IMG::new(Size::new(0, 0), TRANSPARENT));
-        old
+        std::mem::replace(&mut self.inner, IMG::new(Size::new(0, 0), TRANSPARENT))
     }
 
     pub fn clear(&mut self) -> IMG {
         let size = self.size();
-        let old = std::mem::replace(&mut self.inner, IMG::new(size, TRANSPARENT));
-        old
+        std::mem::replace(&mut self.inner, IMG::new(size, TRANSPARENT))
     }
 
     pub fn resize(&mut self, size: Size<i32>) -> IMG {
@@ -88,7 +86,8 @@ impl<IMG: Bitmap> Canvas<IMG> {
             self.inner.set_pixel(p, color);
             return Some((p, old));
         }
-        return None;
+
+        None
     }
 
     pub fn line(

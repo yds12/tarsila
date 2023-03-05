@@ -1,5 +1,4 @@
 use macroquad::prelude::*;
-use std::time::Duration;
 
 mod bg;
 mod graphics;
@@ -20,7 +19,7 @@ use util::*;
 
 fn window_conf() -> Conf {
     Conf {
-        window_title: format!("Tarsila {VERSION}: Pixel Art and 2D Sprite Editor").to_owned(),
+        window_title: format!("Tarsila {VERSION}: Pixel Art and 2D Sprite Editor"),
         window_width: WINDOW_W,
         window_height: WINDOW_H,
         high_dpi: true,

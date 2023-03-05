@@ -1,4 +1,3 @@
-use crate::graphics;
 use crate::graphics::DrawContext;
 use crate::wrapped_image::WrappedImage;
 use lapix::color::TRANSPARENT;
@@ -47,22 +46,24 @@ impl Background {
         let p = ctx.canvas_pos - ctx.camera;
         let side = self.tile_size * self.pix_per_sq;
 
-        for i in 0..(ctx.canvas_size.x / side as f32).ceil() as usize {
-            for j in 0..(ctx.canvas_size.y / side as f32).ceil() as usize {
+        for i in 0..(ctx.canvas_size.x / side).ceil() as usize {
+            for j in 0..(ctx.canvas_size.y / side).ceil() as usize {
                 let pos = p + (i as f32 * side * ctx.scale, j as f32 * side * ctx.scale).into();
 
                 let pixels_left = ctx.canvas_size - (i as f32 * side, j as f32 * side).into();
                 let x_frac = pixels_left.x / side;
                 let y_frac = pixels_left.y / side;
 
-                let mut params = DrawTextureParams::default();
-                params.source = Some(Rect {
-                    x: 0.,
-                    y: 0.,
-                    w: self.tile_size * x_frac,
-                    h: self.tile_size * y_frac,
-                });
-                params.dest_size = Some(vec2(side * x_frac * ctx.scale, side * y_frac * ctx.scale));
+                let params = DrawTextureParams {
+                    source: Some(Rect {
+                        x: 0.,
+                        y: 0.,
+                        w: self.tile_size * x_frac,
+                        h: self.tile_size * y_frac,
+                    }),
+                    dest_size: Some(vec2(side * x_frac * ctx.scale, side * y_frac * ctx.scale)),
+                    ..Default::default()
+                };
                 draw_texture_ex(
                     self.checkered_tile,
                     pos.x,

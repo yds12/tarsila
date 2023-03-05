@@ -5,12 +5,12 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 #[derive(Debug, Clone)]
 pub struct WrappedImage(pub Image);
 
-impl<'a> Serialize for WrappedImage {
+impl Serialize for WrappedImage {
     fn serialize<S>(&self, ser: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        let bytes = self.into_png_bytes();
+        let bytes = self.png_bytes();
         ser.serialize_bytes(&bytes)
     }
 }

@@ -134,7 +134,7 @@ impl MouseManager {
                 _ => (),
             }
 
-            while self.on_left_release.len() > 0 {
+            while !self.on_left_release.is_empty() {
                 let f = self.on_left_release.remove(0);
                 let event = (f)(self);
                 events.push(event);

@@ -1,6 +1,5 @@
-use crate::wrapped_image::WrappedImage;
-use crate::{Effect, UiEvent, UiState};
-use lapix::{Bitmap, Position, Rect, Size};
+use crate::UiState;
+use lapix::{Position, Rect, Size};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 const MS_PER_FRAME: usize = 100;

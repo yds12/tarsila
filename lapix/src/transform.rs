@@ -1,3 +1,5 @@
+//! Functions that can be applied to an image, modifying it
+
 use crate::{color, Bitmap};
 
 pub enum Transform {

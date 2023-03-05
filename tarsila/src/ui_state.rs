@@ -52,18 +52,15 @@ pub enum UiEvent {
     ZoomOut,
     MoveCamera(Direction),
     MouseOverGui,
-    GuiInteraction,
     Paste,
     Exit,
     NewProject,
+    GuiInteraction,
 }
 
 impl UiEvent {
     pub fn is_gui_interaction(&self) -> bool {
-        match self {
-            Self::MouseOverGui | Self::GuiInteraction => true,
-            _ => false,
-        }
+        matches!(self, Self::MouseOverGui | Self::GuiInteraction)
     }
 }
 
@@ -93,7 +90,7 @@ impl Default for UiState {
 
         Self {
             inner: state,
-            gui: Gui::new((CANVAS_W, CANVAS_H).into()),
+            gui: Gui::new(),
             camera: Position::ZERO_F32,
             canvas_pos: (CANVAS_X, CANVAS_Y).into(),
             zoom: 8.,
@@ -116,9 +113,9 @@ impl UiState {
         self.must_exit
     }
 
-    pub fn drawing_mut(&mut self) -> &mut Texture2D {
+    /*pub fn drawing_mut(&mut self) -> &mut Texture2D {
         &mut self.layer_textures[self.inner.layers().active_index()]
-    }
+    }*/
 
     pub fn drawing(&self) -> &Texture2D {
         &self.layer_textures[self.inner.layers().active_index()]
@@ -176,18 +173,16 @@ impl UiState {
     pub fn draw(&mut self) {
         macroquad::prelude::clear_background(BG_COLOR);
 
-        let t0 = SystemTime::now();
         let ctx = self.draw_ctx();
 
         self.bg.draw(ctx);
-
         graphics::draw_canvas(&*self);
-
         graphics::draw_spritesheet_boundaries(ctx);
 
         let (x, y) = macroquad::prelude::mouse_position();
         let mouse_canvas = self.screen_to_canvas(x, y).into();
 
+        // TODO should be in update method
         self.inner.update_free_image(mouse_canvas);
 
         if self.inner.selection().is_some() {

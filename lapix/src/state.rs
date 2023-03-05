@@ -47,7 +47,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
     }
 
     pub fn start_action(&mut self) {
-        self.cur_reversal = Some(Action::new());
+        self.cur_reversal = Some(Action::default());
     }
 
     pub fn add_to_action(&mut self, actions: Vec<AtomicAction<IMG>>) {
@@ -137,7 +137,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 };
                 let color = self.main_color;
                 let reversals = self.canvas_mut().rectangle(p0, p, color);
-                self.single_pixels_action(reversals.into());
+                self.single_pixels_action(reversals);
                 self.free_image = None;
             }
             Event::BrushStroke(p) => {
@@ -195,7 +195,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 if self.canvas().is_in_bounds(p) {
                     let color = self.main_color;
                     let reversals = self.canvas_mut().bucket(p, color);
-                    self.single_pixels_action(reversals.into());
+                    self.single_pixels_action(reversals);
                 }
             }
             Event::ClearSelection => (),
@@ -223,7 +223,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
             Event::DeleteSelection => match self.selection {
                 Some(Selection::Canvas(rect)) => {
                     let reversals = self.canvas_mut().set_area(rect, TRANSPARENT);
-                    self.single_pixels_action(reversals.into());
+                    self.single_pixels_action(reversals);
                 }
                 Some(Selection::FreeImage) => {
                     self.free_image = None;
@@ -278,7 +278,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
             Event::NewLayerAbove => {
                 self.layers.add_new_above();
                 self.end_action();
-                self.cur_reversal = Some(Action::new());
+                self.cur_reversal = Some(Action::default());
                 let i = self.layers.count() - 1;
                 self.cur_reversal
                     .as_mut()
@@ -295,7 +295,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
             Event::DeleteLayer(i) => {
                 let img = self.layers.delete(i);
                 self.end_action();
-                self.cur_reversal = Some(Action::new());
+                self.cur_reversal = Some(Action::default());
                 self.cur_reversal
                     .as_mut()
                     .unwrap()
@@ -310,7 +310,6 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 dbg!(t0.elapsed().unwrap());
                 return self.undo();
             }
-            _ => todo!(),
         }
 
         if event.clears_selection() {

@@ -7,8 +7,8 @@ pub fn save(path: PathBuf, bytes: Vec<u8>) {
     use std::io::Write;
     let mut file = std::fs::File::create(path).unwrap();
     let header = header();
-    file.write(&header).unwrap();
-    file.write(&bytes).unwrap();
+    file.write_all(&header).unwrap();
+    file.write_all(&bytes).unwrap();
 }
 
 pub fn load(path: PathBuf) -> Vec<u8> {

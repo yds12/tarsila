@@ -5,6 +5,12 @@ pub type LayerIndex = usize;
 
 pub struct Action<IMG>(Vec<AtomicAction<IMG>>);
 
+impl<IMG> Default for Action<IMG> {
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
+
 impl<IMG> Debug for Action<IMG> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.write_str("Action([")?;
@@ -24,10 +30,6 @@ impl<IMG> From<Vec<AtomicAction<IMG>>> for Action<IMG> {
 }
 
 impl<IMG: Bitmap> Action<IMG> {
-    pub fn new() -> Self {
-        Self(Vec::new())
-    }
-
     pub fn push(&mut self, action: AtomicAction<IMG>) {
         self.0.push(action);
     }
@@ -94,7 +96,6 @@ impl<IMG: Bitmap> AtomicAction<IMG> {
             Self::SetLayerCanvas(i, img) => {
                 layers.canvas_at_mut(i).set_img(img);
             }
-            _ => todo!(),
         }
         CanvasEffect::Layer
     }

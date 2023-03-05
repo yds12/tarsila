@@ -1,9 +1,6 @@
-use crate::wrapped_image::WrappedImage;
 use crate::{Effect, UiEvent, UiState};
-use lapix::{Event, Point, Position, Size, Tool};
+use lapix::{Position, Size, Tool};
 use macroquad::prelude::*;
-use std::collections::HashMap;
-use std::path::PathBuf;
 
 mod layers;
 mod menu;
@@ -22,9 +19,6 @@ use toolbar::Toolbar;
 pub struct Gui {
     toolbar: Toolbar,
     layers_panel: LayersPanel,
-    canvas_size: (String, String),
-    last_file: Option<PathBuf>,
-    spritesheet: (String, String),
     preview: Preview,
     palette: Palette,
     status_bar: StatusBar,
@@ -33,13 +27,10 @@ pub struct Gui {
 }
 
 impl Gui {
-    pub fn new(canvas_size: Size<u16>) -> Self {
+    pub fn new() -> Self {
         Self {
             toolbar: Toolbar::new(),
             layers_panel: LayersPanel::new(),
-            canvas_size: (canvas_size.x.to_string(), canvas_size.y.to_string()),
-            last_file: None,
-            spritesheet: ("1".to_owned(), "1".to_owned()),
             preview: Preview::new(),
             palette: Palette::new(),
             status_bar: StatusBar::new(),

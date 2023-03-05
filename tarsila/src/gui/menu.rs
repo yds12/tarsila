@@ -1,5 +1,5 @@
 use crate::{project, Effect, UiEvent};
-use lapix::{Color, Event, LoadProject, Position, SaveProject, Size, Tool};
+use lapix::{Event, LoadProject, SaveProject, Size, Tool};
 use std::path::PathBuf;
 
 pub struct MenuBar {
