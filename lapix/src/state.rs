@@ -368,7 +368,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
     }
 
     pub fn palette(&self) -> &[Color] {
-        self.palette.inner()
+        self.palette.colors()
     }
 
     pub fn selection(&self) -> Option<Selection> {

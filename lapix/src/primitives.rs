@@ -220,3 +220,39 @@ impl<T: Number> From<(T, T, T, T)> for Rect<T> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_case::test_case;
+
+    #[test_case((0, 0, 10, 10), (2, 2, 4, 4), (2, 2, 4, 4))]
+    #[test_case((-1, 0, 1, 1), (-1, 0, 1, 1), (-1, 0, 1, 1))]
+    #[test_case((-1, 0, 1, 1), (-2, 0, 2, 1), (-1, 0, 1, 1))]
+    #[test_case((0, 0, 2, 2), (-2, -2, 4, 4), (0, 0, 2, 2))]
+    #[test_case((0, 0, 2, 2), (0, 0, 1, 1), (0, 0, 1, 1))]
+    #[test_case((0, 0, 2, 2), (-2, 0, 4, 1), (0, 0, 2, 1))]
+    fn rect_clip<R: Into<Rect<i32>>>(r: R, clip: R, res: R) {
+        assert_eq!(r.into().clip_to(clip.into()), res.into());
+    }
+
+    #[test_case((0, 0, 1, 1), (0, 0), true)]
+    #[test_case((0, 0, 2, 2), (1, 1), true)]
+    #[test_case((0, 0, 1, 1), (0, 1), true)]
+    #[test_case((0, 0, 1, 1), (1, 0), true)]
+    #[test_case((0, 0, 1, 1), (2, 0), false)]
+    #[test_case((0, 0, 1, 1), (0, 2), false)]
+    #[test_case((0, 0, 1, 1), (-1, 0), false)]
+    fn rect_contains(r: impl Into<Rect<i32>>, p: (i32, i32), res: bool) {
+        assert_eq!(r.into().contains(p.0, p.1), res);
+    }
+
+    #[test]
+    fn rect_extremes() {
+        let r = Rect::new(0, 1, 2, 3);
+        assert_eq!(r.pos(), Position::new(0, 1));
+        assert_eq!(r.size(), Size::new(2, 3));
+        assert_eq!(r.top_right(), Position::new(2, 1));
+        assert_eq!(r.bottom_left(), Position::new(0, 4));
+    }
+}
