@@ -240,3 +240,73 @@ impl<IMG: Bitmap> Canvas<IMG> {
         img
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::bitmap::TestImage;
+    use test_case::test_case;
+
+    #[test]
+    fn basic_properties() {
+        let canvas = Canvas::<TestImage>::new(Size::new(5, 10));
+
+        assert_eq!(canvas.width(), 5);
+        assert_eq!(canvas.height(), 10);
+        assert_eq!(canvas.size(), Size::new(5, 10));
+        assert_eq!(canvas.rect(), Rect::new(0, 0, 5, 10));
+    }
+
+    #[test_case((1, 1), (0, 0), true)]
+    #[test_case((1, 1), (1, 0), false)]
+    #[test_case((1, 1), (0, 1), false)]
+    #[test_case((2, 2), (0, 0), true)]
+    #[test_case((2, 2), (0, 1), true)]
+    #[test_case((2, 2), (1, 0), true)]
+    #[test_case((2, 2), (1, 1), true)]
+    #[test_case((2, 2), (-1, 0), false)]
+    #[test_case((2, 2), (1, 2), false)]
+    fn is_in_bounds(size: impl Into<Size<i32>>, p: impl Into<Point<i32>>, res: bool) {
+        let canvas = Canvas::<TestImage>::new(size.into());
+        assert_eq!(canvas.is_in_bounds(p.into()), res);
+    }
+
+    #[test]
+    fn resize_same() {
+        let black = Color::new(0, 0, 0, 255);
+        let mut canvas = Canvas::<TestImage>::new(Size::new(1, 2));
+        canvas.set_pixel(Point::new(0, 0), black);
+        canvas.set_pixel(Point::new(0, 1), black);
+        canvas.resize(Size::new(1, 2));
+
+        assert_eq!(canvas.size(), Size::new(1, 2));
+        assert_eq!(canvas.pixel(Point::new(0, 0)), black);
+        assert_eq!(canvas.pixel(Point::new(0, 1)), black);
+    }
+
+    #[test]
+    fn resize_smaller() {
+        let black = Color::new(0, 0, 0, 255);
+        let mut canvas = Canvas::<TestImage>::new(Size::new(2, 2));
+        canvas.set_pixel(Point::new(0, 0), black);
+        canvas.set_pixel(Point::new(0, 1), black);
+        canvas.set_pixel(Point::new(1, 0), black);
+        canvas.set_pixel(Point::new(1, 1), black);
+        canvas.resize(Size::new(1, 1));
+
+        assert_eq!(canvas.size(), Size::new(1, 1));
+        assert_eq!(canvas.pixel(Point::new(0, 0)), black);
+    }
+
+    #[test]
+    fn resize_bigger() {
+        let black = Color::new(0, 0, 0, 255);
+        let mut canvas = Canvas::<TestImage>::new(Size::new(1, 1));
+        canvas.set_pixel(Point::new(0, 0), black);
+        canvas.resize(Size::new(2, 1));
+
+        assert_eq!(canvas.size(), Size::new(2, 1));
+        assert_eq!(canvas.pixel(Point::new(0, 0)), black);
+        assert_eq!(canvas.pixel(Point::new(1, 0)), crate::color::TRANSPARENT);
+    }
+}
