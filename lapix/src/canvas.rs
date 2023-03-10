@@ -245,6 +245,7 @@ impl<IMG: Bitmap> Canvas<IMG> {
 mod tests {
     use super::*;
     use crate::bitmap::TestImage;
+    use crate::color::TRANSPARENT;
     use test_case::test_case;
 
     #[test]
@@ -307,6 +308,78 @@ mod tests {
 
         assert_eq!(canvas.size(), Size::new(2, 1));
         assert_eq!(canvas.pixel(Point::new(0, 0)), black);
-        assert_eq!(canvas.pixel(Point::new(1, 0)), crate::color::TRANSPARENT);
+        assert_eq!(canvas.pixel(Point::new(1, 0)), TRANSPARENT);
+    }
+
+    fn assert_points(canvas: &Canvas<TestImage>, points: &[(i32, i32)]) {
+        let black = Color::new(0, 0, 0, 255);
+        for i in 0..canvas.width() {
+            for j in 0..canvas.height() {
+                let color = if points.contains(&(i, j)) {
+                    black
+                } else {
+                    TRANSPARENT
+                };
+                assert_eq!(canvas.pixel(Point::new(i, j)), color);
+            }
+        }
+    }
+
+    #[test_case((0, 0), (0, 0), vec![(0, 0)])]
+    #[test_case((0, 0), (0, 1), vec![(0, 0), (0, 1)])]
+    #[test_case((0, 1), (0, 0), vec![(0, 0), (0, 1)])]
+    #[test_case((0, 0), (2, 2), vec![(0, 0), (1, 1), (2, 2)])]
+    fn line<P: Into<Point<i32>>>(p: P, q: P, line: Vec<(i32, i32)>) {
+        let mut canvas = Canvas::<TestImage>::new(Size::new(5, 5));
+        let black = Color::new(0, 0, 0, 255);
+        canvas.line(p.into(), q.into(), black);
+        assert_points(&canvas, &line);
+    }
+
+    #[test]
+    fn rect() {
+        let mut canvas = Canvas::<TestImage>::new(Size::new(5, 5));
+        let black = Color::new(0, 0, 0, 255);
+        canvas.rectangle((0, 0).into(), (2, 2).into(), black);
+
+        assert_points(
+            &canvas,
+            &[
+                (0, 0),
+                (0, 1),
+                (0, 2),
+                (1, 0),
+                (1, 2),
+                (2, 0),
+                (2, 1),
+                (2, 2),
+            ],
+        );
+    }
+
+    #[test]
+    fn bucket() {
+        let mut canvas = Canvas::<TestImage>::new(Size::new(5, 5));
+        let black = Color::new(0, 0, 0, 255);
+        canvas.set_pixel(Point::new(0, 1), black);
+        canvas.set_pixel(Point::new(1, 0), black);
+        canvas.set_pixel(Point::new(2, 0), black);
+        canvas.set_pixel(Point::new(1, 2), black);
+        canvas.set_pixel(Point::new(2, 2), black);
+        canvas.set_pixel(Point::new(3, 1), black);
+        canvas.bucket(Point::new(1, 1), black);
+        assert_points(
+            &canvas,
+            &[
+                (0, 1),
+                (1, 0),
+                (2, 0),
+                (1, 2),
+                (2, 2),
+                (3, 1),
+                (1, 1),
+                (2, 1),
+            ],
+        );
     }
 }

@@ -65,14 +65,22 @@ mod test {
     pub struct TestImage {
         size: Size<i32>,
         pixels: Vec<Vec<Color>>, // vec of rows of pixels
-        bytes: Vec<u8>
+        bytes: Vec<u8>,
     }
 
     impl TestImage {
         fn update_bytes(&mut self) {
-            self.bytes = self.pixels.iter().map(|row|
-                row.iter().map(|c| [c.r, c.g, c.b, c.a]).flatten().collect::<Vec<_>>()
-            ).flatten().collect();
+            self.bytes = self
+                .pixels
+                .iter()
+                .map(|row| {
+                    row.iter()
+                        .map(|c| [c.r, c.g, c.b, c.a])
+                        .flatten()
+                        .collect::<Vec<_>>()
+                })
+                .flatten()
+                .collect();
         }
     }
 
@@ -83,7 +91,7 @@ mod test {
             let mut img = Self {
                 size,
                 pixels,
-                bytes: Vec::new()
+                bytes: Vec::new(),
             };
             img.update_bytes();
 
@@ -118,7 +126,8 @@ mod test {
                 self.pixels = self.pixels[0..self.size.y as usize].to_vec();
             } else {
                 while self.pixels.len() < self.size.y as usize {
-                    self.pixels.push(vec![color::TRANSPARENT; self.size.x as usize]);
+                    self.pixels
+                        .push(vec![color::TRANSPARENT; self.size.x as usize]);
                 }
             }
 
@@ -136,4 +145,3 @@ mod test {
         }
     }
 }
-

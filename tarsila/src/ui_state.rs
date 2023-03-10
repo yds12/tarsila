@@ -19,7 +19,7 @@ pub const CANVAS_H: u16 = 64;
 const CANVAS_SCALE: f32 = 8.;
 const LEFT_TOOLBAR_W: u16 = 300;
 const CAMERA_SPEED: f32 = 12.;
-const BG_COLOR: MqColor = SKYBLUE;
+const BG_COLOR: MqColor = MqColor::new(0.5, 0.5, 0.5, 1.);
 const GUI_REST_MS: u64 = 100;
 const FPS_INTERVAL: usize = 15;
 
