@@ -1,13 +1,30 @@
 use crate::{color, Color, Point, Size};
 
+// TODO rename this trait
+/// Represents a 2D matrix of pixels (an image)
 pub trait Bitmap: Clone {
+    /// Create a new image with a specified size and filled with one color
     fn new(size: Size<i32>, color: Color) -> Self;
+
+    /// Get the [`Size`] of the image
     fn size(&self) -> Size<i32>;
+
+    /// Get the width of the image in pixels
     fn width(&self) -> i32;
+
+    /// Get the height of the image in pixels
     fn height(&self) -> i32;
+
+    /// Get the pixel color at a certain [`Point`]
     fn pixel(&self, point: Point<i32>) -> Color;
+
+    /// Set the pixel at a certain [`Point`] to a specified color
     fn set_pixel(&mut self, point: Point<i32>, color: Color);
+
+    /// Get this image's representation as a slice of bytes
     fn bytes(&self) -> &[u8];
+
+    /// Create a new image from a slice of bytes and a [`Size`]
     fn from_parts(size: Size<i32>, bytes: &[u8]) -> Self;
 
     /// Set this image pixels based on another, but respecting the size of this
@@ -15,6 +32,7 @@ pub trait Bitmap: Clone {
     fn set_from(&mut self, other: &Self);
 
     // TODO: use this and next method to save/load files
+    /// Get the the PNG representation of this image as a sequence of bytes
     fn png_bytes(&self) -> Vec<u8> {
         let img = image::RgbaImage::from_raw(
             self.width() as u32,
@@ -31,6 +49,8 @@ pub trait Bitmap: Clone {
         vec.into_inner()
     }
 
+    /// Create a new image from a sequence of bytes read from an image file
+    /// (e.g. PNG or JPG)
     fn from_file_bytes(bytes: Vec<u8>) -> Self {
         let reader = image::io::Reader::new(std::io::Cursor::new(bytes))
             .with_guessed_format()

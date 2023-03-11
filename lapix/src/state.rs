@@ -5,12 +5,22 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
+/// Represents a selection
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Selection {
+    /// A selected portion of the canvas, based on a rectangular area
     Canvas(Rect<i32>),
+    // TODO: maybe this should contain the FreeImage
+    /// A selected free image that is not part of the canvas until it's
+    /// *anchored*
     FreeImage,
 }
 
+/// The state of the image editor's core. Most importantly, this contains all
+/// the layers and images that are being drawn. This state can be modified
+/// externally mainly by sending [`Event`]s via the [`execute`] method.
+///
+/// [`execute`]: State::execute
 #[derive(Debug, Serialize, Deserialize)]
 pub struct State<IMG> {
     layers: Layers<IMG>,
@@ -30,6 +40,7 @@ pub struct State<IMG> {
 }
 
 impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
+    /// Create a new default state for the editor, with a starting canvas size
     pub fn new(size: Size<i32>) -> Self {
         Self {
             layers: Layers::new(size),
@@ -46,38 +57,42 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         }
     }
 
-    pub fn start_action(&mut self) {
+    fn start_action(&mut self) {
         self.cur_reversal = Some(Action::default());
     }
 
-    pub fn add_to_action(&mut self, actions: Vec<AtomicAction<IMG>>) {
+    fn add_to_action(&mut self, actions: Vec<AtomicAction<IMG>>) {
         if self.cur_reversal.is_none() {
             self.start_action();
         }
         self.cur_reversal.as_mut().unwrap().append(actions);
     }
 
-    pub fn end_action(&mut self) {
+    fn end_action(&mut self) {
         if let Some(action) = self.cur_reversal.take() {
             self.reversals.push(action);
         }
     }
 
-    pub fn single_action(&mut self, action: Action<IMG>) {
+    fn single_action(&mut self, action: Action<IMG>) {
         self.end_action();
         self.reversals.push(action);
     }
 
-    pub fn add_to_pixels_action(&mut self, actions: Vec<(Point<i32>, Color)>) {
+    fn add_to_pixels_action(&mut self, actions: Vec<(Point<i32>, Color)>) {
         let actions = AtomicAction::set_pixel_vec(self.layers.active_index(), actions);
         self.add_to_action(actions);
     }
 
-    pub fn single_pixels_action(&mut self, actions: Vec<(Point<i32>, Color)>) {
+    fn single_pixels_action(&mut self, actions: Vec<(Point<i32>, Color)>) {
         let actions = AtomicAction::set_pixel_vec(self.layers.active_index(), actions);
         self.single_action(actions.into());
     }
 
+    /// Execute an [`Event`]. This is the main way of changing the editor's
+    /// state, and probably the most central method of this library. A
+    /// [`CanvasEffect`] is returned to communicate to the caller what kind of
+    /// visual updates must be made.
     pub fn execute(&mut self, event: Event) -> CanvasEffect {
         if let Some(prev_event) = self.events.last() {
             if (prev_event == &event && !event.repeatable())
@@ -329,37 +344,52 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         }
     }
 
-    pub fn resize_canvas(&mut self, size: Size<i32>) -> Vec<IMG> {
+    fn resize_canvas(&mut self, size: Size<i32>) -> Vec<IMG> {
         self.layers.resize_all(size)
     }
 
+    /// Get a mutable reference to the active [`Layer`]'s [`Canvas`]
+    ///
+    /// [`Layer`]: crate::Layer
     pub fn canvas_mut(&mut self) -> &mut Canvas<IMG> {
         self.layers.active_canvas_mut()
     }
 
+    /// Get a reference to the active [`Layer`]'s [`Canvas`]
+    ///
+    /// [`Layer`]: crate::Layer
     pub fn canvas(&self) -> &Canvas<IMG> {
         self.layers.active_canvas()
     }
 
+    /// Get a reference to the collection of [`Layers`]
     pub fn layers(&self) -> &Layers<IMG> {
         &self.layers
     }
 
+    /// Get the currently selected [`Tool`]
     pub fn selected_tool(&self) -> Tool {
         self.tool
     }
 
+    /// Get the main (selected) color. This is the color used by most tools
+    /// when drawing
     pub fn main_color(&self) -> Color {
         self.main_color
     }
 
+    /// Get the spritesheet dimensions (number of horizontal and vertical
+    /// frames). For a static image (not an animation) it will be `(1, 1)`.
     pub fn spritesheet(&self) -> Size<u8> {
         self.spritesheet
     }
 
+    /// Set the spritesheet dimensions (number of horizontal and vertical
+    /// frames). For a static image (not an animation) it will be `(1, 1)`.
     fn set_spritesheet(&mut self, size: Size<u8>) {
         if self.canvas().width() % size.x as i32 != 0 || self.canvas().height() % size.y as i32 != 0
         {
+            // TODO: relax this requirement
             eprintln!("WARN: Canvas size should be a multiple of the spritesheet size");
             return;
         }
@@ -367,22 +397,27 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         self.spritesheet = size;
     }
 
+    /// Get the colors of the palette
     pub fn palette(&self) -> &[Color] {
         self.palette.colors()
     }
 
+    /// Get the [`Selection`]
     pub fn selection(&self) -> Option<Selection> {
         self.selection
     }
 
+    /// Get the [`FreeImage`]
     pub fn free_image(&self) -> Option<&FreeImage<IMG>> {
         self.free_image.as_ref()
     }
 
+    /// Clear the [`Selection`]
     fn clear_selection(&mut self) {
         self.set_selection(None);
     }
 
+    /// Set the [`Selection`]
     fn set_selection(&mut self, selection: Option<Selection>) {
         match selection {
             None => self.selection = None,
@@ -396,6 +431,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         }
     }
 
+    /// Anchor the [`FreeImage`] into the canvas.
     fn anchor(&mut self) {
         if let Some(free_image) = self.free_image.take() {
             println!("Anchoring");
@@ -407,6 +443,8 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         }
     }
 
+    /// Undo the last undoable action. Returns the [`CanvasEffect`] to signal to
+    /// the caller what needs to be updated visually
     fn undo(&mut self) -> CanvasEffect {
         if let Some(action) = self.reversals.pop() {
             return action.apply(&mut self.layers);
@@ -415,6 +453,11 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         CanvasEffect::None
     }
 
+    /// When drawing lines, rectangles, etc. or moving things, there are visible
+    /// effects (e.g. a preview of the line or of the image being moved) that
+    /// are not immediately represented in the canvas, but are stored as a
+    /// [`FreeImage`] instead. This method must be called as often as possible
+    /// whenever the mouse moves, in order to update this preview image.
     pub fn update_free_image(&mut self, mouse_canvas: Position<i32>) {
         match self.events.last() {
             Some(Event::MoveStart(_)) => self.move_free_image(mouse_canvas),
@@ -445,11 +488,11 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
     }
 
     fn update_line_preview(&mut self, p0: Point<i32>, p: Point<i32>) {
-        self.free_image = FreeImage::line_preview(p0, p, self.main_color());
+        self.free_image = Some(FreeImage::line_preview(p0, p, self.main_color()));
     }
 
     fn update_rect_preview(&mut self, p0: Point<i32>, p: Point<i32>) {
-        self.free_image = FreeImage::rect_preview(p0, p, self.main_color());
+        self.free_image = Some(FreeImage::rect_preview(p0, p, self.main_color()));
     }
 
     fn save_image(&self, path: &str) {

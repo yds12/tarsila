@@ -1,8 +1,13 @@
+//! Basic types for colors
+
 use serde::{Deserialize, Serialize};
 
+/// The color transparent
 pub const TRANSPARENT: Color = Color::new(0, 0, 0, 0);
+/// The color black
 pub const BLACK: Color = Color::new(0, 0, 0, 255);
 
+/// Represents an RGBA color, with component values from 0-255
 #[derive(Debug, Default, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Color {
     pub r: u8,
@@ -11,6 +16,7 @@ pub struct Color {
     pub a: u8,
 }
 
+/// Represents an RGBA color, with component values from 0-1
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ColorF32 {
     pub r: f32,
@@ -81,12 +87,14 @@ impl From<(f32, f32, f32, f32)> for ColorF32 {
 }
 
 impl ColorF32 {
+    /// Create a new color
     pub const fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
         Self { r, g, b, a }
     }
 }
 
 impl Color {
+    /// Create a new color
     pub const fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self { r, g, b, a }
     }
@@ -118,6 +126,8 @@ impl Color {
         }
     }
 
+    /// Get the hexadecimal representation of this color (with uppercase
+    /// letters and a leading `#` sign).
     pub fn hex(&self) -> String {
         format!("#{:02X}{:02X}{:02X}{:02X}", self.r, self.g, self.b, self.a)
     }

@@ -1,8 +1,11 @@
+//! Basic types for numbers, points, rectangles, etc.
+
 use serde::{Deserialize, Serialize};
 use std::cmp::PartialOrd;
 use std::fmt::Debug;
 use std::ops::{Add, Sub};
 
+/// Represents a number
 pub trait Number:
     Add<Output = Self> + Sub<Output = Self> + PartialOrd<Self> + Copy + Debug + Clone + Sized
 {
@@ -21,6 +24,7 @@ impl Number for usize {}
 impl Number for f32 {}
 impl Number for f64 {}
 
+/// Represents a 2D point.
 #[derive(
     Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
 )]
@@ -28,7 +32,9 @@ pub struct Point<T: Number> {
     pub x: T,
     pub y: T,
 }
+/// Represents a 2D position
 pub type Position<T> = Point<T>;
+/// Represents a 2D size
 pub type Size<T> = Point<T>;
 
 impl<T: Number> Sub for Point<T> {
@@ -64,20 +70,27 @@ impl From<Point<i32>> for Point<f32> {
 }
 
 impl<T: Number> Point<T> {
+    /// Create a new point
     pub const fn new(x: T, y: T) -> Self {
         Self { x, y }
     }
 }
 
 impl Point<f32> {
+    /// The point (0, 0)
     pub const ZERO_F32: Self = Point::new(0., 0.);
+    /// The point (1, 1)
     pub const ONE_F32: Self = Point::new(1., 1.);
 }
 
 impl Point<i32> {
+    /// The point (0, 0)
     pub const ZERO: Self = Point::new(0, 0);
+    /// The point (1, 1)
     pub const ONE: Self = Point::new(1, 1);
 
+    /// The absolute difference in each coordinate between this and another
+    /// point.
     pub fn abs_diff(&self, p: Self) -> Self {
         Self {
             x: (self.x - p.x).abs(),
@@ -85,6 +98,8 @@ impl Point<i32> {
         }
     }
 
+    /// Get the top-left corner of a rectangle determined by this and another
+    /// point
     pub fn rect_min_corner(&self, p: Self) -> Self {
         Self {
             x: std::cmp::min(self.x, p.x),
@@ -93,6 +108,7 @@ impl Point<i32> {
     }
 }
 
+/// Represents one of the 4 basic 2D directions
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Direction {
     Up,
@@ -101,6 +117,7 @@ pub enum Direction {
     Right,
 }
 
+/// Represents a rectangle by its top left coordinate plus width and height
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Rect<T: Number> {
     pub x: T,
@@ -110,14 +127,17 @@ pub struct Rect<T: Number> {
 }
 
 impl<T: Number> Rect<T> {
+    /// Create a new rectangle
     pub fn new(x: T, y: T, w: T, h: T) -> Self {
         Self { x, y, w, h }
     }
 
+    /// Check whether this rectangle contains a certain point
     pub fn contains(self, x: T, y: T) -> bool {
         self.x <= x && self.x + self.w >= x && self.y <= y && self.y + self.h >= y
     }
 
+    /// Get the position of the rectangle
     pub fn pos(self) -> Position<T> {
         Position {
             x: self.x,
@@ -125,6 +145,7 @@ impl<T: Number> Rect<T> {
         }
     }
 
+    /// Get the size of the rectangle
     pub fn size(self) -> Size<T> {
         Size {
             x: self.w,
@@ -132,6 +153,7 @@ impl<T: Number> Rect<T> {
         }
     }
 
+    /// Get the top right corner of the rectangle
     pub fn top_right(self) -> Point<T> {
         Point {
             x: self.x + self.w,
@@ -139,6 +161,7 @@ impl<T: Number> Rect<T> {
         }
     }
 
+    /// Get the bottom left corner of the rectangle
     pub fn bottom_left(self) -> Point<T> {
         Point {
             x: self.x,
@@ -148,6 +171,7 @@ impl<T: Number> Rect<T> {
 }
 
 impl<T: Number + Ord> Rect<T> {
+    /// Clamp the rectangle to the bounds of another (intersection)
     pub fn clip_to(self, other: Self) -> Self {
         let x = self.x.clamp(other.x, other.x + other.w);
         let y = self.y.clamp(other.y, other.y + other.h);

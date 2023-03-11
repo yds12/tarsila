@@ -1,9 +1,14 @@
+//! Functions to calculate graphics like lines, rectangles, etc. in a discrete
+//! 2D space
+
 use crate::Point;
 
+/// Get the distance between two [`Point`]s
 pub fn distance(p1: Point<i32>, p2: Point<i32>) -> f32 {
     ((((p1.x - p2.x) as i64).pow(2) + ((p1.y - p2.y) as i64).pow(2)) as f64).sqrt() as f32
 }
 
+/// Get the set of [`Point`]s needed to draw a line between two points
 pub fn line(p1: Point<i32>, p2: Point<i32>) -> Vec<Point<i32>> {
     let mut line = Vec::new();
     let diff = p2 - p1;
@@ -27,6 +32,7 @@ pub fn line(p1: Point<i32>, p2: Point<i32>) -> Vec<Point<i32>> {
     line
 }
 
+/// Get the set of [`Point`]s needed to draw a rectangle between two points
 pub fn rectangle(p1: Point<i32>, p2: Point<i32>) -> Vec<Point<i32>> {
     let l1 = line((p1.x, p1.y).into(), (p1.x, p2.y).into());
     let l2 = line((p1.x, p1.y).into(), (p2.x, p1.y).into());

@@ -1,11 +1,13 @@
 use crate::{color, Bitmap, Color};
 
+/// Load an image from a file in the specified path
 pub fn load_img_from_file(path: &str) -> image::RgbaImage {
     use image::io::Reader as ImageReader;
     let img = ImageReader::open(path).unwrap().decode().unwrap();
     img.into_rgba8()
 }
 
+/// Create an image satisfying [`Bitmap`] from a raw [`image::RgbaImage`]
 pub fn img_from_raw<IMG: Bitmap>(raw: image::RgbaImage) -> IMG {
     let mut img = IMG::new(
         (raw.width() as i32, raw.height() as i32).into(),
@@ -19,6 +21,7 @@ pub fn img_from_raw<IMG: Bitmap>(raw: image::RgbaImage) -> IMG {
     img
 }
 
+/// Save an image to the specified file path
 pub fn save_image<IMG: Bitmap>(image: IMG, path: &str) {
     let bytes = image.bytes();
 
