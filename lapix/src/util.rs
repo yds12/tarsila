@@ -22,14 +22,21 @@ pub fn img_from_raw<IMG: Bitmap>(raw: image::RgbaImage) -> IMG {
 }
 
 /// Save an image to the specified file path
-pub fn save_image<IMG: Bitmap>(image: IMG, path: &str) {
-    let bytes = image.bytes();
+pub fn save_image<IMG: Bitmap>(bitmap: IMG, path: &str) {
+    use image::ImageFormat as Format;
+
+    let image_format =
+        Format::from_extension(std::path::Path::new(path).extension().unwrap_or_default())
+            .unwrap_or(Format::Png);
+
+    let bytes = bitmap.bytes();
 
     let img = image::RgbaImage::from_raw(
-        image.width() as u32,
-        image.height() as u32,
+        bitmap.width() as u32,
+        bitmap.height() as u32,
         bytes.to_owned(),
     )
     .expect("Failed to generate image from bytes");
-    img.save(path).expect("Failed to save image");
+    img.save_with_format(path, image_format)
+        .expect("Failed to save image");
 }
