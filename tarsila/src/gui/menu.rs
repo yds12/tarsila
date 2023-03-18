@@ -56,7 +56,7 @@ impl MenuBar {
                     if ui.button("Save Project").clicked() {
                         ui.close_menu();
                         let mut dialog = rfd::FileDialog::new()
-                            .add_filter("Tarsila", &["tarsila"])
+                            .add_filter("Tarsila files", &["tarsila"])
                             .add_filter("All files", &["*"]);
 
                         if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
@@ -72,7 +72,7 @@ impl MenuBar {
                     if ui.button("Load Project").clicked() {
                         ui.close_menu();
                         let mut dialog = rfd::FileDialog::new()
-                            .add_filter("Tarsila", &["tarsila"])
+                            .add_filter("Tarsila files", &["tarsila"])
                             .add_filter("All files", &["*"]);
 
                         if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
@@ -88,7 +88,7 @@ impl MenuBar {
                     if ui.button("Export Image").clicked() {
                         ui.close_menu();
                         let mut dialog = rfd::FileDialog::new()
-                            .add_filter("Image", &["png"])
+                            .add_filter("PNG files", &["png"])
                             .add_filter("All files", &["*"]);
 
                         if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
@@ -103,7 +103,7 @@ impl MenuBar {
                     if ui.button("Import Image").clicked() {
                         ui.close_menu();
                         let mut dialog = rfd::FileDialog::new()
-                            .add_filter("Image", &["png"])
+                            .add_filter("PNG files", &["png"])
                             .add_filter("All files", &["*"]);
 
                         if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
