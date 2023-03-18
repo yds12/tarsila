@@ -1,3 +1,7 @@
+![checks](https://github.com/yds12/tarsila/actions/workflows/checks.yml/badge.svg)
+![build](https://github.com/yds12/tarsila/actions/workflows/build.yml/badge.svg)
+![tests](https://github.com/yds12/tarsila/actions/workflows/tests.yml/badge.svg)
+
 **NOTE: this project is a work in progress, if you want to use it, please save
 your work as frequently as possible to avoid losing it.**
 
