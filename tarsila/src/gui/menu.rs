@@ -103,8 +103,8 @@ impl MenuBar {
                     if ui.button("Import Image").clicked() {
                         ui.close_menu();
                         let mut dialog = rfd::FileDialog::new()
-                            .add_filter("PNG files", &["png"])
-                            .add_filter("All files", &["*"]);
+                            .add_filter("All files", &["*"])
+                            .add_filter("PNG files", &["png"]);
 
                         if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
                             dialog = dialog.set_directory(dir);
