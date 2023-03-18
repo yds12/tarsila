@@ -31,3 +31,5 @@ Projects issues and bugs:
 29. Limit the amount of data on Undo list [ENH]
 30. If selection is not fully in canvas, panic [DONE]
 31. When dragging preview window, draws on canvas behind
+32. CTRL shortcuts not working on Mac
+33. File dialog not working on Mac

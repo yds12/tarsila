@@ -8,11 +8,14 @@ Features (+ means done, (-) means least important):
 - Canvas to edit sprite (+)
   - Resizable (+)
   - Multiple frames (+)
+    - add new frame based on existing one
   - Layers (+)
     - control visibility (+)
     - control editability (+)
     - layer panel allow to change layer position, remove and add layers (+)
     - group/ungroup layers (-)
+    - merge layers
+    - active layer with full opacity, others with lower
   - Transparent (+) or solid background
   - Zoom in and out (+) and predefined zoom levels
   - Pan (+)
@@ -68,6 +71,7 @@ Features (+ means done, (-) means least important):
     - By color area (with customizable tolerance) or all of the same color
       (magic wand)
     - Copy and paste (+)
+    - Cut
     - Move (+)
     - When selection is active, might affect other tools, like bucket
     - create selection based on what's on a layer (-)

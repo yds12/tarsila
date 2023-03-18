@@ -34,3 +34,5 @@ libraries:
 * `atk`
 * `gdk`
 
+On a fresh MacOS Ventura you probably just need to install xcode developer tools.
+
