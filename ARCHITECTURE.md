@@ -13,7 +13,7 @@ Tarsila is a pixel art and spritesheet editor written in Rust with
   `egui` and `macroquad`.
 
 Since this is my first project with a GUI in Rust, I was not sure if `egui` and
-`macroquad` would be the right choice, also the GUI ecosystem is notorous for
+`macroquad` would be the right choice, also the GUI ecosystem is notorious for
 being in constant change and rapid evolution. Because of that, from the start
 all the core logic was put in the `lapix` crate, whereas the `tarsila` crate
 serves as a frontend.
@@ -21,7 +21,7 @@ serves as a frontend.
 ## Frontend-Backend Communication
 
 Tarsila deals with egui and macroquad directly, being responsible for capturing
-input events from the user, translating these events into higher level
+input events from the user, translating these events into higher-level
 image-manipulation events and routing those to the core `lapix`. All the
 communication between `tarsila` and `lapix` happens in this fashion:
 

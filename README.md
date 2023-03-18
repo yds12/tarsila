@@ -1,5 +1,5 @@
 **NOTE: this project is a work in progress, if you want to use it, please save
-your work as frequently as possible to avoid losing your work.**
+your work as frequently as possible to avoid losing it.**
 
 ![alt text](https://github.com/yds12/tarsila/blob/master/docs/screenshot.png?raw=true)
 

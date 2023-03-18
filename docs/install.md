@@ -3,7 +3,8 @@
 ## Debian-based Linux
 
 The easiest way to get Tarsila on Linux distros based on Debian 10 (buster)
-or later is to use our pre-built `.deb` package.
+or later is to use our pre-built `.deb` package on the
+[releases page](https://github.com/yds12/tarsila/releases/tag/0.1.0).
 
 If you have rust installed and want to compile from source, first install the
 dependencies:
@@ -21,10 +22,13 @@ For other systems for now you need to compile Tarsila by yourself.
 For this you need to have the
 [rust toolchain](https://www.rust-lang.org/tools/install) installed.
 
-Then clone (with `git`) or download this repository and run
-`cargo install --path .` from the repository's root. If you want to compile it
-without installing, make sure to use `cargo build --release` for performance's
-sake.
+Then run `cargo install tarsila`. This will install the
+[crates.io](https://crates.io/crates/tarsila) version of the program.
+
+If you want the latest changes, clone (with `git`) or download this repository
+and run `cargo install --path .` from the repository's root. If you want to
+compile it without installing, make sure to use `cargo build --release` for
+performance's sake.
 
 You might first have to install some system dependencies such as these
 libraries:
