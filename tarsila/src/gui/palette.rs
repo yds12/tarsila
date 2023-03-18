@@ -69,7 +69,7 @@ impl Palette {
                             ui.ctx().load_texture("", image.clone(), Default::default())
                         });
                         let tooltip = format!(
-                            "Select color {:?} (left click to remove from palette",
+                            "Select color {:?} (right click to remove from palette",
                             self.colors[i]
                         );
 
