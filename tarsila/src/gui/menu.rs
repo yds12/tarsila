@@ -89,6 +89,7 @@ impl MenuBar {
                         ui.close_menu();
                         let mut dialog = rfd::FileDialog::new()
                             .add_filter("PNG files", &["png"])
+                            .add_filter("JPEG files", &["jpg", "jpeg"])
                             .add_filter("All files", &["*"]);
 
                         if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
@@ -104,7 +105,8 @@ impl MenuBar {
                         ui.close_menu();
                         let mut dialog = rfd::FileDialog::new()
                             .add_filter("All files", &["*"])
-                            .add_filter("PNG files", &["png"]);
+                            .add_filter("PNG files", &["png"])
+                            .add_filter("JPEG files", &["jpg", "jpeg"]);
 
                         if let Some(dir) = self.last_file.as_ref().and_then(|p| p.parent()) {
                             dialog = dialog.set_directory(dir);
