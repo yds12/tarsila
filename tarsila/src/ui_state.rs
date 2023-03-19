@@ -1,6 +1,6 @@
 use crate::bg::Background;
 use crate::graphics::DrawContext;
-use crate::gui::Gui;
+use crate::gui::{Gui, GuiSyncParams};
 use crate::keyboard::KeyboardManager;
 use crate::mouse::MouseManager;
 use crate::wrapped_image::WrappedImage;
@@ -63,6 +63,42 @@ pub enum UiEvent {
 impl UiEvent {
     pub fn is_gui_interaction(&self) -> bool {
         matches!(self, Self::MouseOverGui | Self::GuiInteraction)
+    }
+}
+
+impl<'a> From<&'a UiState> for GuiSyncParams {
+    fn from(state: &'a UiState) -> Self {
+        let n_layers = state.inner.layers().count();
+        let (x, y) = macroquad::prelude::mouse_position();
+        let (x, y) = state.screen_to_canvas(x, y);
+        let p = (x, y).into();
+        let in_canvas = state.canvas().is_in_bounds(p);
+        let visible_pixel = if in_canvas {
+            Some(state.visible_pixel(p))
+        } else {
+            None
+        };
+
+        Self {
+            main_color: state.inner.main_color().into(),
+            num_layers: n_layers,
+            active_layer: state.inner.layers().active_index(),
+            layers_vis: (0..n_layers)
+                .map(|i| state.inner.layers().get(i).visible())
+                .collect(),
+            layers_alpha: (0..n_layers)
+                .map(|i| state.inner.layers().get(i).opacity())
+                .collect(),
+            palette: state.inner.palette().iter().map(|c| (*c).into()).collect(),
+            mouse_canvas: (x, y).into(),
+            is_on_canvas: in_canvas,
+            selected_tool: state.selected_tool(),
+            visible_pixel_on_mouse: visible_pixel,
+            canvas_size: state.canvas().size(),
+            spritesheet: state.inner.spritesheet(),
+            zoom: state.zoom,
+            fps: state.fps,
+        }
     }
 }
 
@@ -132,7 +168,7 @@ impl UiState {
 
         self.mouse_over_gui = false;
 
-        self.sync_gui();
+        self.gui.sync((&*self).into());
         let fx = self.gui.update();
         self.process_fx(fx);
 
@@ -210,44 +246,6 @@ impl UiState {
         egui_macroquad::draw();
         self.gui.draw_preview(self);
         self.mouse.draw(self.selected_tool());
-    }
-
-    /// Pass relevant UI state info to the GUI
-    pub fn sync_gui(&mut self) {
-        let n_layers = self.inner.layers().count();
-        let (x, y) = macroquad::prelude::mouse_position();
-        let (x, y) = self.screen_to_canvas(x, y);
-        let p = (x, y).into();
-        let in_canvas = self.canvas().is_in_bounds(p);
-        let visible_pixel = if in_canvas {
-            Some(self.visible_pixel(p))
-        } else {
-            None
-        };
-
-        // TODO: we desperately need to improve this... every new parameter that
-        // needs to be sync'ed, becomes an extra argument here, which in turn
-        // needs to be passed down to the specific GUI component
-        self.gui.sync(
-            self.inner.main_color().into(),
-            n_layers,
-            self.inner.layers().active_index(),
-            (0..n_layers)
-                .map(|i| self.inner.layers().get(i).visible())
-                .collect(),
-            (0..n_layers)
-                .map(|i| self.inner.layers().get(i).opacity())
-                .collect(),
-            self.inner.palette().iter().map(|c| (*c).into()).collect(),
-            (x, y).into(),
-            in_canvas,
-            self.selected_tool(),
-            visible_pixel,
-            self.canvas().size(),
-            self.inner.spritesheet(),
-            self.zoom,
-            self.fps,
-        );
     }
 
     pub fn sync_mouse(&mut self) {

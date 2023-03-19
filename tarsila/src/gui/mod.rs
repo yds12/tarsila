@@ -16,6 +16,24 @@ use preview::Preview;
 use status::StatusBar;
 use toolbar::Toolbar;
 
+#[derive(Debug, Clone)]
+pub struct GuiSyncParams {
+    pub main_color: [u8; 4],
+    pub num_layers: usize,
+    pub active_layer: usize,
+    pub layers_vis: Vec<bool>,
+    pub layers_alpha: Vec<u8>,
+    pub palette: Vec<[u8; 4]>,
+    pub mouse_canvas: Position<i32>,
+    pub is_on_canvas: bool,
+    pub selected_tool: Tool,
+    pub visible_pixel_on_mouse: Option<[u8; 4]>,
+    pub canvas_size: Size<i32>,
+    pub spritesheet: Size<u8>,
+    pub zoom: f32,
+    pub fps: f32,
+}
+
 pub struct Gui {
     toolbar: Toolbar,
     layers_panel: LayersPanel,
@@ -39,45 +57,25 @@ impl Gui {
         }
     }
 
-    pub fn sync(
-        &mut self,
-        main_color: [u8; 4],
-        num_layers: usize,
-        active_layer: usize,
-        layers_vis: Vec<bool>,
-        layers_alpha: Vec<u8>,
-        palette: Vec<[u8; 4]>,
-        mouse_canvas: Position<i32>,
-        is_on_canvas: bool,
-        selected_tool: Tool,
-        visible_pixel_on_mouse: Option<[u8; 4]>,
-        canvas_size: Size<i32>,
-        spritesheet: Size<u8>,
-        zoom: f32,
-        fps: f32,
-    ) {
-        self.mouse_on_canvas = is_on_canvas;
+    pub fn sync(&mut self, params: GuiSyncParams) {
+        self.mouse_on_canvas = params.is_on_canvas;
 
-        self.toolbar.sync(main_color);
+        self.toolbar.sync(params.main_color);
         self.layers_panel.sync(
-            num_layers,
-            active_layer,
-            layers_vis.clone(),
-            layers_alpha.clone(),
+            params.num_layers,
+            params.active_layer,
+            params.layers_vis.clone(),
+            params.layers_alpha.clone(),
         );
-        self.preview
-            .sync(spritesheet, canvas_size, layers_vis, layers_alpha);
-        self.palette.sync(palette);
-        self.status_bar.sync(
-            mouse_canvas,
-            is_on_canvas,
-            selected_tool,
-            visible_pixel_on_mouse,
-            canvas_size,
-            zoom,
-            fps,
+        self.preview.sync(
+            params.spritesheet,
+            params.canvas_size,
+            params.layers_vis.clone(),
+            params.layers_alpha.clone(),
         );
-        self.menu.sync(canvas_size, spritesheet);
+        self.palette.sync(params.palette.clone());
+        self.menu.sync(params.canvas_size, params.spritesheet);
+        self.status_bar.sync(params);
     }
 
     pub fn update(&mut self) -> Vec<Effect> {

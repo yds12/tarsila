@@ -1,3 +1,4 @@
+use crate::gui::GuiSyncParams;
 use lapix::{Color, Position, Size, Tool};
 
 pub struct StatusBar {
@@ -23,23 +24,14 @@ impl StatusBar {
         }
     }
 
-    pub fn sync(
-        &mut self,
-        mouse_canvas: Position<i32>,
-        is_mouse_on_canvas: bool,
-        selected_tool: Tool,
-        visible_pixel_on_mouse: Option<[u8; 4]>,
-        canvas_size: Size<i32>,
-        zoom: f32,
-        fps: f32,
-    ) {
-        self.mouse_canvas = mouse_canvas;
-        self.is_mouse_on_canvas = is_mouse_on_canvas;
-        self.selected_tool = selected_tool;
-        self.visible_pixel_on_mouse = visible_pixel_on_mouse;
-        self.canvas_size = canvas_size;
-        self.zoom = zoom;
-        self.fps = fps;
+    pub fn sync(&mut self, params: GuiSyncParams) {
+        self.mouse_canvas = params.mouse_canvas;
+        self.is_mouse_on_canvas = params.is_on_canvas;
+        self.selected_tool = params.selected_tool;
+        self.visible_pixel_on_mouse = params.visible_pixel_on_mouse;
+        self.canvas_size = params.canvas_size;
+        self.zoom = params.zoom;
+        self.fps = params.fps;
     }
 
     pub fn update(&mut self, egui_ctx: &egui::Context) {
