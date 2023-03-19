@@ -4,13 +4,10 @@
 
 Tarsila is a pixel art and spritesheet editor written in Rust with
 [macroquad](https://macroquad.rs/) as graphics backend and
-[egui](https://www.egui.rs/) for GUI. The project is consists of 3 crates:
+[egui](https://www.egui.rs/) for GUI. The project consists of 2 crates:
 
 * `tarsila`: the frontend GUI of the editor;
-* `lapix`: the backend/core of the editor, where all interesting things happen;
-* `egui-macroquad-fork`: a fork of
-  [egui-macroquad](https://github.com/optozorax/egui-macroquad) to integrate
-  `egui` and `macroquad`.
+* `lapix`: the backend/core of the editor, where all interesting things happen.
 
 Since this is my first project with a GUI in Rust, I was not sure if `egui` and
 `macroquad` would be the right choice, also the GUI ecosystem is notorious for

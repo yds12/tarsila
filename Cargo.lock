@@ -323,8 +323,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "egui-macroquad-fork"
-version = "0.1.0"
+name = "egui-macroquad"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04684094ab441cee64e836dac5d07b822c0dd002739a9790023f9d2d08ce2875"
 dependencies = [
  "egui",
  "egui-miniquad",
@@ -1290,7 +1292,7 @@ name = "tarsila"
 version = "0.1.0"
 dependencies = [
  "egui",
- "egui-macroquad-fork",
+ "egui-macroquad",
  "lapix",
  "macroquad",
  "rfd",

@@ -16,7 +16,7 @@ license = "MIT/Apache-2.0"
 
 [dependencies]
 lapix = { path = "../lapix", version = "0.1.0" }
-egui-macroquad = { package = "egui-macroquad-fork", version = "0.1.0", path = "../egui-macroquad" }
+egui-macroquad = { version = "0.15.0", default-features = false }
 macroquad = "0.3.25"
 rfd = "0.10.0"
 egui = "0.21.0"
