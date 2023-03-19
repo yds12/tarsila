@@ -10,3 +10,6 @@ To find things that need doing, take a look at our
 with
 [help wanted](https://github.com/yds12/tarsila/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
 
+For general discussions, feature brainstorming, etc. visit our
+[discussions page](https://github.com/yds12/tarsila/discussions).
+
