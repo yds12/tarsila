@@ -8,7 +8,7 @@ use crate::{graphics, Timer};
 use lapix::primitives::*;
 use lapix::{Canvas, CanvasEffect, Event, Layer, Selection, State, Tool};
 use macroquad::prelude::Color as MqColor;
-use macroquad::prelude::{FilterMode, Texture2D, SKYBLUE};
+use macroquad::prelude::{FilterMode, Texture2D};
 use std::default::Default;
 use std::time::SystemTime;
 
@@ -46,6 +46,8 @@ impl From<UiEvent> for Effect {
     }
 }
 
+// TODO remove this
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum UiEvent {
     ZoomIn,

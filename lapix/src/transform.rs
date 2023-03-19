@@ -1,5 +1,8 @@
 //! Functions that can be applied to an image, modifying it
 
+// TODO remove this when this file starts being used
+#![allow(dead_code)]
+
 use crate::{color, Bitmap};
 
 pub enum Transform {

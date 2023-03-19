@@ -7,6 +7,8 @@ use std::time::SystemTime;
 
 const KEYDOWN_INTERVAL: u128 = 5;
 
+// TODO remove this
+#[allow(dead_code, clippy::enum_variant_names)]
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum Shortcut {
     KeyPress(KeyCode),
@@ -15,6 +17,8 @@ pub enum Shortcut {
     KeyDownMod(Modifier, KeyCode),
 }
 
+// TODO remove this
+#[allow(dead_code)]
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum Modifier {
     Ctrl,
