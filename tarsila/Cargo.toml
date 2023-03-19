@@ -10,7 +10,7 @@ readme = "README.md"
 documentation = "https://docs.rs/tarsila/latest/"
 keywords = ["image", "pixel", "pixel-art", "image-editor", "editor"]
 categories = ["game-development", "graphics", "multimedia", "multimedia::images", "rendering"]
-license = "MIT"
+license = "MIT/Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
