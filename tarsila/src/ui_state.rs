@@ -52,12 +52,14 @@ impl From<UiEvent> for Effect {
 pub enum UiEvent {
     ZoomIn,
     ZoomOut,
+    ResetZoom,
     MoveCamera(Direction),
     MouseOverGui,
     Paste,
     Exit,
     NewProject,
     GuiInteraction,
+    SetZoom100,
 }
 
 impl UiEvent {
@@ -102,6 +104,16 @@ impl<'a> From<&'a UiState> for GuiSyncParams {
     }
 }
 
+struct Preferences {
+    default_zoom: f32,
+}
+
+impl Default for Preferences {
+    fn default() -> Self {
+        Self { default_zoom: 8. }
+    }
+}
+
 pub struct UiState {
     inner: State<WrappedImage>,
     gui: Gui,
@@ -118,6 +130,7 @@ pub struct UiState {
     t0: SystemTime,
     fps: f32,
     bg: Background,
+    preferences: Preferences,
 }
 
 impl Default for UiState {
@@ -125,13 +138,14 @@ impl Default for UiState {
         let state = State::<WrappedImage>::new((CANVAS_W as i32, CANVAS_H as i32).into());
         let drawing = Texture2D::from_image(&state.canvas().inner().0);
         drawing.set_filter(FilterMode::Nearest);
+        let preferences = Preferences::default();
 
         Self {
             inner: state,
             gui: Gui::new(),
             camera: Position::ZERO_F32,
             canvas_pos: (CANVAS_X, CANVAS_Y).into(),
-            zoom: 8.,
+            zoom: preferences.default_zoom,
             layer_textures: vec![drawing],
             keyboard: KeyboardManager::new(),
             mouse: MouseManager::new(),
@@ -142,6 +156,7 @@ impl Default for UiState {
             t0: SystemTime::now(),
             fps: 60.,
             bg: Background::new(),
+            preferences,
         }
     }
 }
@@ -308,6 +323,8 @@ impl UiState {
         match event {
             UiEvent::ZoomIn => self.zoom_in(),
             UiEvent::ZoomOut => self.zoom_out(),
+            UiEvent::ResetZoom => self.reset_zoom(),
+            UiEvent::SetZoom100 => self.zoom = 1.,
             UiEvent::MoveCamera(dir) => self.move_camera(dir),
             UiEvent::MouseOverGui => self.mouse_over_gui = true,
             UiEvent::GuiInteraction => (),
@@ -375,6 +392,10 @@ impl UiState {
         self.zoom /= 2.;
         self.camera.x /= 2.;
         self.camera.y /= 2.;
+    }
+
+    pub fn reset_zoom(&mut self) {
+        self.zoom = self.preferences.default_zoom;
     }
 
     pub fn move_camera(&mut self, direction: Direction) {
