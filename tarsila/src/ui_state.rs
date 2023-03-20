@@ -22,6 +22,7 @@ const CAMERA_SPEED: f32 = 12.;
 const BG_COLOR: MqColor = MqColor::new(0.5, 0.5, 0.5, 1.);
 const GUI_REST_MS: u64 = 100;
 const FPS_INTERVAL: usize = 15;
+const DEFAULT_ZOOM_LEVEL: f32 = 8.;
 
 // Center on the space after the toolbar
 const CANVAS_X: f32 = LEFT_TOOLBAR_W as f32 + ((WINDOW_W as u16 - LEFT_TOOLBAR_W) / 2) as f32
@@ -104,16 +105,6 @@ impl<'a> From<&'a UiState> for GuiSyncParams {
     }
 }
 
-struct Preferences {
-    default_zoom: f32,
-}
-
-impl Default for Preferences {
-    fn default() -> Self {
-        Self { default_zoom: 8. }
-    }
-}
-
 pub struct UiState {
     inner: State<WrappedImage>,
     gui: Gui,
@@ -130,7 +121,6 @@ pub struct UiState {
     t0: SystemTime,
     fps: f32,
     bg: Background,
-    preferences: Preferences,
 }
 
 impl Default for UiState {
@@ -138,14 +128,13 @@ impl Default for UiState {
         let state = State::<WrappedImage>::new((CANVAS_W as i32, CANVAS_H as i32).into());
         let drawing = Texture2D::from_image(&state.canvas().inner().0);
         drawing.set_filter(FilterMode::Nearest);
-        let preferences = Preferences::default();
 
         Self {
             inner: state,
             gui: Gui::new(),
             camera: Position::ZERO_F32,
             canvas_pos: (CANVAS_X, CANVAS_Y).into(),
-            zoom: preferences.default_zoom,
+            zoom: DEFAULT_ZOOM_LEVEL,
             layer_textures: vec![drawing],
             keyboard: KeyboardManager::new(),
             mouse: MouseManager::new(),
@@ -156,7 +145,6 @@ impl Default for UiState {
             t0: SystemTime::now(),
             fps: 60.,
             bg: Background::new(),
-            preferences,
         }
     }
 }
@@ -395,7 +383,7 @@ impl UiState {
     }
 
     pub fn reset_zoom(&mut self) {
-        self.zoom = self.preferences.default_zoom;
+        self.zoom = DEFAULT_ZOOM_LEVEL;
     }
 
     pub fn move_camera(&mut self, direction: Direction) {
