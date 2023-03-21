@@ -50,7 +50,7 @@ impl MouseManager {
         }
     }
 
-    pub fn update(&mut self) -> Vec<Effect> {
+    pub fn update(&mut self, is_canvas_blocked: bool) -> Vec<Effect> {
         let p = (self.mouse_canvas.x, self.mouse_canvas.y).into();
         let mut events = Vec::new();
 
@@ -91,7 +91,7 @@ impl MouseManager {
                 Tool::Move => {
                     if self.is_on_selection {
                         events.push(Event::MoveStart(p).into());
-                    } else {
+                    } else if !is_canvas_blocked {
                         events.push(Event::ClearSelection.into());
                     }
                 }

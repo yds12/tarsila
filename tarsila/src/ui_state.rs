@@ -176,7 +176,7 @@ impl UiState {
         self.process_fx(fx);
 
         self.sync_mouse();
-        let fx = self.mouse.update();
+        let fx = self.mouse.update(self.is_canvas_blocked());
         self.process_fx(fx);
 
         let fx = self.keyboard.update();

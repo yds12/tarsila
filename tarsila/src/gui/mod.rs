@@ -108,9 +108,6 @@ impl Gui {
             visuals.override_text_color = text_color;
             egui_ctx.set_visuals(visuals);
 
-            let mut canvas_panel_events = self.update_canvas_panel(egui_ctx);
-            events.append(&mut canvas_panel_events);
-
             let mut palette_events = self.palette.update(egui_ctx);
             events.append(&mut palette_events);
 
@@ -125,6 +122,9 @@ impl Gui {
 
             self.preview.update(egui_ctx);
             self.status_bar.update(egui_ctx);
+
+            let mut canvas_panel_events = self.update_canvas_panel(egui_ctx);
+            events.append(&mut canvas_panel_events);
 
             if self.mouse_on_canvas {
                 egui_ctx.output_mut(|o| o.cursor_icon = egui::CursorIcon::None);
