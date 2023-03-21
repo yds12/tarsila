@@ -5,6 +5,7 @@
 
 use crate::{color, Bitmap};
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum Transform {
     Identity,
     Silhouete,

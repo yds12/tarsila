@@ -27,4 +27,4 @@ use palette::Palette;
 pub use primitives::*;
 pub use state::{Selection, State};
 pub use tool::Tool;
-//use transform::Transform;
+pub use transform::Transform;

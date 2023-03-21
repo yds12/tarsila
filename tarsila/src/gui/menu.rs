@@ -1,5 +1,5 @@
 use crate::{project, Effect, UiEvent};
-use lapix::{Event, LoadProject, SaveProject, Size, Tool};
+use lapix::{Event, LoadProject, SaveProject, Size, Tool, Transform};
 use std::path::PathBuf;
 
 pub struct MenuBar {
@@ -160,6 +160,12 @@ impl MenuBar {
                     if ui.button("Erase Canvas").clicked() {
                         ui.close_menu();
                         events.push(Event::ClearCanvas.into());
+                    }
+                });
+                ui.menu_button("Transform", |ui| {
+                    if ui.button("Silhouete").clicked() {
+                        ui.close_menu();
+                        events.push(Event::ApplyTransform(Transform::Silhouete).into());
                     }
                 });
             });

@@ -288,7 +288,14 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 if let Some(free_img) = self.free_image.as_mut() {
                     free_img.flip_vertically();
                 }
-                //Transform::Silhouete.apply(&mut self.free_image.as_mut().unwrap().texture);
+            }
+            Event::ApplyTransform(t) => {
+                if let Some(Selection::Canvas(_)) = self.selection {
+                    self.free_image_from_selection(None);
+                }
+                if let Some(free_img) = self.free_image.as_mut() {
+                    t.apply(&mut free_img.texture);
+                }
             }
             Event::NewLayerAbove => {
                 self.layers.add_new_above();

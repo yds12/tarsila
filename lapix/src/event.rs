@@ -1,4 +1,4 @@
-pub use crate::{Bitmap, CanvasEffect, Color, Point, Position, Size, Tool};
+pub use crate::{Bitmap, CanvasEffect, Color, Point, Position, Size, Tool, Transform};
 use std::fmt::Debug;
 use std::path::PathBuf;
 
@@ -157,6 +157,8 @@ pub enum Event {
     FlipHorizontal,
     /// Flip the selection vertically
     FlipVertical,
+    /// Apply an image transform
+    ApplyTransform(Transform),
     /// Undo the last undoable action
     Undo,
 }
@@ -183,6 +185,7 @@ impl Event {
             | Self::Paste(_)
             | Self::FlipHorizontal
             | Self::FlipVertical
+            | Self::ApplyTransform(_)
             | Self::Erase(_) => CanvasEffect::Update,
             Self::ResizeCanvas(_) | Self::OpenFile(_) => CanvasEffect::New,
             Self::NewLayerAbove
@@ -212,6 +215,7 @@ impl Event {
                 | Self::MoveEnd(_)
                 | Self::Paste(_)
                 | Self::Erase(_)
+                | Self::ApplyTransform(_)
         )
     }
 
@@ -274,6 +278,7 @@ impl Event {
                 | Self::OpenFile(_)
                 | Self::MoveLayerDown(_)
                 | Self::MoveLayerUp(_)
+                | Self::ApplyTransform(_)
         )
     }
 
