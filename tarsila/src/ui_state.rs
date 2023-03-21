@@ -176,7 +176,7 @@ impl UiState {
         self.process_fx(fx);
 
         self.sync_mouse();
-        let fx = self.mouse.update(self.is_canvas_blocked());
+        let fx = self.mouse.update();
         self.process_fx(fx);
 
         let fx = self.keyboard.update();
@@ -188,9 +188,7 @@ impl UiState {
             match effect {
                 Effect::UiEvent(event) => self.process_event(event),
                 Effect::Event(event) => {
-                    if !event.is_drawing_event() || !self.is_canvas_blocked() {
-                        self.execute(event);
-                    }
+                    self.execute(event);
                 }
             }
         }
@@ -268,6 +266,7 @@ impl UiState {
             self.is_mouse_on_selection(),
             self.selected_tool(),
             visible_pixel,
+            self.is_canvas_blocked(),
         );
     }
 

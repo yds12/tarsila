@@ -199,26 +199,6 @@ impl Event {
         }
     }
 
-    /// Whether this event affects the image being drawn in the canvas
-    pub fn is_drawing_event(&self) -> bool {
-        matches!(
-            self,
-            Self::BrushStart
-                | Self::DeleteSelection
-                | Self::BrushStroke(_)
-                | Self::LineStart(_)
-                | Self::LineEnd(_)
-                | Self::RectStart(_)
-                | Self::RectEnd(_)
-                | Self::Bucket(_)
-                | Self::MoveStart(_)
-                | Self::MoveEnd(_)
-                | Self::Paste(_)
-                | Self::Erase(_)
-                | Self::ApplyTransform(_)
-        )
-    }
-
     /// Whether this event can happen twice in a roll
     pub fn repeatable(&self) -> bool {
         matches!(
@@ -315,6 +295,7 @@ impl Event {
                 | Self::DeleteSelection
                 | Self::MoveLayerDown(_)
                 | Self::MoveLayerUp(_)
+                | Self::ApplyTransform(_)
         )
     }
 }

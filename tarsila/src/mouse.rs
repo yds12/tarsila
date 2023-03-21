@@ -12,6 +12,7 @@ pub struct MouseManager {
     is_on_selection: bool,
     is_on_canvas: bool,
     on_left_release: Vec<Box<fn(&Self) -> Effect>>,
+    is_canvas_blocked: bool,
 }
 
 impl MouseManager {
@@ -24,6 +25,7 @@ impl MouseManager {
             is_on_selection: false,
             is_on_canvas: false,
             on_left_release: Default::default(),
+            is_canvas_blocked: false,
         }
     }
 
@@ -34,12 +36,14 @@ impl MouseManager {
         is_on_selection: bool,
         selected_tool: Tool,
         visible_pixel_on_mouse: Option<[u8; 4]>,
+        is_canvas_blocked: bool,
     ) {
         self.is_on_selection = is_on_selection;
         self.is_on_canvas = is_on_canvas;
         self.mouse_canvas = mouse_canvas;
         self.selected_tool = selected_tool;
         self.visible_pixel_on_mouse = visible_pixel_on_mouse;
+        self.is_canvas_blocked = is_canvas_blocked;
     }
 
     pub fn draw(&self, selected_tool: Tool) {
@@ -50,34 +54,34 @@ impl MouseManager {
         }
     }
 
-    pub fn update(&mut self, is_canvas_blocked: bool) -> Vec<Effect> {
+    pub fn update(&mut self) -> Vec<Effect> {
         let p = (self.mouse_canvas.x, self.mouse_canvas.y).into();
         let mut events = Vec::new();
 
         if is_mouse_button_pressed(MouseButton::Left) {
-            match self.selected_tool {
-                Tool::Brush => {
+            match (self.selected_tool, self.is_canvas_blocked) {
+                (Tool::Brush, false) => {
                     events.push(Event::BrushStart.into());
                 }
-                Tool::Eraser => {
+                (Tool::Eraser, false) => {
                     events.push(Event::EraseStart.into());
                 }
-                Tool::Line => {
+                (Tool::Line, false) => {
                     events.push(Event::LineStart(p).into());
                 }
-                Tool::Rectangle => {
+                (Tool::Rectangle, false) => {
                     events.push(Event::RectStart(p).into());
                 }
-                Tool::Eyedropper => {
+                (Tool::Eyedropper, false) => {
                     if let Some(color) = self.visible_pixel_on_mouse {
                         events.push(Event::SetMainColor(color.into()).into());
                         events.push(Event::SetTool(Tool::Brush).into());
                     }
                 }
-                Tool::Bucket => {
+                (Tool::Bucket, false) => {
                     events.push(Event::Bucket(p).into());
                 }
-                Tool::Selection => {
+                (Tool::Selection, _) => {
                     if self.is_on_canvas {
                         events.push(Event::StartSelection(p).into());
                         self.on_left_release.push(Box::new(|mouse: &Self| {
@@ -88,19 +92,20 @@ impl MouseManager {
                             .push(Box::new(|_| Event::SetTool(Tool::Move).into()));
                     }
                 }
-                Tool::Move => {
+                (Tool::Move, _) => {
                     if self.is_on_selection {
                         events.push(Event::MoveStart(p).into());
-                    } else if !is_canvas_blocked {
+                    } else if !self.is_canvas_blocked {
                         events.push(Event::ClearSelection.into());
                     }
                 }
+                _ => (),
             }
         }
 
         if is_mouse_button_down(MouseButton::Left) {
-            match self.selected_tool {
-                Tool::Brush => {
+            match (self.selected_tool, self.is_canvas_blocked) {
+                (Tool::Brush, false) => {
                     // TODO: there is a bug on macroquad or egui or miniquad
                     // or miniquad-egui or macroquad-egui where the mouse
                     // release event is not registered when it's done out of
@@ -108,7 +113,7 @@ impl MouseManager {
                     // when the mouse is not pressed).
                     events.push(Event::BrushStroke(p).into());
                 }
-                Tool::Eraser => {
+                (Tool::Eraser, false) => {
                     events.push(Event::Erase(p).into());
                 }
                 _ => (),
@@ -116,20 +121,20 @@ impl MouseManager {
         }
 
         if is_mouse_button_released(MouseButton::Left) {
-            match self.selected_tool {
-                Tool::Brush => {
+            match (self.selected_tool, self.is_canvas_blocked) {
+                (Tool::Brush, false) => {
                     events.push(Event::BrushEnd.into());
                 }
-                Tool::Eraser => {
+                (Tool::Eraser, false) => {
                     events.push(Event::EraseEnd.into());
                 }
-                Tool::Line => {
+                (Tool::Line, false) => {
                     events.push(Event::LineEnd(p).into());
                 }
-                Tool::Rectangle => {
+                (Tool::Rectangle, false) => {
                     events.push(Event::RectEnd(p).into());
                 }
-                Tool::Move => {
+                (Tool::Move, _) => {
                     events.push(Event::MoveEnd(p).into());
                 }
                 _ => (),
