@@ -123,6 +123,24 @@ impl MenuBar {
                         ui.close_menu();
                     }
                 });
+                ui.menu_button("View", |ui| {
+                    if ui.button("Zoom in").clicked() {
+                        events.push(Effect::UiEvent(UiEvent::ZoomIn));
+                        ui.close_menu();
+                    }
+                    if ui.button("Zoom out").clicked() {
+                        events.push(Effect::UiEvent(UiEvent::ZoomOut));
+                        ui.close_menu();
+                    }
+                    if ui.button("Reset zoom to default").clicked() {
+                        events.push(Effect::UiEvent(UiEvent::ResetZoom));
+                        ui.close_menu();
+                    }
+                    if ui.button("Set zoom to 100%").clicked() {
+                        events.push(Effect::UiEvent(UiEvent::SetZoom100));
+                        ui.close_menu();
+                    }
+                });
                 ui.menu_button("Canvas", |ui| {
                     /*
                     ui.menu_button("Category", |ui| {

@@ -22,6 +22,7 @@ const CAMERA_SPEED: f32 = 12.;
 const BG_COLOR: MqColor = MqColor::new(0.5, 0.5, 0.5, 1.);
 const GUI_REST_MS: u64 = 100;
 const FPS_INTERVAL: usize = 15;
+const DEFAULT_ZOOM_LEVEL: f32 = 8.;
 
 // Center on the space after the toolbar
 const CANVAS_X: f32 = LEFT_TOOLBAR_W as f32 + ((WINDOW_W as u16 - LEFT_TOOLBAR_W) / 2) as f32
@@ -52,12 +53,14 @@ impl From<UiEvent> for Effect {
 pub enum UiEvent {
     ZoomIn,
     ZoomOut,
+    ResetZoom,
     MoveCamera(Direction),
     MouseOverGui,
     Paste,
     Exit,
     NewProject,
     GuiInteraction,
+    SetZoom100,
 }
 
 impl UiEvent {
@@ -131,7 +134,7 @@ impl Default for UiState {
             gui: Gui::new(),
             camera: Position::ZERO_F32,
             canvas_pos: (CANVAS_X, CANVAS_Y).into(),
-            zoom: 8.,
+            zoom: DEFAULT_ZOOM_LEVEL,
             layer_textures: vec![drawing],
             keyboard: KeyboardManager::new(),
             mouse: MouseManager::new(),
@@ -308,6 +311,8 @@ impl UiState {
         match event {
             UiEvent::ZoomIn => self.zoom_in(),
             UiEvent::ZoomOut => self.zoom_out(),
+            UiEvent::ResetZoom => self.reset_zoom(),
+            UiEvent::SetZoom100 => self.zoom = 1.,
             UiEvent::MoveCamera(dir) => self.move_camera(dir),
             UiEvent::MouseOverGui => self.mouse_over_gui = true,
             UiEvent::GuiInteraction => (),
@@ -375,6 +380,10 @@ impl UiState {
         self.zoom /= 2.;
         self.camera.x /= 2.;
         self.camera.y /= 2.;
+    }
+
+    pub fn reset_zoom(&mut self) {
+        self.zoom = DEFAULT_ZOOM_LEVEL;
     }
 
     pub fn move_camera(&mut self, direction: Direction) {
