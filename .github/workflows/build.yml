@@ -3,14 +3,44 @@ on: [push, pull_request]
 name: Build
 
 jobs:
-  check:
-    name: Build
+  build-linux:
+    name: Build on Linux
     runs-on: ubuntu-20.04
     steps:
       - name: update apt
         run: sudo apt update
       - name: install dependencies
         run: sudo apt install -y pkg-config librust-glib-sys-dev librust-atk-sys-dev librust-gdk-sys-dev libasound2-dev
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --color always
+
+  build-windows:
+    name: Build on Windows
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --color always
+
+  build-macos:
+    name: Build on MacOS
+    runs-on: macos-12
+    steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
