@@ -230,6 +230,11 @@ impl UiState {
 
         // TODO: most of this logic should be in some update method, not a draw one
         if let Some(img) = self.inner.free_image() {
+            // Macroquad's Texture2D is not automatically freed, so we need to free it manually,
+            // otherwise we risk exhausting video memory (and even system memory on some systems).
+            if let Some(tex) = &mut self.free_image_tex {
+                tex.delete();
+            }
             let tex = Texture2D::from_image(&img.texture.0);
             tex.set_filter(FilterMode::Nearest);
             self.free_image_tex = Some(tex);
