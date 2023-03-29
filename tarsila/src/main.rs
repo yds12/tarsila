@@ -3,6 +3,7 @@ use macroquad::prelude::*;
 mod bg;
 mod graphics;
 mod gui;
+mod input;
 mod keyboard;
 mod mouse;
 mod project;

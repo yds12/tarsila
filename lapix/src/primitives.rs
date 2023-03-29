@@ -69,6 +69,15 @@ impl From<Point<i32>> for Point<f32> {
     }
 }
 
+impl From<Point<f32>> for Point<i32> {
+    fn from(value: Point<f32>) -> Self {
+        Self {
+            x: value.x.round() as i32,
+            y: value.y.round() as i32,
+        }
+    }
+}
+
 impl<T: Number> Point<T> {
     /// Create a new point
     pub const fn new(x: T, y: T) -> Self {
@@ -109,7 +118,7 @@ impl Point<i32> {
 }
 
 /// Represents one of the 4 basic 2D directions
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Direction {
     Up,
     Down,

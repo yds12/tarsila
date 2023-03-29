@@ -1,6 +1,8 @@
 use crate::bg::Background;
 use crate::graphics::DrawContext;
 use crate::gui::{Gui, GuiSyncParams};
+use crate::input::bindings::KeyBindings;
+use crate::input::manager::InputManager;
 use crate::keyboard::KeyboardManager;
 use crate::mouse::MouseManager;
 use crate::wrapped_image::WrappedImage;
@@ -55,6 +57,7 @@ pub enum UiEvent {
     ZoomOut,
     ResetZoom,
     MoveCamera(Direction),
+    MoveCameraExact(Point<i32>),
     MouseOverGui,
     Paste,
     Exit,
@@ -112,9 +115,11 @@ pub struct UiState {
     canvas_pos: Position<f32>,
     zoom: f32,
     layer_textures: Vec<Texture2D>,
+    input: InputManager,
     keyboard: KeyboardManager,
     mouse: MouseManager,
     mouse_over_gui: bool,
+    key_bindings: KeyBindings,
     gui_interaction_rest: Timer,
     free_image_tex: Option<Texture2D>,
     must_exit: bool,
@@ -129,6 +134,11 @@ impl Default for UiState {
         let drawing = Texture2D::from_image(&state.canvas().inner().0);
         drawing.set_filter(FilterMode::Nearest);
 
+        let key_bindings = KeyBindings::new();
+
+        // TODO: keys_to_track should be defined by the shortcuts in use
+        let input = InputManager::new(key_bindings.used_keys());
+
         Self {
             inner: state,
             gui: Gui::new(),
@@ -136,9 +146,11 @@ impl Default for UiState {
             canvas_pos: (CANVAS_X, CANVAS_Y).into(),
             zoom: DEFAULT_ZOOM_LEVEL,
             layer_textures: vec![drawing],
+            input,
             keyboard: KeyboardManager::new(),
             mouse: MouseManager::new(),
             mouse_over_gui: false,
+            key_bindings,
             gui_interaction_rest: Timer::new(),
             free_image_tex: None,
             must_exit: false,
@@ -175,12 +187,22 @@ impl UiState {
         let fx = self.gui.update();
         self.process_fx(fx);
 
+        let (x, y) = macroquad::prelude::mouse_position();
+        let sp = (x, y).into();
+        let (cx, cy) = self.screen_to_canvas(x, y);
+        let cp = (cx, cy).into();
+        self.input.sync(sp, cp);
+        let fx = self.input.update(&self.key_bindings);
+        self.process_fx(fx);
+
+        /*
         self.sync_mouse();
         let fx = self.mouse.update();
         self.process_fx(fx);
 
         let fx = self.keyboard.update();
         self.process_fx(fx);
+        */
     }
 
     fn process_fx(&mut self, fx: Vec<Effect>) {
@@ -318,6 +340,7 @@ impl UiState {
             UiEvent::ResetZoom => self.reset_zoom(),
             UiEvent::SetZoom100 => self.zoom = 1.,
             UiEvent::MoveCamera(dir) => self.move_camera(dir),
+            UiEvent::MoveCameraExact(p) => self.move_camera_exact(p),
             UiEvent::MouseOverGui => self.mouse_over_gui = true,
             UiEvent::GuiInteraction => (),
             UiEvent::Paste => {
@@ -400,6 +423,28 @@ impl UiState {
                 Direction::Left => self.camera.x -= speed,
                 Direction::Right => self.camera.x += speed,
             }
+        }
+    }
+
+    pub fn move_camera_exact(&mut self, vector: Point<i32>) {
+        let h_dir = if vector.x < 0 {
+            Direction::Left
+        } else {
+            Direction::Right
+        };
+
+        let v_dir = if vector.y < 0 {
+            Direction::Up
+        } else {
+            Direction::Down
+        };
+
+        if !self.is_camera_off(h_dir) {
+            self.camera.x += vector.x as f32;
+        }
+
+        if !self.is_camera_off(v_dir) {
+            self.camera.y += vector.y as f32;
         }
     }
 
