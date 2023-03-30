@@ -6,6 +6,7 @@ use std::collections::HashMap;
 #[allow(clippy::type_complexity)]
 pub struct MouseManager {
     cursors: CursorSet,
+    cursor: CursorType,
     mouse_canvas: Position<i32>,
     selected_tool: Tool,
     visible_pixel_on_mouse: Option<[u8; 4]>,
@@ -19,6 +20,7 @@ impl MouseManager {
     pub fn new() -> Self {
         Self {
             cursors: CursorSet::new(),
+            cursor: CursorType::Tool(Tool::Brush),
             mouse_canvas: Default::default(),
             selected_tool: Tool::Brush,
             visible_pixel_on_mouse: None,
@@ -46,8 +48,16 @@ impl MouseManager {
         self.is_canvas_blocked = is_canvas_blocked;
     }
 
-    pub fn draw(&self, selected_tool: Tool) {
-        if let Some(cursor) = self.cursors.0.get(&selected_tool) {
+    pub fn cursor(&self) -> CursorType {
+        self.cursor
+    }
+
+    pub fn set_cursor(&mut self, cursor: CursorType) {
+        self.cursor = cursor;
+    }
+
+    pub fn draw(&self) {
+        if let Some(cursor) = self.cursors.0.get(&self.cursor) {
             if self.is_on_canvas {
                 cursor.draw();
             }
@@ -151,7 +161,13 @@ impl MouseManager {
     }
 }
 
-pub struct CursorSet(HashMap<Tool, ToolCursor>);
+#[derive(Copy, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum CursorType {
+    Tool(Tool),
+    Pan,
+}
+
+pub struct CursorSet(HashMap<CursorType, Cursor>);
 
 impl CursorSet {
     pub fn new() -> Self {
@@ -166,23 +182,33 @@ impl CursorSet {
             (Tool::Rectangle, (0., -16.).into()),
         ];
 
-        Self(
-            tools
-                .iter()
-                .map(|(t, offset)| (*t, ToolCursor::new(*t, *offset)))
-                .collect(),
-        )
+        let mut hm: HashMap<_, _> = tools
+            .iter()
+            .map(|(t, offset)| {
+                (
+                    CursorType::Tool(*t),
+                    Cursor::new(CursorType::Tool(*t), *offset),
+                )
+            })
+            .collect();
+
+        hm.insert(
+            CursorType::Pan,
+            Cursor::new(CursorType::Pan, (0., 0.).into()),
+        );
+
+        Self(hm)
     }
 }
 
-pub struct ToolCursor {
+pub struct Cursor {
     texture: Texture2D,
     offset: Point<f32>,
 }
 
-impl ToolCursor {
-    pub fn new(tool: Tool, offset: Point<f32>) -> Self {
-        let bytes = Resources::tool_icon(tool);
+impl Cursor {
+    pub fn new(typ: CursorType, offset: Point<f32>) -> Self {
+        let bytes = Resources::cursor(typ);
         let texture = Texture2D::from_file_with_format(bytes, None);
 
         Self { texture, offset }

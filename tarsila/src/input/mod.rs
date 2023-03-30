@@ -41,6 +41,8 @@ pub enum InputEvent {
     MouseButtonPressed(MouseButton),
     MouseButtonDown(MouseButton),
     MouseButtonReleased(MouseButton),
+    MouseScrollUp,
+    MouseScrollDown,
     MouseRealMove(Point<i32>),
     MouseCanvasMove(Point<i32>),
 }

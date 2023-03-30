@@ -4,7 +4,7 @@ use crate::gui::{Gui, GuiSyncParams};
 use crate::input::bindings::KeyBindings;
 use crate::input::manager::InputManager;
 use crate::keyboard::KeyboardManager;
-use crate::mouse::MouseManager;
+use crate::mouse::{CursorType, MouseManager};
 use crate::wrapped_image::WrappedImage;
 use crate::{graphics, Timer};
 use lapix::primitives::*;
@@ -25,6 +25,8 @@ const BG_COLOR: MqColor = MqColor::new(0.5, 0.5, 0.5, 1.);
 const GUI_REST_MS: u64 = 100;
 const FPS_INTERVAL: usize = 15;
 const DEFAULT_ZOOM_LEVEL: f32 = 8.;
+pub const MIN_ZOOM: f32 = 0.125;
+pub const MAX_ZOOM: f32 = 1024.;
 
 // Center on the space after the toolbar
 const CANVAS_X: f32 = LEFT_TOOLBAR_W as f32 + ((WINDOW_W as u16 - LEFT_TOOLBAR_W) / 2) as f32
@@ -56,6 +58,8 @@ pub enum UiEvent {
     ZoomIn,
     ZoomOut,
     ResetZoom,
+    ZoomAdd(f32),
+    ZoomMul(f32),
     MoveCamera(Direction),
     MoveCameraExact(Point<i32>),
     MouseOverGui,
@@ -64,6 +68,13 @@ pub enum UiEvent {
     NewProject,
     GuiInteraction,
     SetZoom100,
+    SetCursor(CursorType),
+    SetPreviousCursor,
+    ToolStart,
+    ToolStroke,
+    ToolEnd,
+    BlockCanvas,
+    UnblockCanvas,
 }
 
 impl UiEvent {
@@ -121,11 +132,13 @@ pub struct UiState {
     mouse_over_gui: bool,
     key_bindings: KeyBindings,
     gui_interaction_rest: Timer,
+    manual_canvas_block: bool,
     free_image_tex: Option<Texture2D>,
     must_exit: bool,
     t0: SystemTime,
     fps: f32,
     bg: Background,
+    prev_cursor: CursorType,
 }
 
 impl Default for UiState {
@@ -157,6 +170,8 @@ impl Default for UiState {
             t0: SystemTime::now(),
             fps: 60.,
             bg: Background::new(),
+            prev_cursor: CursorType::Tool(Tool::Brush),
+            manual_canvas_block: false,
         }
     }
 }
@@ -195,14 +210,12 @@ impl UiState {
         let fx = self.input.update(&self.key_bindings);
         self.process_fx(fx);
 
-        /*
         self.sync_mouse();
-        let fx = self.mouse.update();
-        self.process_fx(fx);
+        //let fx = self.mouse.update();
+        //self.process_fx(fx);
 
-        let fx = self.keyboard.update();
-        self.process_fx(fx);
-        */
+        //let fx = self.keyboard.update();
+        //self.process_fx(fx);
     }
 
     fn process_fx(&mut self, fx: Vec<Effect>) {
@@ -217,7 +230,7 @@ impl UiState {
     }
 
     fn is_canvas_blocked(&self) -> bool {
-        self.mouse_over_gui || !self.gui_interaction_rest.expired()
+        self.manual_canvas_block || self.mouse_over_gui || !self.gui_interaction_rest.expired()
     }
 
     fn draw_ctx(&self) -> DrawContext {
@@ -273,7 +286,7 @@ impl UiState {
 
         egui_macroquad::draw();
         self.gui.draw_preview(self);
-        self.mouse.draw(self.selected_tool());
+        self.mouse.draw();
     }
 
     pub fn sync_mouse(&mut self) {
@@ -331,13 +344,18 @@ impl UiState {
     }
 
     pub fn process_event(&mut self, event: UiEvent) {
+        dbg!(&event);
         if event.is_gui_interaction() {
             self.gui_interaction_rest.start(GUI_REST_MS);
         }
         match event {
+            UiEvent::BlockCanvas => self.manual_canvas_block = true,
+            UiEvent::UnblockCanvas => self.manual_canvas_block = false,
             UiEvent::ZoomIn => self.zoom_in(),
             UiEvent::ZoomOut => self.zoom_out(),
             UiEvent::ResetZoom => self.reset_zoom(),
+            UiEvent::ZoomAdd(n) => self.zoom_add(n),
+            UiEvent::ZoomMul(n) => self.zoom_mul(n),
             UiEvent::SetZoom100 => self.zoom = 1.,
             UiEvent::MoveCamera(dir) => self.move_camera(dir),
             UiEvent::MoveCameraExact(p) => self.move_camera_exact(p),
@@ -350,6 +368,47 @@ impl UiState {
             }
             UiEvent::Exit => self.must_exit = true,
             UiEvent::NewProject => *self = UiState::default(),
+            UiEvent::SetPreviousCursor => self.mouse.set_cursor(self.prev_cursor),
+            UiEvent::SetCursor(c) => {
+                self.prev_cursor = self.mouse.cursor();
+                self.mouse.set_cursor(c);
+            }
+            // TODO: same logic as in mouse.rs
+            UiEvent::ToolStart => {
+                let (x, y) = macroquad::prelude::mouse_position();
+                let p = self.screen_to_canvas(x, y).into();
+
+                match (self.selected_tool(), self.is_canvas_blocked()) {
+                    (Tool::Brush, false) => self.execute(Event::BrushStart),
+                    (Tool::Eraser, false) => self.execute(Event::EraseStart),
+                    (Tool::Line, false) => self.execute(Event::LineStart(p)),
+                    (Tool::Rectangle, false) => self.execute(Event::RectStart(p)),
+                    (Tool::Bucket, false) => self.execute(Event::Bucket(p)),
+                    _ => (),
+                }
+            }
+            UiEvent::ToolStroke => {
+                let (x, y) = macroquad::prelude::mouse_position();
+                let p = self.screen_to_canvas(x, y).into();
+
+                match (self.selected_tool(), self.is_canvas_blocked()) {
+                    (Tool::Brush, false) => self.execute(Event::BrushStroke(p)),
+                    (Tool::Eraser, false) => self.execute(Event::Erase(p)),
+                    _ => (),
+                }
+            }
+            UiEvent::ToolEnd => {
+                let (x, y) = macroquad::prelude::mouse_position();
+                let p = self.screen_to_canvas(x, y).into();
+
+                match (self.selected_tool(), self.is_canvas_blocked()) {
+                    (Tool::Brush, false) => self.execute(Event::BrushEnd),
+                    (Tool::Eraser, false) => self.execute(Event::EraseEnd),
+                    (Tool::Line, false) => self.execute(Event::LineEnd(p)),
+                    (Tool::Rectangle, false) => self.execute(Event::RectEnd(p)),
+                    _ => (),
+                }
+            }
         }
     }
 
@@ -398,15 +457,27 @@ impl UiState {
     }
 
     pub fn zoom_in(&mut self) {
-        self.zoom *= 2.;
-        self.camera.x *= 2.;
-        self.camera.y *= 2.;
+        self.zoom_mul(2.);
     }
 
     pub fn zoom_out(&mut self) {
-        self.zoom /= 2.;
-        self.camera.x /= 2.;
-        self.camera.y /= 2.;
+        self.zoom_mul(0.5);
+    }
+
+    pub fn zoom_mul(&mut self, val: f32) {
+        self.change_zoom(|zoom| zoom * val);
+    }
+
+    pub fn zoom_add(&mut self, val: f32) {
+        self.change_zoom(|zoom| zoom + val);
+    }
+
+    pub fn change_zoom<F: Fn(f32) -> f32>(&mut self, op: F) {
+        let new_zoom = (op)(self.zoom).clamp(MIN_ZOOM, MAX_ZOOM);
+        let fac = new_zoom / self.zoom;
+        self.camera.x *= fac;
+        self.camera.y *= fac;
+        self.zoom = new_zoom;
     }
 
     pub fn reset_zoom(&mut self) {

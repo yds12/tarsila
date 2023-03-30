@@ -10,7 +10,7 @@ pub struct InputManager {
     prev_mouse_canvas: Position<i32>,
     mouse_canvas: Position<i32>,
     mouse: Position<f32>,
-    prev_mouse: Position<f32>
+    prev_mouse: Position<f32>,
 }
 
 impl InputManager {
@@ -77,11 +77,22 @@ impl InputManager {
         }
 
         if self.prev_mouse_canvas != self.mouse_canvas {
-            events.push(InputEvent::MouseCanvasMove(self.mouse_canvas - self.prev_mouse_canvas));
+            events.push(InputEvent::MouseCanvasMove(
+                self.mouse_canvas - self.prev_mouse_canvas,
+            ));
         }
 
         if self.prev_mouse != self.mouse {
-            events.push(InputEvent::MouseRealMove((self.mouse - self.prev_mouse).into()));
+            events.push(InputEvent::MouseRealMove(
+                (self.mouse - self.prev_mouse).into(),
+            ));
+        }
+
+        let scroll = mq::mouse_wheel().1;
+        if scroll > 0. {
+            events.push(InputEvent::MouseScrollUp);
+        } else if scroll < 0. {
+            events.push(InputEvent::MouseScrollDown);
         }
 
         // keyboard

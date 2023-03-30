@@ -1,8 +1,16 @@
+use crate::mouse::CursorType;
 use lapix::Tool;
 
 pub struct Resources;
 
 impl Resources {
+    pub fn cursor(cursor: CursorType) -> &'static [u8] {
+        match cursor {
+            CursorType::Tool(tool) => Self::tool_icon(tool),
+            CursorType::Pan => include_bytes!("../res/cursor/pan.png"),
+        }
+    }
+
     pub fn tool_icon(tool: Tool) -> &'static [u8] {
         match tool {
             Tool::Brush => include_bytes!("../res/icon/pencil.png"),
