@@ -1,7 +1,7 @@
 use super::{InputEvent, KeyboardKey, KeyboardModifier};
 use crate::mouse::CursorType;
 use crate::{Effect, UiEvent};
-use lapix::{Direction, Point, Event, Tool};
+use lapix::{Direction, Event, Point, Tool};
 use macroquad::prelude as mq;
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -10,6 +10,18 @@ use std::hash::Hash;
 pub enum KeySpec {
     InputEvents(Vec<InputEvent>),
     FollowMouse(Vec<InputEvent>),
+}
+
+impl From<InputEvent> for KeySpec {
+    fn from(e: InputEvent) -> Self {
+        Self::InputEvents(vec![e])
+    }
+}
+
+impl From<Vec<InputEvent>> for KeySpec {
+    fn from(v: Vec<InputEvent>) -> Self {
+        Self::InputEvents(v)
+    }
 }
 
 impl KeySpec {
@@ -34,6 +46,18 @@ pub enum ActionSpec {
     // should later just have an enum of possible functions. Problem is that we
     // need to have the (Ui)Event parameterizable
     MouseFn(MouseAction),
+}
+
+impl From<Event> for ActionSpec {
+    fn from(e: Event) -> Self {
+        Self::Fx(vec![Effect::Event(e)])
+    }
+}
+
+impl From<UiEvent> for ActionSpec {
+    fn from(e: UiEvent) -> Self {
+        Self::Fx(vec![Effect::UiEvent(e)])
+    }
 }
 
 impl Debug for ActionSpec {
@@ -73,93 +97,94 @@ impl KeyBindings {
         let bindings = vec![
             // SET TOOLS
             (
-                KeySpec::InputEvents(vec![
-                    InputEvent::KeyPressed(mq::KeyCode::B.into()),
-                ]),
-                ActionSpec::Fx(vec![Effect::Event(Event::SetTool(Tool::Brush))]),
+                InputEvent::KeyPress(mq::KeyCode::B.into()).into(),
+                Event::SetTool(Tool::Brush).into(),
             ),
             (
-                KeySpec::InputEvents(vec![
-                    InputEvent::KeyPressed(mq::KeyCode::G.into()),
-                ]),
-                ActionSpec::Fx(vec![Effect::Event(Event::SetTool(Tool::Bucket))]),
+                InputEvent::KeyPress(mq::KeyCode::G.into()).into(),
+                Event::SetTool(Tool::Bucket).into(),
             ),
             (
-                KeySpec::InputEvents(vec![
-                    InputEvent::KeyPressed(mq::KeyCode::L.into()),
-                ]),
-                ActionSpec::Fx(vec![Effect::Event(Event::SetTool(Tool::Line))]),
+                InputEvent::KeyPress(mq::KeyCode::L.into()).into(),
+                Event::SetTool(Tool::Line).into(),
             ),
             (
-                KeySpec::InputEvents(vec![
-                    InputEvent::KeyPressed(mq::KeyCode::R.into()),
-                ]),
-                ActionSpec::Fx(vec![Effect::Event(Event::SetTool(Tool::Rectangle))]),
+                InputEvent::KeyPress(mq::KeyCode::R.into()).into(),
+                Event::SetTool(Tool::Rectangle).into(),
             ),
             (
-                KeySpec::InputEvents(vec![
-                    InputEvent::KeyPressed(mq::KeyCode::I.into()),
-                ]),
-                ActionSpec::Fx(vec![Effect::Event(Event::SetTool(Tool::Eyedropper))]),
+                InputEvent::KeyPress(mq::KeyCode::I.into()).into(),
+                Event::SetTool(Tool::Eyedropper).into(),
             ),
             (
-                KeySpec::InputEvents(vec![
-                    InputEvent::KeyPressed(mq::KeyCode::E.into()),
-                ]),
-                ActionSpec::Fx(vec![Effect::Event(Event::SetTool(Tool::Eraser))]),
+                InputEvent::KeyPress(mq::KeyCode::E.into()).into(),
+                Event::SetTool(Tool::Eraser).into(),
+            ),
+            (
+                InputEvent::KeyPress(mq::KeyCode::S.into()).into(),
+                Event::SetTool(Tool::Selection).into(),
+            ),
+            (
+                InputEvent::KeyPress(mq::KeyCode::M.into()).into(),
+                Event::SetTool(Tool::Move).into(),
+            ),
+            // FLIP
+            (
+                InputEvent::KeyPress(mq::KeyCode::H.into()).into(),
+                Event::FlipHorizontal.into(),
+            ),
+            (
+                InputEvent::KeyPress(mq::KeyCode::V.into()).into(),
+                Event::FlipVertical.into(),
             ),
             // ZOOM
             (
-                KeySpec::InputEvents(vec![
+                vec![
                     InputEvent::MouseScrollUp,
                     InputEvent::KeyModifier(KeyboardModifier::Control),
-                ]),
-                ActionSpec::Fx(vec![Effect::UiEvent(UiEvent::ZoomAdd(1.))]),
+                ]
+                .into(),
+                UiEvent::ZoomAdd(1.).into(),
             ),
             (
-                KeySpec::InputEvents(vec![
+                vec![
                     InputEvent::MouseScrollDown,
                     InputEvent::KeyModifier(KeyboardModifier::Control),
-                ]),
-                ActionSpec::Fx(vec![Effect::UiEvent(UiEvent::ZoomAdd(-1.))]),
+                ]
+                .into(),
+                UiEvent::ZoomAdd(-1.).into(),
             ),
             (
-                KeySpec::InputEvents(vec![InputEvent::KeyPressed(mq::KeyCode::Minus.into())]),
-                ActionSpec::Fx(vec![Effect::UiEvent(UiEvent::ZoomOut)]),
+                InputEvent::KeyPress(mq::KeyCode::Minus.into()).into(),
+                UiEvent::ZoomOut.into(),
             ),
             (
-                KeySpec::InputEvents(vec![InputEvent::KeyPressed(mq::KeyCode::Equal.into())]),
-                ActionSpec::Fx(vec![Effect::UiEvent(UiEvent::ZoomIn)]),
+                InputEvent::KeyPress(mq::KeyCode::Equal.into()).into(),
+                UiEvent::ZoomIn.into(),
             ),
             // DRAWING
             (
-                KeySpec::InputEvents(vec![InputEvent::MouseButtonPressed(
-                    mq::MouseButton::Left.into(),
-                )]),
-                ActionSpec::Fx(vec![Effect::UiEvent(UiEvent::ToolStart)]),
+                InputEvent::MouseButtonPress(mq::MouseButton::Left.into()).into(),
+                UiEvent::ToolStart.into(),
             ),
             (
-                KeySpec::InputEvents(vec![InputEvent::MouseButtonDown(
-                    mq::MouseButton::Left.into(),
-                )]),
-                ActionSpec::Fx(vec![Effect::UiEvent(UiEvent::ToolStroke)]),
+                InputEvent::MouseButtonDown(mq::MouseButton::Left.into()).into(),
+                UiEvent::ToolStroke.into(),
             ),
             (
-                KeySpec::InputEvents(vec![InputEvent::MouseButtonReleased(
-                    mq::MouseButton::Left.into(),
-                )]),
-                ActionSpec::Fx(vec![Effect::UiEvent(UiEvent::ToolEnd)]),
+                InputEvent::MouseButtonRelease(mq::MouseButton::Left.into()).into(),
+                UiEvent::ToolEnd.into(),
             ),
-            // PAN SIDEFX
+            // PAN CURSOR + CANVAS BLOCK
             (
-                KeySpec::InputEvents(vec![InputEvent::KeyPressed(mq::KeyCode::Space.into())]),
+                InputEvent::KeyPress(mq::KeyCode::Space.into()).into(),
                 ActionSpec::Fx(vec![
                     Effect::UiEvent(UiEvent::BlockCanvas),
                     Effect::UiEvent(UiEvent::SetCursor(CursorType::Pan)),
                 ]),
             ),
             (
-                KeySpec::InputEvents(vec![InputEvent::KeyRelease(mq::KeyCode::Space.into())]),
+                InputEvent::KeyRelease(mq::KeyCode::Space.into()).into(),
                 ActionSpec::Fx(vec![
                     Effect::UiEvent(UiEvent::UnblockCanvas),
                     Effect::UiEvent(UiEvent::SetPreviousCursor),
@@ -167,20 +192,20 @@ impl KeyBindings {
             ),
             // PAN
             (
-                KeySpec::InputEvents(vec![InputEvent::KeyDown(mq::KeyCode::Down.into())]),
-                ActionSpec::Fx(vec![Effect::UiEvent(UiEvent::MoveCamera(Direction::Down))]),
+                InputEvent::KeyDown(mq::KeyCode::Down.into()).into(),
+                UiEvent::MoveCamera(Direction::Down).into(),
             ),
             (
-                KeySpec::InputEvents(vec![InputEvent::KeyDown(mq::KeyCode::Up.into())]),
-                ActionSpec::Fx(vec![Effect::UiEvent(UiEvent::MoveCamera(Direction::Up))]),
+                InputEvent::KeyDown(mq::KeyCode::Up.into()).into(),
+                UiEvent::MoveCamera(Direction::Up).into(),
             ),
             (
-                KeySpec::InputEvents(vec![InputEvent::KeyDown(mq::KeyCode::Left.into())]),
-                ActionSpec::Fx(vec![Effect::UiEvent(UiEvent::MoveCamera(Direction::Left))]),
+                InputEvent::KeyDown(mq::KeyCode::Left.into()).into(),
+                UiEvent::MoveCamera(Direction::Left).into(),
             ),
             (
-                KeySpec::InputEvents(vec![InputEvent::KeyDown(mq::KeyCode::Right.into())]),
-                ActionSpec::Fx(vec![Effect::UiEvent(UiEvent::MoveCamera(Direction::Right))]),
+                InputEvent::KeyDown(mq::KeyCode::Right.into()).into(),
+                UiEvent::MoveCamera(Direction::Right).into(),
             ),
             (
                 KeySpec::FollowMouse(vec![
@@ -190,6 +215,36 @@ impl KeyBindings {
                 ActionSpec::MouseFn(Box::new(|p| {
                     vec![Effect::UiEvent(UiEvent::MoveCameraExact(Point::ZERO - p))]
                 })),
+            ),
+            // UNDO
+            (
+                vec![
+                    InputEvent::KeyModifier(KeyboardModifier::Control),
+                    InputEvent::KeyPress(mq::KeyCode::Z.into()),
+                ]
+                .into(),
+                Event::Undo.into(),
+            ),
+            // COPY + PASTE
+            (
+                vec![
+                    InputEvent::KeyModifier(KeyboardModifier::Control),
+                    InputEvent::KeyPress(mq::KeyCode::C.into()),
+                ]
+                .into(),
+                Event::Copy.into(),
+            ),
+            (
+                vec![
+                    InputEvent::KeyModifier(KeyboardModifier::Control),
+                    InputEvent::KeyPress(mq::KeyCode::V.into()),
+                ]
+                .into(),
+                UiEvent::Paste.into(),
+            ),
+            (
+                InputEvent::KeyPress(mq::KeyCode::Delete.into()).into(),
+                Event::DeleteSelection.into(),
             ),
         ];
 

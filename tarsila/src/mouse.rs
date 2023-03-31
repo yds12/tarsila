@@ -43,9 +43,13 @@ impl MouseManager {
         self.is_on_selection = is_on_selection;
         self.is_on_canvas = is_on_canvas;
         self.mouse_canvas = mouse_canvas;
-        self.selected_tool = selected_tool;
         self.visible_pixel_on_mouse = visible_pixel_on_mouse;
         self.is_canvas_blocked = is_canvas_blocked;
+
+        if self.selected_tool != selected_tool {
+            self.set_cursor(CursorType::Tool(selected_tool));
+            self.selected_tool = selected_tool;
+        }
     }
 
     pub fn cursor(&self) -> CursorType {

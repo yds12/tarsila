@@ -255,7 +255,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                         free_image.pivot = Some(p - free_image.rect.pos());
                     }
                 }
-                None => (),
+                None => skip_event = true,
             },
             Event::MoveEnd(p) => {
                 let last_event = self.events.last();

@@ -34,13 +34,13 @@ impl From<mq::MouseButton> for MouseButton {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum InputEvent {
-    KeyPressed(KeyboardKey),
+    KeyPress(KeyboardKey),
     KeyDown(KeyboardKey),
     KeyRelease(KeyboardKey),
     KeyModifier(KeyboardModifier),
-    MouseButtonPressed(MouseButton),
+    MouseButtonPress(MouseButton),
     MouseButtonDown(MouseButton),
-    MouseButtonReleased(MouseButton),
+    MouseButtonRelease(MouseButton),
     MouseScrollUp,
     MouseScrollDown,
     MouseRealMove(Point<i32>),

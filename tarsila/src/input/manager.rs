@@ -44,12 +44,12 @@ impl InputManager {
         // mouse
 
         if mq::is_mouse_button_pressed(mq::MouseButton::Left) {
-            events.push(InputEvent::MouseButtonPressed(MouseButton(
+            events.push(InputEvent::MouseButtonPress(MouseButton(
                 mq::MouseButton::Left,
             )));
         }
         if mq::is_mouse_button_pressed(mq::MouseButton::Right) {
-            events.push(InputEvent::MouseButtonPressed(MouseButton(
+            events.push(InputEvent::MouseButtonPress(MouseButton(
                 mq::MouseButton::Right,
             )));
         }
@@ -66,12 +66,12 @@ impl InputManager {
         }
 
         if mq::is_mouse_button_released(mq::MouseButton::Left) {
-            events.push(InputEvent::MouseButtonReleased(MouseButton(
+            events.push(InputEvent::MouseButtonRelease(MouseButton(
                 mq::MouseButton::Left,
             )));
         }
         if mq::is_mouse_button_released(mq::MouseButton::Right) {
-            events.push(InputEvent::MouseButtonReleased(MouseButton(
+            events.push(InputEvent::MouseButtonRelease(MouseButton(
                 mq::MouseButton::Right,
             )));
         }
@@ -99,7 +99,7 @@ impl InputManager {
 
         for key in &self.keys_to_track {
             if mq::is_key_pressed(key.0) {
-                events.push(InputEvent::KeyPressed(key.clone()));
+                events.push(InputEvent::KeyPress(key.clone()));
             }
             if mq::is_key_down(key.0) {
                 events.push(InputEvent::KeyDown(key.clone()));

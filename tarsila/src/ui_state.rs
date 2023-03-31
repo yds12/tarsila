@@ -344,10 +344,13 @@ impl UiState {
     }
 
     pub fn process_event(&mut self, event: UiEvent) {
-        dbg!(&event);
         if event.is_gui_interaction() {
             self.gui_interaction_rest.start(GUI_REST_MS);
         }
+        let (x, y) = macroquad::prelude::mouse_position();
+        let (x, y) = self.screen_to_canvas(x, y);
+        let p = (x, y).into();
+
         match event {
             UiEvent::BlockCanvas => self.manual_canvas_block = true,
             UiEvent::UnblockCanvas => self.manual_canvas_block = false,
@@ -362,9 +365,7 @@ impl UiState {
             UiEvent::MouseOverGui => self.mouse_over_gui = true,
             UiEvent::GuiInteraction => (),
             UiEvent::Paste => {
-                let (x, y) = macroquad::prelude::mouse_position();
-                let (x, y) = self.screen_to_canvas(x, y);
-                self.execute(Event::Paste((x, y).into()));
+                self.execute(Event::Paste(p));
             }
             UiEvent::Exit => self.must_exit = true,
             UiEvent::NewProject => *self = UiState::default(),
@@ -374,41 +375,46 @@ impl UiState {
                 self.mouse.set_cursor(c);
             }
             // TODO: same logic as in mouse.rs
-            UiEvent::ToolStart => {
-                let (x, y) = macroquad::prelude::mouse_position();
-                let p = self.screen_to_canvas(x, y).into();
-
-                match (self.selected_tool(), self.is_canvas_blocked()) {
-                    (Tool::Brush, false) => self.execute(Event::BrushStart),
-                    (Tool::Eraser, false) => self.execute(Event::EraseStart),
-                    (Tool::Line, false) => self.execute(Event::LineStart(p)),
-                    (Tool::Rectangle, false) => self.execute(Event::RectStart(p)),
-                    (Tool::Bucket, false) => self.execute(Event::Bucket(p)),
-                    _ => (),
+            UiEvent::ToolStart => match (self.selected_tool(), self.is_canvas_blocked()) {
+                (Tool::Brush, false) => self.execute(Event::BrushStart),
+                (Tool::Eraser, false) => self.execute(Event::EraseStart),
+                (Tool::Line, false) => self.execute(Event::LineStart(p)),
+                (Tool::Rectangle, false) => self.execute(Event::RectStart(p)),
+                (Tool::Bucket, false) => self.execute(Event::Bucket(p)),
+                (Tool::Selection, false) => self.execute(Event::StartSelection(p)),
+                (Tool::Move, false) => self.execute(Event::MoveStart(p)),
+                (Tool::Eyedropper, false) => {
+                    if self.canvas().is_in_bounds(p) {
+                        let color = self.visible_pixel(p);
+                        self.execute(Event::SetMainColor(color.into()));
+                        self.execute(Event::SetTool(Tool::Brush));
+                    }
                 }
-            }
-            UiEvent::ToolStroke => {
-                let (x, y) = macroquad::prelude::mouse_position();
-                let p = self.screen_to_canvas(x, y).into();
-
-                match (self.selected_tool(), self.is_canvas_blocked()) {
-                    (Tool::Brush, false) => self.execute(Event::BrushStroke(p)),
-                    (Tool::Eraser, false) => self.execute(Event::Erase(p)),
-                    _ => (),
+                _ => (),
+            },
+            UiEvent::ToolStroke => match (self.selected_tool(), self.is_canvas_blocked()) {
+                (Tool::Brush, false) => self.execute(Event::BrushStroke(p)),
+                (Tool::Eraser, false) => self.execute(Event::Erase(p)),
+                _ => (),
+            },
+            UiEvent::ToolEnd => match (self.selected_tool(), self.is_canvas_blocked()) {
+                (Tool::Brush, false) => self.execute(Event::BrushEnd),
+                (Tool::Eraser, false) => self.execute(Event::EraseEnd),
+                (Tool::Line, false) => self.execute(Event::LineEnd(p)),
+                (Tool::Rectangle, false) => self.execute(Event::RectEnd(p)),
+                (Tool::Selection, false) => {
+                    self.execute(Event::EndSelection(p));
+                    self.execute(Event::SetTool(Tool::Move));
                 }
-            }
-            UiEvent::ToolEnd => {
-                let (x, y) = macroquad::prelude::mouse_position();
-                let p = self.screen_to_canvas(x, y).into();
-
-                match (self.selected_tool(), self.is_canvas_blocked()) {
-                    (Tool::Brush, false) => self.execute(Event::BrushEnd),
-                    (Tool::Eraser, false) => self.execute(Event::EraseEnd),
-                    (Tool::Line, false) => self.execute(Event::LineEnd(p)),
-                    (Tool::Rectangle, false) => self.execute(Event::RectEnd(p)),
-                    _ => (),
+                (Tool::Move, false) => {
+                    if self.is_mouse_on_selection() {
+                        self.execute(Event::MoveEnd(p));
+                    } else {
+                        self.execute(Event::ClearSelection);
+                    }
                 }
-            }
+                _ => (),
+            },
         }
     }
 
