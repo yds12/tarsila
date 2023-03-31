@@ -104,11 +104,12 @@ impl Color {
         let fg = ColorF32::from(*self);
         let bg = ColorF32::from(other);
 
+        let res_alpha = fg.a + bg.a * (1. - fg.a);
         ColorF32::new(
-            (fg.r * fg.a) + (bg.r * bg.a * (1. - fg.a)),
-            (fg.g * fg.a) + (bg.g * bg.a * (1. - fg.a)),
-            (fg.b * fg.a) + (bg.b * bg.a * (1. - fg.a)),
-            fg.a + bg.a * (1. - fg.a),
+            ((fg.r * fg.a) + (bg.r * bg.a * (1. - fg.a))) / res_alpha,
+            ((fg.g * fg.a) + (bg.g * bg.a * (1. - fg.a))) / res_alpha,
+            ((fg.b * fg.a) + (bg.b * bg.a * (1. - fg.a))) / res_alpha,
+            res_alpha,
         )
         .into()
     }
@@ -138,12 +139,38 @@ mod tests {
     use super::*;
     use test_case::test_case;
 
+    fn assert_colorf32_eq(a: ColorF32, b: ColorF32) {
+        dbg!(a, b);
+        assert!((a.r - b.r).abs() < 0.01);
+        assert!((a.g - b.g).abs() < 0.01);
+        assert!((a.b - b.b).abs() < 0.01);
+        assert!((a.a - b.a).abs() < 0.01);
+    }
+
+    #[test_case((255, 255, 255, 255), (1., 1., 1., 1.))]
+    #[test_case((0, 0, 0, 0), (0., 0., 0., 0.))]
+    #[test_case((255, 0, 0, 0), (1., 0., 0., 0.))]
+    #[test_case((255, 127, 0, 0), (1., 0.5, 0., 0.))]
+    #[test_case((76, 0, 189, 199), (0.3, 0., 0.745, 0.784))]
+    fn convert<C: Into<Color>, CF: Into<ColorF32>>(a: C, b: CF) {
+        let a: Color = a.into();
+        let b: ColorF32 = b.into();
+        assert_eq!(a, b.into());
+        assert_colorf32_eq(b, a.into());
+    }
+
     #[test_case((0, 0, 0, 255), (255, 255, 255, 255), (0, 0, 0, 255))]
     #[test_case((10, 200, 99, 255), (0, 255, 0, 99), (10, 200, 99, 255))]
     #[test_case((0, 0, 0, 127), (255, 255, 255, 255), (127, 127, 127, 255))]
-    #[test_case((0, 0, 0, 127), (255, 255, 255, 127), (63, 63, 63, 190))]
+    #[test_case((0, 0, 0, 127), (255, 255, 255, 127), (85, 85, 85, 190))]
+    #[test_case((255, 0, 0, 11), (0, 255, 0, 11), (130, 124, 0, 21))]
+    #[test_case((0, 0, 0, 0), (255, 255, 255, 11), (255, 255, 255, 11))]
+    #[test_case((0, 0, 0, 0), (67, 127, 28, 110), (67, 127, 28, 110))]
+    #[test_case((10, 100, 0, 0), (67, 127, 28, 110), (67, 127, 28, 110))]
     fn blend_color<C: Into<Color>>(a: C, b: C, res: C) {
-        assert_eq!(a.into().blend_over(b.into()), res.into());
+        let a = a.into();
+        let b = b.into();
+        assert_eq!(a.blend_over(b), res.into(), "colors: {a:?} over {b:?}");
     }
 
     #[test_case((0, 0, 0, 255), 255, (0, 0, 0, 255))]
