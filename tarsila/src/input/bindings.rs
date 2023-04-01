@@ -25,16 +25,30 @@ impl From<Vec<InputEvent>> for KeySpec {
 }
 
 impl KeySpec {
+    // TODO: this works but it's incredibly unoptimized.
     pub fn matches(&self, events: &[InputEvent]) -> bool {
         match self {
-            Self::InputEvents(es) => es.iter().all(|e| events.contains(e)),
+            Self::InputEvents(es) => Self::is_subset(es, events) && Self::matches_mod(events, es),
             Self::FollowMouse(es) => {
-                es.iter().all(|e| events.contains(e))
+                Self::is_subset(es, events)
+                    && Self::matches_mod(events, es)
                     && events
                         .iter()
                         .any(|e| matches!(e, InputEvent::MouseRealMove(_)))
             }
         }
+    }
+
+    // Checks whether the two sets of events have the same keyboard modifier
+    fn matches_mod(a: &[InputEvent], b: &[InputEvent]) -> bool {
+        let mut a = a.iter().filter(|e| matches!(e, InputEvent::KeyModifier(_)));
+        let mut b = b.iter().filter(|e| matches!(e, InputEvent::KeyModifier(_)));
+
+        a.all(|e| b.any(|e2| e2 == e)) && b.all(|e| a.any(|e2| e2 == e))
+    }
+
+    fn is_subset(a: &[InputEvent], b: &[InputEvent]) -> bool {
+        a.iter().all(|e| b.contains(e))
     }
 }
 
@@ -144,7 +158,7 @@ impl KeyBindings {
                     InputEvent::KeyModifier(KeyboardModifier::Control),
                 ]
                 .into(),
-                UiEvent::ZoomAdd(1.).into(),
+                UiEvent::ZoomAdd(0.25).into(),
             ),
             (
                 vec![
@@ -152,7 +166,7 @@ impl KeyBindings {
                     InputEvent::KeyModifier(KeyboardModifier::Control),
                 ]
                 .into(),
-                UiEvent::ZoomAdd(-1.).into(),
+                UiEvent::ZoomAdd(-0.25).into(),
             ),
             (
                 InputEvent::KeyPress(mq::KeyCode::Minus.into()).into(),

@@ -145,7 +145,9 @@ impl<IMG: Bitmap> Layers<IMG> {
     /// opacity settings
     pub fn visible_pixel(&self, p: Point<i32>) -> Color {
         let mut result = if self.inner[0].visible() {
-            self.canvas_at(0).pixel(p).with_multiplied_alpha(self.get(0).opacity())
+            self.canvas_at(0)
+                .pixel(p)
+                .with_multiplied_alpha(self.get(0).opacity())
         } else {
             TRANSPARENT
         };
@@ -252,8 +254,12 @@ mod tests {
     #[test_case((255, 0, 0, 11), (0, 255, 0, 11), (130, 124, 0, 21))]
     fn visible_pixel<C: Into<Color>>(a: C, b: C, res: C) {
         let mut layers = get_three_layer_canvas();
-        layers.canvas_at_mut(1).set_pixel(Point::new(1, 1), a.into());
-        layers.canvas_at_mut(0).set_pixel(Point::new(1, 1), b.into());
+        layers
+            .canvas_at_mut(1)
+            .set_pixel(Point::new(1, 1), a.into());
+        layers
+            .canvas_at_mut(0)
+            .set_pixel(Point::new(1, 1), b.into());
         let pixel = layers.visible_pixel(Point::new(1, 1));
 
         assert_eq!(pixel, res.into());
