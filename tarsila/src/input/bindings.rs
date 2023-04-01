@@ -320,12 +320,11 @@ mod tests {
 
     #[test]
     fn simple_event_matches() {
-        let spec: KeySpec =
-            vec![InputEvent::MouseButtonPress(mq::MouseButton::Left.into())].into();
+        let spec: KeySpec = vec![InputEvent::MouseButtonPress(mq::MouseButton::Left.into())].into();
 
-        assert!(spec.matches(&vec![
-            InputEvent::MouseButtonPress(mq::MouseButton::Left.into())
-        ]));
+        assert!(spec.matches(&vec![InputEvent::MouseButtonPress(
+            mq::MouseButton::Left.into()
+        )]));
 
         assert!(spec.matches(&vec![
             InputEvent::MouseButtonPress(mq::MouseButton::Left.into()),
@@ -345,11 +344,11 @@ mod tests {
 
     #[test]
     fn event_with_modifier_matches() {
-        let spec: KeySpec =
-            vec![
-                InputEvent::MouseButtonPress(mq::MouseButton::Left.into()),
-                InputEvent::KeyModifier(KeyboardModifier::Shift),
-            ].into();
+        let spec: KeySpec = vec![
+            InputEvent::MouseButtonPress(mq::MouseButton::Left.into()),
+            InputEvent::KeyModifier(KeyboardModifier::Shift),
+        ]
+        .into();
 
         assert!(spec.matches(&vec![
             InputEvent::KeyModifier(KeyboardModifier::Shift),
@@ -362,9 +361,9 @@ mod tests {
             InputEvent::MouseButtonDown(mq::MouseButton::Right.into())
         ]));
 
-        assert!(!spec.matches(&vec![
-            InputEvent::MouseButtonPress(mq::MouseButton::Left.into())
-        ]));
+        assert!(!spec.matches(&vec![InputEvent::MouseButtonPress(
+            mq::MouseButton::Left.into()
+        )]));
 
         assert!(!spec.matches(&vec![
             InputEvent::MouseButtonDown(mq::MouseButton::Left.into()),

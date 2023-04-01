@@ -22,8 +22,11 @@ In this manual we will see how to use Tarsila. These are its main features:
 ## The Canvas
 
 You can move the camera by pressing and holding the arrow keys in the keyboard.
+It's also possible to move around by holding SPACE and dragging the mouse with
+the left button.
 
-You can zoom in with `=` and out with `-`.
+You can zoom in with `=` and out with `-`, or by holding CTRL and using the
+mouse wheel/scroll.
 
 The canvas can be resized by clicking on the menu on `File > Resize Canvas`. It
 can also be erased completely via `File > Erase Canvas`.
