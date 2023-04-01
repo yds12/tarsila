@@ -10,7 +10,7 @@ use macroquad::prelude as mq;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct MouseButton(mq::MouseButton);
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct KeyboardKey(mq::KeyCode);
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum KeyboardModifier {

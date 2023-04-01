@@ -3,6 +3,7 @@ use crate::mouse::CursorType;
 use crate::{Effect, UiEvent};
 use lapix::{Direction, Event, Point, Tool};
 use macroquad::prelude as mq;
+use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -25,6 +26,13 @@ impl From<Vec<InputEvent>> for KeySpec {
 }
 
 impl KeySpec {
+    pub fn iter(&self) -> &[InputEvent] {
+        match self {
+            Self::InputEvents(es) => es,
+            Self::FollowMouse(es) => es,
+        }
+    }
+
     // TODO: this works but it's incredibly unoptimized.
     pub fn matches(&self, events: &[InputEvent]) -> bool {
         match self {
@@ -101,7 +109,10 @@ impl ActionSpec {
 }
 
 #[derive(Debug)]
-pub struct KeyBindings(Vec<(KeySpec, ActionSpec)>);
+pub struct KeyBindings {
+    bindings: Vec<(KeySpec, ActionSpec)>,
+    used_keys: Vec<KeyboardKey>,
+}
 
 impl KeyBindings {
     pub fn new() -> Self {
@@ -262,60 +273,47 @@ impl KeyBindings {
             ),
         ];
 
-        Self(bindings)
+        Self {
+            bindings,
+            used_keys: Vec::new(),
+        }
     }
 
     pub fn iter(&self) -> std::slice::Iter<(KeySpec, ActionSpec)> {
-        self.0.iter()
+        self.bindings.iter()
     }
 
     pub fn used_keys(&self) -> Vec<KeyboardKey> {
-        vec![
-            mq::KeyCode::A.into(),
-            mq::KeyCode::B.into(),
-            mq::KeyCode::C.into(),
-            mq::KeyCode::D.into(),
-            mq::KeyCode::E.into(),
-            mq::KeyCode::F.into(),
-            mq::KeyCode::G.into(),
-            mq::KeyCode::H.into(),
-            mq::KeyCode::I.into(),
-            mq::KeyCode::J.into(),
-            mq::KeyCode::K.into(),
-            mq::KeyCode::L.into(),
-            mq::KeyCode::M.into(),
-            mq::KeyCode::N.into(),
-            mq::KeyCode::O.into(),
-            mq::KeyCode::P.into(),
-            mq::KeyCode::Q.into(),
-            mq::KeyCode::R.into(),
-            mq::KeyCode::S.into(),
-            mq::KeyCode::T.into(),
-            mq::KeyCode::U.into(),
-            mq::KeyCode::V.into(),
-            mq::KeyCode::W.into(),
-            mq::KeyCode::X.into(),
-            mq::KeyCode::Y.into(),
-            mq::KeyCode::Z.into(),
-            mq::KeyCode::Key0.into(),
-            mq::KeyCode::Key1.into(),
-            mq::KeyCode::Key2.into(),
-            mq::KeyCode::Key3.into(),
-            mq::KeyCode::Key4.into(),
-            mq::KeyCode::Key5.into(),
-            mq::KeyCode::Key6.into(),
-            mq::KeyCode::Key7.into(),
-            mq::KeyCode::Key8.into(),
-            mq::KeyCode::Key9.into(),
-            mq::KeyCode::Escape.into(),
-            mq::KeyCode::Enter.into(),
-            mq::KeyCode::Space.into(),
-            mq::KeyCode::Minus.into(),
-            mq::KeyCode::Equal.into(),
-            mq::KeyCode::Up.into(),
-            mq::KeyCode::Down.into(),
-            mq::KeyCode::Left.into(),
-            mq::KeyCode::Right.into(),
-        ]
+        let mut used_keys = HashSet::new();
+
+        for (keys, _) in &self.bindings {
+            for key in keys.iter() {
+                match &key {
+                    InputEvent::KeyPress(k)
+                    | InputEvent::KeyDown(k)
+                    | InputEvent::KeyRelease(k) => {
+                        used_keys.insert(*k);
+                    }
+                    InputEvent::KeyModifier(m) if *m == KeyboardModifier::Control => {
+                        used_keys.insert(mq::KeyCode::LeftControl.into());
+                        used_keys.insert(mq::KeyCode::RightControl.into());
+                    }
+                    InputEvent::KeyModifier(m) if *m == KeyboardModifier::Shift => {
+                        used_keys.insert(mq::KeyCode::LeftShift.into());
+                        used_keys.insert(mq::KeyCode::RightShift.into());
+                    }
+                    InputEvent::KeyModifier(m) if *m == KeyboardModifier::Alt => {
+                        used_keys.insert(mq::KeyCode::LeftAlt.into());
+                        used_keys.insert(mq::KeyCode::RightAlt.into());
+                    }
+                    InputEvent::KeyModifier(m) if *m == KeyboardModifier::Super => {
+                        used_keys.insert(mq::KeyCode::LeftSuper.into());
+                        used_keys.insert(mq::KeyCode::RightSuper.into());
+                    }
+                    _ => (),
+                }
+            }
+        }
+        used_keys.into_iter().collect()
     }
 }
