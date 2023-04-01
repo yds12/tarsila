@@ -313,3 +313,62 @@ impl KeyBindings {
         used_keys.into_iter().collect()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn simple_event_matches() {
+        let spec: KeySpec =
+            vec![InputEvent::MouseButtonPress(mq::MouseButton::Left.into())].into();
+
+        assert!(spec.matches(&vec![
+            InputEvent::MouseButtonPress(mq::MouseButton::Left.into())
+        ]));
+
+        assert!(spec.matches(&vec![
+            InputEvent::MouseButtonPress(mq::MouseButton::Left.into()),
+            InputEvent::MouseButtonDown(mq::MouseButton::Right.into())
+        ]));
+
+        assert!(!spec.matches(&vec![
+            InputEvent::KeyModifier(KeyboardModifier::Shift),
+            InputEvent::MouseButtonPress(mq::MouseButton::Left.into()),
+        ]));
+
+        assert!(!spec.matches(&vec![
+            InputEvent::MouseButtonDown(mq::MouseButton::Left.into()),
+            InputEvent::MouseButtonDown(mq::MouseButton::Right.into())
+        ]));
+    }
+
+    #[test]
+    fn event_with_modifier_matches() {
+        let spec: KeySpec =
+            vec![
+                InputEvent::MouseButtonPress(mq::MouseButton::Left.into()),
+                InputEvent::KeyModifier(KeyboardModifier::Shift),
+            ].into();
+
+        assert!(spec.matches(&vec![
+            InputEvent::KeyModifier(KeyboardModifier::Shift),
+            InputEvent::MouseButtonPress(mq::MouseButton::Left.into()),
+            InputEvent::KeyPress(mq::KeyCode::L.into())
+        ]));
+
+        assert!(!spec.matches(&vec![
+            InputEvent::MouseButtonPress(mq::MouseButton::Left.into()),
+            InputEvent::MouseButtonDown(mq::MouseButton::Right.into())
+        ]));
+
+        assert!(!spec.matches(&vec![
+            InputEvent::MouseButtonPress(mq::MouseButton::Left.into())
+        ]));
+
+        assert!(!spec.matches(&vec![
+            InputEvent::MouseButtonDown(mq::MouseButton::Left.into()),
+            InputEvent::MouseButtonDown(mq::MouseButton::Right.into())
+        ]));
+    }
+}

@@ -51,6 +51,7 @@ impl From<UiEvent> for Effect {
 }
 
 // TODO remove this
+// TODO maybe this deserves its own module
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum UiEvent {
@@ -354,7 +355,8 @@ impl UiState {
                 self.prev_cursor = self.mouse.cursor();
                 self.mouse.set_cursor(c);
             }
-            // TODO: same logic as in mouse.rs
+            // TODO: this used to be in mouse.rs, now it's cluttering this
+            // module, we should move it somewhere else
             UiEvent::ToolStart => match (self.selected_tool(), self.is_canvas_blocked()) {
                 (Tool::Brush, false) => self.execute(Event::BrushStart),
                 (Tool::Eraser, false) => self.execute(Event::EraseStart),
