@@ -111,7 +111,6 @@ impl ActionSpec {
 #[derive(Debug)]
 pub struct KeyBindings {
     bindings: Vec<(KeySpec, ActionSpec)>,
-    used_keys: Vec<KeyboardKey>,
 }
 
 impl KeyBindings {
@@ -273,10 +272,7 @@ impl KeyBindings {
             ),
         ];
 
-        Self {
-            bindings,
-            used_keys: Vec::new(),
-        }
+        Self { bindings }
     }
 
     pub fn iter(&self) -> std::slice::Iter<(KeySpec, ActionSpec)> {

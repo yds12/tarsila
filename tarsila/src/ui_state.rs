@@ -3,7 +3,6 @@ use crate::graphics::DrawContext;
 use crate::gui::{Gui, GuiSyncParams};
 use crate::input::bindings::KeyBindings;
 use crate::input::manager::InputManager;
-use crate::keyboard::KeyboardManager;
 use crate::mouse::{CursorType, MouseManager};
 use crate::wrapped_image::WrappedImage;
 use crate::{graphics, Timer};
@@ -127,7 +126,6 @@ pub struct UiState {
     zoom: f32,
     layer_textures: Vec<Texture2D>,
     input: InputManager,
-    keyboard: KeyboardManager,
     mouse: MouseManager,
     mouse_over_gui: bool,
     key_bindings: KeyBindings,
@@ -160,7 +158,6 @@ impl Default for UiState {
             zoom: DEFAULT_ZOOM_LEVEL,
             layer_textures: vec![drawing],
             input,
-            keyboard: KeyboardManager::new(),
             mouse: MouseManager::new(),
             mouse_over_gui: false,
             key_bindings,
@@ -211,11 +208,6 @@ impl UiState {
         self.process_fx(fx);
 
         self.sync_mouse();
-        //let fx = self.mouse.update();
-        //self.process_fx(fx);
-
-        //let fx = self.keyboard.update();
-        //self.process_fx(fx);
     }
 
     fn process_fx(&mut self, fx: Vec<Effect>) {
@@ -294,20 +286,8 @@ impl UiState {
         let (x, y) = self.screen_to_canvas(x, y);
         let p = (x, y).into();
         let in_canvas = self.canvas().is_in_bounds(p);
-        let visible_pixel = if in_canvas {
-            Some(self.visible_pixel(p))
-        } else {
-            None
-        };
 
-        self.mouse.sync(
-            (x, y).into(),
-            in_canvas,
-            self.is_mouse_on_selection(),
-            self.selected_tool(),
-            visible_pixel,
-            self.is_canvas_blocked(),
-        );
+        self.mouse.sync(in_canvas, self.selected_tool());
     }
 
     pub fn execute(&mut self, event: Event) {

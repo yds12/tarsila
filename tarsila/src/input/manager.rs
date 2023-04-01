@@ -1,6 +1,6 @@
 use super::{InputEvent, InputMapper, KeyBindings, KeyboardKey, KeyboardModifier, MouseButton};
 use crate::Effect;
-use lapix::{Direction, Position};
+use lapix::Position;
 use macroquad::prelude as mq;
 
 #[derive(Debug)]
@@ -34,8 +34,8 @@ impl InputManager {
 
     pub fn update(&self, key_bindings: &KeyBindings) -> Vec<Effect> {
         let input_events = self.get_input_events();
-        let fx = self.mapper.map(key_bindings, input_events);
-        fx
+
+        self.mapper.map(key_bindings, input_events)
     }
 
     fn get_input_events(&self) -> Vec<InputEvent> {
@@ -99,13 +99,13 @@ impl InputManager {
 
         for key in &self.keys_to_track {
             if mq::is_key_pressed(key.0) {
-                events.push(InputEvent::KeyPress(key.clone()));
+                events.push(InputEvent::KeyPress(*key));
             }
             if mq::is_key_down(key.0) {
-                events.push(InputEvent::KeyDown(key.clone()));
+                events.push(InputEvent::KeyDown(*key));
             }
             if mq::is_key_released(key.0) {
-                events.push(InputEvent::KeyRelease(key.clone()));
+                events.push(InputEvent::KeyRelease(*key));
             }
         }
 
