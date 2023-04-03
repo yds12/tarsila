@@ -1,5 +1,5 @@
-use crate::{project, Effect, UiEvent};
-use lapix::{Event, LoadProject, SaveProject, Size, Tool, Transform};
+use crate::{Effect, UiEvent};
+use lapix::{Event, Size, Tool, Transform};
 use std::path::PathBuf;
 
 pub struct MenuBar {
@@ -65,8 +65,7 @@ impl MenuBar {
 
                         if let Some(path) = dialog.save_file() {
                             self.last_file = Some(path.clone());
-                            events
-                                .push(Event::SaveProject(path, SaveProject(project::save)).into());
+                            events.push(Event::SaveProject(path).into());
                         }
                     }
                     if ui.button("Load Project").clicked() {
@@ -81,8 +80,7 @@ impl MenuBar {
 
                         if let Some(path) = dialog.pick_file() {
                             self.last_file = Some(path.clone());
-                            events
-                                .push(Event::LoadProject(path, LoadProject(project::load)).into());
+                            events.push(Event::LoadProject(path).into());
                         }
                     }
                     if ui.button("Export Image").clicked() {

@@ -1,4 +1,5 @@
 use crate::color::{BLACK, TRANSPARENT};
+use crate::util::{LoadProject, SaveProject};
 use crate::{
     util, Action, AtomicAction, Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Layers,
     Palette, Point, Position, Rect, Size, Tool,
@@ -37,11 +38,19 @@ pub struct State<IMG> {
     reversals: Vec<Action<IMG>>,
     #[serde(skip, default = "Option::default")]
     cur_reversal: Option<Action<IMG>>,
+    #[serde(skip, default = "Option::default")]
+    load_project_fn: Option<LoadProject>,
+    #[serde(skip, default = "Option::default")]
+    save_project_fn: Option<SaveProject>,
 }
 
 impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
     /// Create a new default state for the editor, with a starting canvas size
-    pub fn new(size: Size<i32>) -> Self {
+    pub fn new(
+        size: Size<i32>,
+        load_project_fn: Option<LoadProject>,
+        save_project_fn: Option<SaveProject>,
+    ) -> Self {
         Self {
             layers: Layers::new(size),
             events: Vec::new(),
@@ -54,6 +63,8 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
             clipboard: None,
             reversals: Vec::new(),
             cur_reversal: None,
+            load_project_fn,
+            save_project_fn,
         }
     }
 
@@ -193,13 +204,25 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
             Event::SetMainColor(color) => self.main_color = color,
             Event::Save(path) => self.save_image(path.to_string_lossy().as_ref()),
             Event::OpenFile(path) => self.import_image(path.to_string_lossy().as_ref()),
-            Event::SaveProject(path, f) => {
-                let bytes = bincode::serialize(&self).unwrap();
-                (f.0)(path, bytes);
+            Event::SaveProject(path) => {
+                if let Some(f) = &self.save_project_fn {
+                    let bytes = bincode::serialize(&self).unwrap();
+                    (f.0)(path, bytes);
+                } else {
+                    eprintln!("Bug: Missing save project function");
+                }
             }
-            Event::LoadProject(path, f) => {
-                let bytes = (f.0)(path);
-                *self = bincode::deserialize(&bytes).unwrap();
+            Event::LoadProject(path) => {
+                if let Some(f) = &self.load_project_fn {
+                    let bytes = (f.0)(path);
+                    let (save_fn, load_fn) =
+                        (self.save_project_fn.take(), self.load_project_fn.take());
+                    *self = bincode::deserialize(&bytes).unwrap();
+                    self.save_project_fn = save_fn;
+                    self.load_project_fn = load_fn;
+                } else {
+                    eprintln!("Bug: Missing load project function");
+                }
             }
             Event::LoadPalette(path) => {
                 self.palette = Palette::from_file(path.to_string_lossy().as_ref())

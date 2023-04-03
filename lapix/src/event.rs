@@ -1,55 +1,14 @@
 pub use crate::{Bitmap, CanvasEffect, Color, Point, Position, Size, Tool, Transform};
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::path::PathBuf;
-
-/// Holds a function that takes a path as input and outputs the bytes of the
-/// project file found at that path.
-pub struct LoadProject(pub fn(PathBuf) -> Vec<u8>);
-impl Debug for LoadProject {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        f.write_str("LoadProject(fn(PathBuf) -> Vec<u8>>)")
-    }
-}
-impl PartialEq for LoadProject {
-    fn eq(&self, _: &Self) -> bool {
-        true
-    }
-}
-impl Clone for LoadProject {
-    fn clone(&self) -> Self {
-        Self(self.0)
-    }
-}
-impl From<fn(PathBuf) -> Vec<u8>> for LoadProject {
-    fn from(val: fn(PathBuf) -> Vec<u8>) -> Self {
-        Self(val)
-    }
-}
-/// Holds a function that takes a path and a set of bytes as input as saves
-/// those bytes as a project file at that path
-pub struct SaveProject(pub fn(PathBuf, Vec<u8>));
-impl Debug for SaveProject {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        f.write_str("SaveProject(fn(PathBuf, Vec<u8>))")
-    }
-}
-impl PartialEq for SaveProject {
-    fn eq(&self, _: &Self) -> bool {
-        true
-    }
-}
-impl Clone for SaveProject {
-    fn clone(&self) -> Self {
-        Self(self.0)
-    }
-}
 
 /// Represents an event. This is one of the key types of this crate. The main
 /// way the [`State`] of the drawing project can be modified is by sending
 /// events to it.
 ///
 /// [`State`]: crate::State
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Event {
     /// Erase the image of the active canvas
     ClearCanvas,
@@ -85,9 +44,9 @@ pub enum Event {
     // TODO: these should be UI events, however we need to see what to do
     // when it comes to UNDO
     /// Save the drawing project to the defined file path
-    SaveProject(PathBuf, SaveProject),
+    SaveProject(PathBuf),
     /// Load a drawing project from a path
-    LoadProject(PathBuf, LoadProject),
+    LoadProject(PathBuf),
     /// Load a palette from a file path. The file must be an image. The image
     /// will be read and colors will be added to the palette without repetition,
     /// until a certain limit of colors is reached.
@@ -193,7 +152,7 @@ impl Event {
             | Self::DeleteLayer(_)
             | Self::MoveLayerDown(_)
             | Self::MoveLayerUp(_)
-            | Self::LoadProject(_, _) => CanvasEffect::Layer,
+            | Self::LoadProject(_) => CanvasEffect::Layer,
             x if x.triggers_anchoring() => CanvasEffect::Update,
             _ => CanvasEffect::None,
         }

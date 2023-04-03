@@ -4,10 +4,11 @@ use crate::gui::{Gui, GuiSyncParams};
 use crate::input::bindings::KeyBindings;
 use crate::input::manager::InputManager;
 use crate::mouse::{CursorType, MouseManager};
+use crate::project;
 use crate::wrapped_image::WrappedImage;
 use crate::{graphics, Timer};
 use lapix::primitives::*;
-use lapix::{Canvas, CanvasEffect, Event, Layer, Selection, State, Tool};
+use lapix::{Canvas, CanvasEffect, Event, Layer, LoadProject, SaveProject, Selection, State, Tool};
 use macroquad::prelude::Color as MqColor;
 use macroquad::prelude::{FilterMode, Texture2D};
 use std::default::Default;
@@ -142,7 +143,11 @@ pub struct UiState {
 
 impl Default for UiState {
     fn default() -> Self {
-        let state = State::<WrappedImage>::new((CANVAS_W as i32, CANVAS_H as i32).into());
+        let state = State::<WrappedImage>::new(
+            (CANVAS_W as i32, CANVAS_H as i32).into(),
+            Some(LoadProject(project::load)),
+            Some(SaveProject(project::save)),
+        );
         let drawing = Texture2D::from_image(&state.canvas().inner().0);
         drawing.set_filter(FilterMode::Nearest);
 

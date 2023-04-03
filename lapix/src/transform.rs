@@ -1,11 +1,9 @@
 //! Functions that can be applied to an image, modifying it
 
-// TODO remove this when this file starts being used
-#![allow(dead_code)]
-
 use crate::{color, Bitmap};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Transform {
     Identity,
     Silhouete,

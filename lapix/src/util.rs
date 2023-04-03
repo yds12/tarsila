@@ -1,5 +1,53 @@
 use crate::{color, Bitmap, Color};
 use image::{codecs, ImageEncoder, ImageFormat, ImageOutputFormat};
+use std::fmt::Debug;
+use std::path::PathBuf;
+
+/// Holds a function that takes a path as input and outputs the bytes of the
+/// project file found at that path.
+pub struct LoadProject(pub fn(PathBuf) -> Vec<u8>);
+impl Debug for LoadProject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.write_str("LoadProject(fn(PathBuf) -> Vec<u8>>)")
+    }
+}
+impl PartialEq for LoadProject {
+    fn eq(&self, _: &Self) -> bool {
+        true
+    }
+}
+
+impl Clone for LoadProject {
+    fn clone(&self) -> Self {
+        Self(self.0)
+    }
+}
+
+impl From<fn(PathBuf) -> Vec<u8>> for LoadProject {
+    fn from(val: fn(PathBuf) -> Vec<u8>) -> Self {
+        Self(val)
+    }
+}
+/// Holds a function that takes a path and a set of bytes as input as saves
+/// those bytes as a project file at that path
+pub struct SaveProject(pub fn(PathBuf, Vec<u8>));
+impl Debug for SaveProject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.write_str("SaveProject(fn(PathBuf, Vec<u8>))")
+    }
+}
+
+impl PartialEq for SaveProject {
+    fn eq(&self, _: &Self) -> bool {
+        true
+    }
+}
+
+impl Clone for SaveProject {
+    fn clone(&self) -> Self {
+        Self(self.0)
+    }
+}
 
 /// Load an image from a file in the specified path
 pub fn load_img_from_file(path: &str) -> image::RgbaImage {
