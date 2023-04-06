@@ -3,7 +3,6 @@ use lapix::{Point, Tool};
 use macroquad::prelude::*;
 use std::collections::HashMap;
 
-#[allow(clippy::type_complexity)]
 pub struct MouseManager {
     cursors: CursorSet,
     cursor: CursorType,
