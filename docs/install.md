@@ -15,6 +15,16 @@ apt install pkg-config librust-glib-sys-dev librust-atk-sys-dev librust-gdk-sys-
 
 Then follow the general compilation instructions below.
 
+## Arch Linux/AUR
+
+[Tarsila is on AUR](https://aur.archlinux.org/packages/tarsila) and can
+be installed using [your helper of choice](https://wiki.archlinux.org/title/AUR_helpers).
+
+E.g.: `paru -S tarsila`
+
+This will compile and install the latest Tarsila release.
+
+
 ## Other Systems
 
 For other systems for now you need to compile Tarsila by yourself.
