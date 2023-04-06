@@ -8,6 +8,7 @@ impl Resources {
         match cursor {
             CursorType::Tool(tool) => Self::tool_icon(tool),
             CursorType::Pan => include_bytes!("../res/cursor/pan.png"),
+            CursorType::Cross => include_bytes!("../res/cursor/cross.png"),
         }
     }
 

@@ -53,6 +53,9 @@ keyboard shortcuts to select them. These are:
   selection can also be flipped horizontally with the `H` keyboard key, and
   vertically with `V`;
 
+For more precision while using drawing tools, you can toggle the crosshair
+cursor with the `C` button.
+
 ## Colors and Palette
 
 Most drawing tools use the active color to determine which color to draw. The

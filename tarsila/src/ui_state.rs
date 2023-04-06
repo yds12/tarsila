@@ -70,6 +70,7 @@ pub enum UiEvent {
     GuiInteraction,
     SetZoom100,
     SetCursor(CursorType),
+    ToggleCursor(CursorType),
     SetPreviousCursor,
     ToolStart,
     ToolStroke,
@@ -359,6 +360,15 @@ impl UiState {
             UiEvent::SetCursor(c) => {
                 self.prev_cursor = self.mouse.cursor();
                 self.mouse.set_cursor(c);
+            }
+            UiEvent::ToggleCursor(c) => {
+                if self.mouse.cursor() == c {
+                    self.mouse.set_cursor(self.prev_cursor);
+                    self.prev_cursor = c;
+                } else {
+                    self.prev_cursor = self.mouse.cursor();
+                    self.mouse.set_cursor(c);
+                }
             }
             // TODO: this used to be in mouse.rs, now it's cluttering this
             // module, we should move it somewhere else

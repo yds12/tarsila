@@ -199,6 +199,13 @@ impl KeyBindings {
                 InputEvent::MouseButtonRelease(mq::MouseButton::Left.into()).into(),
                 UiEvent::ToolEnd.into(),
             ),
+            // CROSSHAIR CURSOR
+            (
+                InputEvent::KeyPress(mq::KeyCode::C.into()).into(),
+                ActionSpec::Fx(vec![Effect::UiEvent(UiEvent::ToggleCursor(
+                    CursorType::Cross,
+                ))]),
+            ),
             // PAN CURSOR + CANVAS BLOCK
             (
                 InputEvent::KeyPress(mq::KeyCode::Space.into()).into(),

@@ -51,6 +51,7 @@ impl MouseManager {
 pub enum CursorType {
     Tool(Tool),
     Pan,
+    Cross,
 }
 
 pub struct CursorSet(HashMap<CursorType, Cursor>);
@@ -81,6 +82,10 @@ impl CursorSet {
         hm.insert(
             CursorType::Pan,
             Cursor::new(CursorType::Pan, (0., 0.).into()),
+        );
+        hm.insert(
+            CursorType::Cross,
+            Cursor::new(CursorType::Cross, (-7., -7.).into()),
         );
 
         Self(hm)
