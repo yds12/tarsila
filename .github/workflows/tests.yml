@@ -20,7 +20,26 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --color always -p lapix
+          args: --features test-utils --lib --color always -p lapix
+
+  lapix-integration-test:
+    name: lapix Integration Tests
+    runs-on: ubuntu-20.04
+    steps:
+      - name: update apt
+        run: sudo apt update
+      - name: install dependencies
+        run: sudo apt install -y pkg-config librust-glib-sys-dev librust-atk-sys-dev librust-gdk-sys-dev libasound2-dev
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features test-utils --color always -p lapix --test '*'
 
   tarsila-unit-test:
     name: tarsila Unit Tests

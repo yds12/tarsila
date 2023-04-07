@@ -70,18 +70,19 @@ pub trait Bitmap: Clone {
     }
 }
 
-#[cfg(test)]
+#[cfg(feature = "test-utils")]
 pub use test::TestImage;
 
-#[cfg(test)]
+#[cfg(feature = "test-utils")]
 mod test {
     use super::*;
+    use serde::{Deserialize, Serialize};
 
     // TODO implementing this showed that our trait is not that generic. We were
     // forced to add this `bytes` field which defeats the purpose of having a
     // vec of vec of color as storage. We should improve this.
     /// Terribly slow but easy to use image type just for tests' sake
-    #[derive(Clone)]
+    #[derive(Clone, Serialize, Deserialize)]
     pub struct TestImage {
         size: Size<i32>,
         pixels: Vec<Vec<Color>>, // vec of rows of pixels
