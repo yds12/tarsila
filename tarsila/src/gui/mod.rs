@@ -1,4 +1,4 @@
-use crate::{Effect, UiEvent, UiState};
+use crate::{ui_state::LapixState, Effect, UiEvent, UiState};
 use lapix::{Position, Size, Tool};
 use macroquad::prelude::*;
 
@@ -78,7 +78,7 @@ impl Gui {
         self.status_bar.sync(params);
     }
 
-    pub fn update(&mut self) -> Vec<Effect> {
+    pub fn update(&mut self, lapix: &LapixState) -> Vec<Effect> {
         let mut events = Vec::new();
 
         let widget_color = egui::Color32::from_rgb(150, 150, 150);
@@ -111,7 +111,7 @@ impl Gui {
             let mut palette_events = self.palette.update(egui_ctx);
             events.append(&mut palette_events);
 
-            let mut toolbar_events = self.toolbar.update(egui_ctx);
+            let mut toolbar_events = self.toolbar.update(egui_ctx, lapix.selected_tool());
             events.append(&mut toolbar_events);
 
             let mut layers_events = self.layers_panel.update(egui_ctx);

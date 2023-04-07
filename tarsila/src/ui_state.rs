@@ -121,8 +121,10 @@ impl<'a> From<&'a UiState> for GuiSyncParams {
     }
 }
 
+pub type LapixState = State<WrappedImage>;
+
 pub struct UiState {
-    inner: State<WrappedImage>,
+    inner: LapixState,
     gui: Gui,
     camera: Position<f32>,
     canvas_pos: Position<f32>,
@@ -203,7 +205,7 @@ impl UiState {
         self.mouse_over_gui = false;
 
         self.gui.sync((&*self).into());
-        let fx = self.gui.update();
+        let fx = self.gui.update(&self.inner);
         self.process_fx(fx);
 
         let (x, y) = macroquad::prelude::mouse_position();
