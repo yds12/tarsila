@@ -111,25 +111,28 @@ impl ToolButton {
     }
 
     pub fn add_to_ui<F: FnMut()>(&mut self, ui: &mut egui::Ui, selected: bool, mut action: F) {
-        ui.scope(|ui| {
-            if selected {
-                ui.style_mut().visuals.widgets.inactive.weak_bg_fill =
-                    Color32::from_rgb(218, 218, 218);
-            }
-            let tooltip: &'static str = self.tooltip();
+        let tooltip: &'static str = self.tooltip();
 
-            let texture: &egui::TextureHandle = self.texture.get_or_insert_with(|| {
-                ui.ctx()
-                    .load_texture("", self.image.clone(), Default::default())
-            });
-            if ui
-                .add(egui::ImageButton::new(texture, texture.size_vec2()))
-                .on_hover_text(tooltip)
-                .clicked()
-            {
-                (action)();
-            }
+        let texture: &egui::TextureHandle = self.texture.get_or_insert_with(|| {
+            ui.ctx()
+                .load_texture("", self.image.clone(), Default::default())
         });
+        let prev_bg_fill = ui.style().visuals.widgets.inactive.weak_bg_fill;
+        // Highlight the currently selected tool.
+        //
+        // FIXME: Ui::scope destroys the toolbar's wrapping layout, so we're forced to temporarily
+        // set the style and then set back the old style manually after we're done.
+        if selected {
+            ui.style_mut().visuals.widgets.inactive.weak_bg_fill = Color32::from_rgb(218, 218, 218);
+        }
+        if ui
+            .add(egui::ImageButton::new(texture, texture.size_vec2()))
+            .on_hover_text(tooltip)
+            .clicked()
+        {
+            (action)();
+        }
+        ui.style_mut().visuals.widgets.inactive.weak_bg_fill = prev_bg_fill;
     }
 
     // TODO: the shortcut being hardcoded here is a problem since it's
