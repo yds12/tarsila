@@ -113,7 +113,8 @@ impl ToolButton {
     pub fn add_to_ui<F: FnMut()>(&mut self, ui: &mut egui::Ui, selected: bool, mut action: F) {
         ui.scope(|ui| {
             if selected {
-                ui.style_mut().visuals.widgets.inactive.weak_bg_fill = Color32::RED;
+                ui.style_mut().visuals.widgets.inactive.weak_bg_fill =
+                    Color32::from_rgb(218, 218, 218);
             }
             let tooltip: &'static str = self.tooltip();
 
