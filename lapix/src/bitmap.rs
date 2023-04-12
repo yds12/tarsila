@@ -1,4 +1,4 @@
-use crate::{color, Color, Point, Size};
+use crate::{color, Color, Error, Point, Result, Size};
 
 // TODO rename this trait
 /// Represents a 2D matrix of pixels (an image)
@@ -33,29 +33,26 @@ pub trait Bitmap: Clone {
 
     // TODO: use this and next method to save/load files
     /// Get the the PNG representation of this image as a sequence of bytes
-    fn png_bytes(&self) -> Vec<u8> {
+    fn png_bytes(&self) -> Result<Vec<u8>> {
         let img = image::RgbaImage::from_raw(
             self.width() as u32,
             self.height() as u32,
             self.bytes().to_owned(),
         )
-        .expect("Failed to generate image from bytes");
+        .ok_or(Error::FailedImageFromRaw)?;
 
         let vec = Vec::<u8>::new();
         let mut vec = std::io::Cursor::new(vec);
-        img.write_to(&mut vec, image::ImageOutputFormat::Png)
-            .unwrap(); // never fails
+        img.write_to(&mut vec, image::ImageOutputFormat::Png)?;
 
-        vec.into_inner()
+        Ok(vec.into_inner())
     }
 
     /// Create a new image from a sequence of bytes read from an image file
     /// (e.g. PNG or JPG)
-    fn from_file_bytes(bytes: Vec<u8>) -> Self {
-        let reader = image::io::Reader::new(std::io::Cursor::new(bytes))
-            .with_guessed_format()
-            .unwrap(); // never fails
-        let img = reader.decode().expect("failed to decode image");
+    fn try_from_file_bytes(bytes: Vec<u8>) -> Result<Self> {
+        let reader = image::io::Reader::new(std::io::Cursor::new(bytes)).with_guessed_format()?;
+        let img = reader.decode()?;
         let img = img.into_rgba8();
 
         let size: Size<i32> = (img.width() as i32, img.height() as i32).into();
@@ -66,7 +63,7 @@ pub trait Bitmap: Clone {
             bitmap.set_pixel((x as i32, y as i32).into(), color);
         }
 
-        bitmap
+        Ok(bitmap)
     }
 }
 

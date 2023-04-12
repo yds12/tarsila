@@ -1,4 +1,4 @@
-use crate::{color, Bitmap, Color};
+use crate::{color, Bitmap, Color, Error, Result};
 use image::{codecs, ImageEncoder, ImageFormat, ImageOutputFormat};
 use std::fmt::Debug;
 use std::path::PathBuf;
@@ -7,7 +7,7 @@ use std::path::PathBuf;
 /// project file found at that path.
 pub struct LoadProject(pub fn(PathBuf) -> Vec<u8>);
 impl Debug for LoadProject {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         f.write_str("LoadProject(fn(PathBuf) -> Vec<u8>>)")
     }
 }
@@ -32,7 +32,7 @@ impl From<fn(PathBuf) -> Vec<u8>> for LoadProject {
 /// those bytes as a project file at that path
 pub struct SaveProject(pub fn(PathBuf, Vec<u8>));
 impl Debug for SaveProject {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         f.write_str("SaveProject(fn(PathBuf, Vec<u8>))")
     }
 }
@@ -50,10 +50,11 @@ impl Clone for SaveProject {
 }
 
 /// Load an image from a file in the specified path
-pub fn load_img_from_file(path: &str) -> image::RgbaImage {
+pub fn load_img_from_file(path: &str) -> Result<image::RgbaImage> {
     use image::io::Reader as ImageReader;
-    let img = ImageReader::open(path).unwrap().decode().unwrap();
-    img.into_rgba8()
+    let img = ImageReader::open(path)?.decode()?;
+
+    Ok(img.into_rgba8())
 }
 
 /// Create an image satisfying [`Bitmap`] from a raw [`image::RgbaImage`]
@@ -71,26 +72,26 @@ pub fn img_from_raw<IMG: Bitmap>(raw: image::RgbaImage) -> IMG {
 }
 
 /// Save an image to the specified file path
-pub fn save_image<IMG: Bitmap>(bitmap: IMG, path: &str) {
+pub fn save_image<IMG: Bitmap>(bitmap: IMG, path: &str) -> Result<()> {
     let bytes = bitmap.bytes();
     let width = bitmap.width() as u32;
     let height = bitmap.height() as u32;
     let color = image::ColorType::Rgba8;
 
-    let file = std::fs::File::create(path).expect("Failed to create file from path");
+    let file = std::fs::File::create(path)?;
     let buffer = std::io::BufWriter::new(file);
 
-    let result = match ImageFormat::from_path(path)
+    match ImageFormat::from_path(path)
         .unwrap_or(ImageFormat::Png)
         .into()
     {
         ImageOutputFormat::Png => {
-            codecs::png::PngEncoder::new(buffer).write_image(bytes, width, height, color)
+            codecs::png::PngEncoder::new(buffer).write_image(bytes, width, height, color)?
         }
         ImageOutputFormat::Jpeg(_) => codecs::jpeg::JpegEncoder::new_with_quality(buffer, 100)
-            .write_image(bytes, width, height, color),
-        _ => panic!("File type is not supported"),
+            .write_image(bytes, width, height, color)?,
+        _ => return Err(Error::UnsupportedImageFormat),
     };
 
-    result.expect("Failed to save image");
+    Ok(())
 }

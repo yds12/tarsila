@@ -1,6 +1,7 @@
 use macroquad::prelude::*;
 
 mod bg;
+mod error;
 mod graphics;
 mod gui;
 mod input;
@@ -13,6 +14,7 @@ mod wrapped_image;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+use error::Result;
 use resource::Resources;
 use ui_state::{Effect, UiEvent, UiState, WINDOW_H, WINDOW_W};
 use util::*;
@@ -33,8 +35,14 @@ async fn main() {
     let mut frame = 0;
 
     loop {
-        state.update(frame);
-        state.draw();
+        if let Err(e) = state.update(frame) {
+            eprintln!("ERROR: {e}");
+        }
+
+        if let Err(e) = state.draw() {
+            eprintln!("ERROR: {e}");
+        }
+
         next_frame().await;
 
         if state.must_exit() {

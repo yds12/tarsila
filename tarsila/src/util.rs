@@ -23,9 +23,10 @@ impl Timer {
     }
 
     pub fn expired(&self) -> bool {
-        match self.start {
-            None => true,
-            Some(t) => t.elapsed().unwrap().as_millis() as u64 > self.duration,
+        if let Some(dur) = self.start.and_then(|t| t.elapsed().ok()) {
+            return dur.as_millis() as u64 > self.duration;
         }
+
+        true
     }
 }

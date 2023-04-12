@@ -102,7 +102,8 @@ impl ActionSpec {
                     }
                 }
 
-                panic!("missing `MouseRealMove` event")
+                eprintln!("ERROR: missing `MouseRealMove` event");
+                Vec::new()
             }
         }
     }

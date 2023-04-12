@@ -6,7 +6,7 @@ use crate::input::manager::InputManager;
 use crate::mouse::{CursorType, MouseManager};
 use crate::project;
 use crate::wrapped_image::WrappedImage;
-use crate::{graphics, Timer};
+use crate::{graphics, Result, Timer};
 use lapix::primitives::*;
 use lapix::{Canvas, CanvasEffect, Event, Layer, LoadProject, SaveProject, Selection, State, Tool};
 use macroquad::prelude::Color as MqColor;
@@ -193,7 +193,7 @@ impl UiState {
         &self.layer_textures[self.inner.layers().active_index()]
     }
 
-    pub fn update(&mut self, frame: usize) {
+    pub fn update(&mut self, frame: usize) -> Result<()> {
         if frame % FPS_INTERVAL == (FPS_INTERVAL - 1) {
             let elapsed_ms = self.t0.elapsed().unwrap().as_millis();
             self.fps = FPS_INTERVAL as f32 / (elapsed_ms as f32 / 1000.);
@@ -204,7 +204,7 @@ impl UiState {
 
         self.gui.sync((&*self).into());
         let fx = self.gui.update();
-        self.process_fx(fx);
+        self.process_fx(fx)?;
 
         let (x, y) = macroquad::prelude::mouse_position();
         let sp = (x, y).into();
@@ -212,20 +212,24 @@ impl UiState {
         let cp = (cx, cy).into();
         self.input.sync(sp, cp);
         let fx = self.input.update(&self.key_bindings);
-        self.process_fx(fx);
+        self.process_fx(fx)?;
 
         self.sync_mouse();
+
+        Ok(())
     }
 
-    fn process_fx(&mut self, fx: Vec<Effect>) {
+    fn process_fx(&mut self, fx: Vec<Effect>) -> Result<()> {
         for effect in fx {
             match effect {
-                Effect::UiEvent(event) => self.process_event(event),
+                Effect::UiEvent(event) => self.process_event(event)?,
                 Effect::Event(event) => {
-                    self.execute(event);
+                    self.execute(event)?;
                 }
             }
         }
+
+        Ok(())
     }
 
     fn is_canvas_blocked(&self) -> bool {
@@ -243,7 +247,7 @@ impl UiState {
         }
     }
 
-    pub fn draw(&mut self) {
+    pub fn draw(&mut self) -> Result<()> {
         macroquad::prelude::clear_background(BG_COLOR);
 
         let ctx = self.draw_ctx();
@@ -256,7 +260,7 @@ impl UiState {
         let mouse_canvas = self.screen_to_canvas(x, y).into();
 
         // TODO should be in update method
-        self.inner.update_free_image(mouse_canvas);
+        self.inner.update_free_image(mouse_canvas)?;
 
         if self.inner.selection().is_some() {
             graphics::draw_selection(ctx, self.inner.free_image());
@@ -286,6 +290,8 @@ impl UiState {
         egui_macroquad::draw();
         self.gui.draw_preview(self);
         self.mouse.draw();
+
+        Ok(())
     }
 
     pub fn sync_mouse(&mut self) {
@@ -297,8 +303,8 @@ impl UiState {
         self.mouse.sync(in_canvas, self.selected_tool());
     }
 
-    pub fn execute(&mut self, event: Event) {
-        let effect = self.inner.execute(event);
+    pub fn execute(&mut self, event: Event) -> Result<()> {
+        let effect = self.inner.execute(event)?;
 
         match effect {
             // TODO: Texture2D is copy, so we don't need `drawing_mut` here, but
@@ -311,6 +317,8 @@ impl UiState {
             }
             CanvasEffect::None => (),
         };
+
+        Ok(())
     }
 
     pub fn sync_layer_textures(&mut self) {
@@ -330,7 +338,7 @@ impl UiState {
         }
     }
 
-    pub fn process_event(&mut self, event: UiEvent) {
+    pub fn process_event(&mut self, event: UiEvent) -> Result<()> {
         if event.is_gui_interaction() {
             self.gui_interaction_rest.start(GUI_REST_MS);
         }
@@ -352,7 +360,7 @@ impl UiState {
             UiEvent::MouseOverGui => self.mouse_over_gui = true,
             UiEvent::GuiInteraction => (),
             UiEvent::Paste => {
-                self.execute(Event::Paste(p));
+                self.execute(Event::Paste(p))?;
             }
             UiEvent::Exit => self.must_exit = true,
             UiEvent::NewProject => *self = UiState::default(),
@@ -373,46 +381,48 @@ impl UiState {
             // TODO: this used to be in mouse.rs, now it's cluttering this
             // module, we should move it somewhere else
             UiEvent::ToolStart => match (self.selected_tool(), self.is_canvas_blocked()) {
-                (Tool::Brush, false) => self.execute(Event::BrushStart),
-                (Tool::Eraser, false) => self.execute(Event::EraseStart),
-                (Tool::Line, false) => self.execute(Event::LineStart(p)),
-                (Tool::Rectangle, false) => self.execute(Event::RectStart(p)),
-                (Tool::Bucket, false) => self.execute(Event::Bucket(p)),
-                (Tool::Selection, false) => self.execute(Event::StartSelection(p)),
-                (Tool::Move, false) => self.execute(Event::MoveStart(p)),
+                (Tool::Brush, false) => self.execute(Event::BrushStart)?,
+                (Tool::Eraser, false) => self.execute(Event::EraseStart)?,
+                (Tool::Line, false) => self.execute(Event::LineStart(p))?,
+                (Tool::Rectangle, false) => self.execute(Event::RectStart(p))?,
+                (Tool::Bucket, false) => self.execute(Event::Bucket(p))?,
+                (Tool::Selection, false) => self.execute(Event::StartSelection(p))?,
+                (Tool::Move, false) => self.execute(Event::MoveStart(p))?,
                 (Tool::Eyedropper, false) => {
                     if self.canvas().is_in_bounds(p) {
                         let color = self.visible_pixel(p);
-                        self.execute(Event::SetMainColor(color.into()));
-                        self.execute(Event::SetTool(Tool::Brush));
+                        self.execute(Event::SetMainColor(color.into()))?;
+                        self.execute(Event::SetTool(Tool::Brush))?;
                     }
                 }
                 _ => (),
             },
             UiEvent::ToolStroke => match (self.selected_tool(), self.is_canvas_blocked()) {
-                (Tool::Brush, false) => self.execute(Event::BrushStroke(p)),
-                (Tool::Eraser, false) => self.execute(Event::Erase(p)),
+                (Tool::Brush, false) => self.execute(Event::BrushStroke(p))?,
+                (Tool::Eraser, false) => self.execute(Event::Erase(p))?,
                 _ => (),
             },
             UiEvent::ToolEnd => match (self.selected_tool(), self.is_canvas_blocked()) {
-                (Tool::Brush, false) => self.execute(Event::BrushEnd),
-                (Tool::Eraser, false) => self.execute(Event::EraseEnd),
-                (Tool::Line, false) => self.execute(Event::LineEnd(p)),
-                (Tool::Rectangle, false) => self.execute(Event::RectEnd(p)),
+                (Tool::Brush, false) => self.execute(Event::BrushEnd)?,
+                (Tool::Eraser, false) => self.execute(Event::EraseEnd)?,
+                (Tool::Line, false) => self.execute(Event::LineEnd(p))?,
+                (Tool::Rectangle, false) => self.execute(Event::RectEnd(p))?,
                 (Tool::Selection, false) => {
-                    self.execute(Event::EndSelection(p));
-                    self.execute(Event::SetTool(Tool::Move));
+                    self.execute(Event::EndSelection(p))?;
+                    self.execute(Event::SetTool(Tool::Move))?;
                 }
                 (Tool::Move, false) => {
                     if self.is_mouse_on_selection() {
-                        self.execute(Event::MoveEnd(p));
+                        self.execute(Event::MoveEnd(p))?;
                     } else {
-                        self.execute(Event::ClearSelection);
+                        self.execute(Event::ClearSelection)?;
                     }
                 }
                 _ => (),
             },
-        }
+        };
+
+        Ok(())
     }
 
     pub fn visible_pixel(&self, p: Point<i32>) -> [u8; 4] {

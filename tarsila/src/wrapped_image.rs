@@ -10,7 +10,11 @@ impl Serialize for WrappedImage {
     where
         S: Serializer,
     {
-        let bytes = self.png_bytes();
+        use serde::ser::Error as _;
+        let bytes = self
+            .png_bytes()
+            .map_err(|e| S::Error::custom(format!("Error deserializing image: {}", e)))?;
+
         ser.serialize_bytes(&bytes)
     }
 }
@@ -20,8 +24,10 @@ impl<'a> Deserialize<'a> for WrappedImage {
     where
         D: Deserializer<'a>,
     {
-        let vec = Vec::<u8>::deserialize(d).expect("failed to deserialize Vec<u8>");
-        Ok(Self::from_file_bytes(vec))
+        use serde::de::Error as _;
+        let vec = Vec::<u8>::deserialize(d)?;
+        Self::try_from_file_bytes(vec)
+            .map_err(|e| D::Error::custom(format!("Error deserializing image: {}", e)))
     }
 }
 

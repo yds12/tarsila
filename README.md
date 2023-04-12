@@ -33,8 +33,8 @@ bugs, incomplete or missing features and suboptimal performance here and there.
 Some of the main gaps currently are:
 
 * Works as intended on Linux, but there are some compatibility issues with MacOS
-  (file dialog window does not open), and status on Windows is unknown;
-* No error handling, everything panics;
+  (file dialog window does not open, modifier keys do not work); Windows is
+  reported to be working as intended;
 * There are a few unit tests, but integration tests are missing, and coverage is
   far from 100%;
 * There is room to improve when it comes to performance

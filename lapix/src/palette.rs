@@ -1,4 +1,4 @@
-use crate::{util, Color};
+use crate::{util, Color, Result};
 use serde::{Deserialize, Serialize};
 
 const MAX_PALETTE: usize = 200;
@@ -28,9 +28,10 @@ impl Default for Palette {
 }
 
 impl Palette {
-    pub fn from_file(path: &str) -> Self {
-        let img = util::load_img_from_file(path);
-        Self::from_image(img)
+    pub fn from_file(path: &str) -> Result<Self> {
+        let img = util::load_img_from_file(path)?;
+
+        Ok(Self::from_image(img))
     }
 
     fn from_image(img: image::RgbaImage) -> Self {

@@ -1,8 +1,8 @@
 use crate::color::{BLACK, TRANSPARENT};
 use crate::util::{LoadProject, SaveProject};
 use crate::{
-    util, Action, AtomicAction, Bitmap, Canvas, CanvasEffect, Color, Event, FreeImage, Layers,
-    Palette, Point, Position, Rect, Size, Tool,
+    util, Action, AtomicAction, Bitmap, Canvas, CanvasEffect, Color, Error, Event, FreeImage,
+    Layers, Palette, Point, Position, Rect, Result, Size, Tool,
 };
 use serde::{Deserialize, Serialize};
 
@@ -72,11 +72,16 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         self.cur_reversal = Some(Action::default());
     }
 
-    fn add_to_action(&mut self, actions: Vec<AtomicAction<IMG>>) {
+    fn add_to_action(&mut self, actions: Vec<AtomicAction<IMG>>) -> Result<()> {
         if self.cur_reversal.is_none() {
             self.start_action();
         }
-        self.cur_reversal.as_mut().unwrap().append(actions);
+        self.cur_reversal
+            .as_mut()
+            .ok_or(Error::ReversalNotSet)?
+            .append(actions);
+
+        Ok(())
     }
 
     fn end_action(&mut self) {
@@ -90,9 +95,10 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         self.reversals.push(action);
     }
 
-    fn add_to_pixels_action(&mut self, actions: Vec<(Point<i32>, Color)>) {
+    fn add_to_pixels_action(&mut self, actions: Vec<(Point<i32>, Color)>) -> Result<()> {
         let actions = AtomicAction::set_pixel_vec(self.layers.active_index(), actions);
-        self.add_to_action(actions);
+
+        self.add_to_action(actions)
     }
 
     fn single_pixels_action(&mut self, actions: Vec<(Point<i32>, Color)>) {
@@ -104,12 +110,12 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
     /// state, and probably the most central method of this library. A
     /// [`CanvasEffect`] is returned to communicate to the caller what kind of
     /// visual updates must be made.
-    pub fn execute(&mut self, event: Event) -> CanvasEffect {
+    pub fn execute(&mut self, event: Event) -> Result<CanvasEffect> {
         if let Some(prev_event) = self.events.last() {
             if (prev_event == &event && !event.repeatable())
                 || (event.same_variant(prev_event) && !event.type_repeatable())
             {
-                return CanvasEffect::None;
+                return Ok(CanvasEffect::None);
             }
         }
 
@@ -117,7 +123,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         let t0 = std::time::SystemTime::now();
 
         if event.triggers_anchoring() {
-            self.anchor();
+            self.anchor()?;
         }
 
         let mut skip_event = false;
@@ -127,7 +133,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 let img = self.canvas_mut().clear();
                 let reversal = AtomicAction::SetLayerCanvas(self.layers.active_index(), img);
                 self.start_action();
-                self.add_to_action(vec![reversal]);
+                self.add_to_action(vec![reversal])?;
                 self.end_action();
             }
             Event::ResizeCanvas(size) => {
@@ -138,7 +144,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                         .enumerate()
                         .map(|(i, img)| AtomicAction::SetLayerCanvas(i, img))
                         .collect(),
-                );
+                )?;
                 self.end_action();
             }
             Event::LineStart(_) | Event::RectStart(_) => (),
@@ -148,7 +154,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 let last_event = self.events.last();
                 let p0 = match last_event {
                     Some(Event::LineStart(p0)) => *p0,
-                    _ => panic!("line not started!"),
+                    _ => return Err(Error::DrawingNotStarted),
                 };
                 let color = self.main_color;
                 let reversals = self.canvas_mut().line(p0, p, color);
@@ -159,7 +165,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 let last_event = self.events.last();
                 let p0: Point<i32> = match last_event {
                     Some(Event::RectStart(p0)) => *p0,
-                    _ => panic!("rectangle not started!"),
+                    _ => return Err(Error::DrawingNotStarted),
                 };
                 let color = self.main_color;
                 let reversals = self.canvas_mut().rectangle(p0, p, color);
@@ -181,7 +187,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                     }
                     _ => Vec::new(),
                 };
-                self.add_to_pixels_action(reversals);
+                self.add_to_pixels_action(reversals)?;
             }
             Event::Erase(p) => {
                 let last_event = self.events.last();
@@ -198,15 +204,15 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                         .collect(),
                     _ => Vec::new(),
                 };
-                self.add_to_pixels_action(reversals);
+                self.add_to_pixels_action(reversals)?;
             }
             Event::SetTool(tool) => self.tool = tool,
             Event::SetMainColor(color) => self.main_color = color,
-            Event::Save(path) => self.save_image(path.to_string_lossy().as_ref()),
-            Event::OpenFile(path) => self.import_image(path.to_string_lossy().as_ref()),
+            Event::Save(path) => self.save_image(path.to_string_lossy().as_ref())?,
+            Event::OpenFile(path) => self.import_image(path.to_string_lossy().as_ref())?,
             Event::SaveProject(path) => {
                 if let Some(f) = &self.save_project_fn {
-                    let bytes = bincode::serialize(&self).unwrap();
+                    let bytes = bincode::serialize(&self)?;
                     (f.0)(path, bytes);
                 } else {
                     eprintln!("Bug: Missing save project function");
@@ -217,7 +223,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                     let bytes = (f.0)(path);
                     let (save_fn, load_fn) =
                         (self.save_project_fn.take(), self.load_project_fn.take());
-                    *self = bincode::deserialize(&bytes).unwrap();
+                    *self = bincode::deserialize(&bytes)?;
                     self.save_project_fn = save_fn;
                     self.load_project_fn = load_fn;
                 } else {
@@ -225,7 +231,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 }
             }
             Event::LoadPalette(path) => {
-                self.palette = Palette::from_file(path.to_string_lossy().as_ref())
+                self.palette = Palette::from_file(path.to_string_lossy().as_ref())?
             }
             Event::AddToPalette(color) => self.palette.add_color(color),
             Event::RemoveFromPalette(color) => self.palette.remove_color(color),
@@ -246,7 +252,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                     let corner = p.rect_min_corner(*p0);
                     let rect = Rect::new(corner.x, corner.y, size.x + 1, size.y + 1);
                     let r = rect.clip_to(self.canvas().rect());
-                    self.set_selection(Some(Selection::Canvas(r)));
+                    self.set_selection(Some(Selection::Canvas(r)))?;
                 }
             }
             Event::Copy => match self.selection {
@@ -254,7 +260,13 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                     self.clipboard = Some(self.canvas().img_from_area(rect))
                 }
                 Some(Selection::FreeImage) => {
-                    self.clipboard = Some(self.free_image.as_ref().unwrap().texture.clone())
+                    self.clipboard = Some(
+                        self.free_image
+                            .as_ref()
+                            .ok_or(Error::MissingFreeImage)?
+                            .texture
+                            .clone(),
+                    )
                 }
                 None => (),
             },
@@ -265,7 +277,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 }
                 Some(Selection::FreeImage) => {
                     self.free_image = None;
-                    self.set_selection(None);
+                    self.set_selection(None)?;
                 }
                 _ => (),
             },
@@ -284,7 +296,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 let last_event = self.events.last();
 
                 if let Some(Event::MoveStart(_)) = last_event {
-                    self.move_free_image(p);
+                    self.move_free_image(p)?;
                 } else {
                     skip_event = true;
                 }
@@ -293,7 +305,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 if let Some(img) = self.clipboard.as_ref().cloned() {
                     let img = FreeImage::new(p, img);
                     self.free_image = Some(img);
-                    self.set_selection(Some(Selection::FreeImage));
+                    self.set_selection(Some(Selection::FreeImage))?;
                 }
             }
             Event::FlipHorizontal => {
@@ -327,7 +339,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 let i = self.layers.count() - 1;
                 self.cur_reversal
                     .as_mut()
-                    .unwrap()
+                    .ok_or(Error::ReversalNotSet)?
                     .push(AtomicAction::DestroyLayer(i));
                 self.end_action();
             }
@@ -343,7 +355,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 self.cur_reversal = Some(Action::default());
                 self.cur_reversal
                     .as_mut()
-                    .unwrap()
+                    .ok_or(Error::ReversalNotSet)?
                     .push(AtomicAction::CreateLayer(i, img));
                 self.end_action();
             }
@@ -352,25 +364,31 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
             Event::SetSpritesheet(size) => self.set_spritesheet(size),
             Event::Undo => {
                 // TODO: we should add UNDO to the events list
-                dbg!(t0.elapsed().unwrap());
-                return self.undo();
+                #[allow(unused_must_use)]
+                {
+                    dbg!(t0.elapsed());
+                }
+                return Ok(self.undo());
             }
         }
 
         if event.clears_selection() {
-            self.clear_selection();
+            self.clear_selection()?;
         }
 
-        dbg!(t0.elapsed().unwrap());
+        #[allow(unused_must_use)]
+        {
+            dbg!(t0.elapsed());
+        }
 
         if skip_event {
             println!("Event skipped");
-            CanvasEffect::None
+            Ok(CanvasEffect::None)
         } else {
             let effect = event.canvas_effect();
             self.events.push(event);
 
-            effect
+            Ok(effect)
         }
     }
 
@@ -443,34 +461,38 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
     }
 
     /// Clear the [`Selection`]
-    fn clear_selection(&mut self) {
-        self.set_selection(None);
+    fn clear_selection(&mut self) -> Result<()> {
+        self.set_selection(None)
     }
 
     /// Set the [`Selection`]
-    fn set_selection(&mut self, selection: Option<Selection>) {
+    fn set_selection(&mut self, selection: Option<Selection>) -> Result<()> {
         match selection {
             None => self.selection = None,
             s @ Some(Selection::Canvas(_)) => self.selection = s,
             s @ Some(Selection::FreeImage) => {
                 if self.free_image.is_none() {
-                    panic!("no free image to select");
+                    return Err(Error::MissingFreeImage);
                 }
                 self.selection = s;
             }
         }
+
+        Ok(())
     }
 
     /// Anchor the [`FreeImage`] into the canvas.
-    fn anchor(&mut self) {
+    fn anchor(&mut self) -> Result<()> {
         if let Some(free_image) = self.free_image.take() {
             println!("Anchoring");
             let reversals = self.canvas_mut().paste_obj(&free_image);
             self.single_pixels_action(reversals);
             self.set_selection(Some(Selection::Canvas(
                 free_image.rect.clip_to(self.canvas().rect()),
-            )));
+            )))?;
         }
+
+        Ok(())
     }
 
     /// Undo the last undoable action. Returns the [`CanvasEffect`] to signal to
@@ -488,20 +510,24 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
     /// are not immediately represented in the canvas, but are stored as a
     /// [`FreeImage`] instead. This method must be called as often as possible
     /// whenever the mouse moves, in order to update this preview image.
-    pub fn update_free_image(&mut self, mouse_canvas: Position<i32>) {
+    pub fn update_free_image(&mut self, mouse_canvas: Position<i32>) -> Result<()> {
         match self.events.last() {
-            Some(Event::MoveStart(_)) => self.move_free_image(mouse_canvas),
+            Some(Event::MoveStart(_)) => self.move_free_image(mouse_canvas)?,
             Some(Event::LineStart(p)) => self.update_line_preview(*p, mouse_canvas),
             Some(Event::RectStart(p)) => self.update_rect_preview(*p, mouse_canvas),
             _ => (),
         }
+
+        Ok(())
     }
 
-    fn move_free_image(&mut self, new: Position<i32>) {
+    fn move_free_image(&mut self, new: Position<i32>) -> Result<()> {
         if let Some(free_image) = self.free_image.as_mut() {
             free_image.move_by_pivot(new);
-            self.set_selection(Some(Selection::FreeImage));
+            self.set_selection(Some(Selection::FreeImage))?;
         }
+
+        Ok(())
     }
 
     fn free_image_from_selection(&mut self, mouse_pos: Option<Point<i32>>) {
@@ -525,13 +551,14 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         self.free_image = Some(FreeImage::rect_preview(p0, p, self.main_color()));
     }
 
-    fn save_image(&self, path: &str) {
+    fn save_image(&self, path: &str) -> Result<()> {
         let blended = self.layers.blended();
-        util::save_image(blended, path);
+
+        util::save_image(blended, path)
     }
 
-    fn import_image(&mut self, path: &str) {
-        let img = util::load_img_from_file(path);
+    fn import_image(&mut self, path: &str) -> Result<()> {
+        let img = util::load_img_from_file(path)?;
 
         if img.width() as i32 > self.canvas().width()
             || img.height() as i32 > self.canvas().height()
@@ -542,6 +569,8 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
         let img: IMG = util::img_from_raw(img);
         let img = FreeImage::new(Point::ZERO, img);
         self.free_image = Some(img);
-        self.set_selection(Some(Selection::FreeImage));
+        self.set_selection(Some(Selection::FreeImage))?;
+
+        Ok(())
     }
 }
