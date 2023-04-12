@@ -1,4 +1,4 @@
-use crate::{ui_state::LapixState, Effect, UiEvent, UiState};
+use crate::{Effect, UiEvent, UiState};
 use lapix::{Position, Size, Tool};
 use macroquad::prelude::*;
 
@@ -42,6 +42,7 @@ pub struct Gui {
     status_bar: StatusBar,
     menu: MenuBar,
     mouse_on_canvas: bool,
+    selected_tool: Tool,
 }
 
 impl Gui {
@@ -54,6 +55,7 @@ impl Gui {
             status_bar: StatusBar::new(),
             menu: MenuBar::new(),
             mouse_on_canvas: false,
+            selected_tool: Tool::Brush,
         }
     }
 
@@ -61,6 +63,7 @@ impl Gui {
         self.mouse_on_canvas = params.is_on_canvas;
 
         self.toolbar.sync(params.main_color);
+        self.selected_tool = params.selected_tool;
         self.layers_panel.sync(
             params.num_layers,
             params.active_layer,
@@ -78,7 +81,7 @@ impl Gui {
         self.status_bar.sync(params);
     }
 
-    pub fn update(&mut self, lapix: &LapixState) -> Vec<Effect> {
+    pub fn update(&mut self) -> Vec<Effect> {
         let mut events = Vec::new();
 
         let widget_color = egui::Color32::from_rgb(150, 150, 150);
@@ -111,7 +114,7 @@ impl Gui {
             let mut palette_events = self.palette.update(egui_ctx);
             events.append(&mut palette_events);
 
-            let mut toolbar_events = self.toolbar.update(egui_ctx, lapix.selected_tool());
+            let mut toolbar_events = self.toolbar.update(egui_ctx, self.selected_tool);
             events.append(&mut toolbar_events);
 
             let mut layers_events = self.layers_panel.update(egui_ctx);
