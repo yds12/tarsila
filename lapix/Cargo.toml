@@ -1,7 +1,7 @@
 [package]
 name = "lapix"
 authors = ["Y. D. Santos <yds12@protonmail.com>"]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Image editor backend library for pixel art"
 homepage = "https://github.com/yds12/tarsila"
