@@ -165,6 +165,10 @@ impl MenuBar {
                         ui.close_menu();
                         events.push(Event::ApplyTransform(Transform::Silhouete).into());
                     }
+                    if ui.button("Apply palette").clicked() {
+                        ui.close_menu();
+                        events.push(Event::ApplyTransform(Transform::ApplyPalette).into());
+                    }
                 });
             });
         });

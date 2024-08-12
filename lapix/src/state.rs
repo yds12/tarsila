@@ -328,8 +328,10 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 if let Some(Selection::Canvas(_)) = self.selection {
                     self.free_image_from_selection(None);
                 }
+
+                let palette = self.palette().to_vec();
                 if let Some(free_img) = self.free_image.as_mut() {
-                    t.apply(&mut free_img.texture);
+                    t.apply(&mut free_img.texture, palette);
                 }
             }
             Event::NewLayerAbove => {

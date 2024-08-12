@@ -20,7 +20,7 @@ mod util;
 use action::{Action, AtomicAction};
 pub use bitmap::Bitmap;
 pub use canvas::{Canvas, CanvasEffect};
-pub use color::Color;
+pub use color::{Color, ColorF32};
 pub use error::{Error, Result};
 pub use event::Event;
 pub use floating::FreeImage;

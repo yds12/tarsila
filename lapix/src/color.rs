@@ -91,6 +91,14 @@ impl ColorF32 {
     pub const fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
         Self { r, g, b, a }
     }
+
+    pub fn dist(&self, other: &Self) -> f32 {
+        ((self.r - other.r).powf(2.)
+            + (self.g - other.g).powf(2.)
+            + (self.b - other.b).powf(2.)
+            + (self.a - other.a).powf(2.))
+        .sqrt()
+    }
 }
 
 impl Color {
