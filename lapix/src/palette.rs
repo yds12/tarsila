@@ -48,16 +48,17 @@ impl Palette {
                 break;
             }
         }
-        palette.sort_by(|a, b| a.hue().cmp(&b.hue()));
+        let mut palette = Self(palette);
+        palette.sort();
 
-        Self(palette)
+        palette
     }
 
     pub fn add_color(&mut self, color: Color) {
         if !self.0.contains(&color) {
             self.0.push(color)
         }
-        self.0.sort_by(|a, b| a.hue().cmp(&b.hue()));
+        self.sort();
     }
 
     pub fn remove_color(&mut self, color: Color) {
@@ -66,6 +67,15 @@ impl Palette {
 
     pub fn colors(&self) -> &[Color] {
         &self.0
+    }
+
+    pub fn sort(&mut self) {
+        fn sort_val(color: &Color) -> i32 {
+            (color.hue() as i32) * 1_000_000 +
+            (color.saturation() * 10_000.) as i32 +
+            (color.value() * 10_000.) as i32
+        }
+        self.0.sort_by(|a, b| sort_val(a).cmp(&sort_val(b)));
     }
 }
 

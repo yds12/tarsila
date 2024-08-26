@@ -121,10 +121,33 @@ impl ColorF32 {
 
             4.0 + (self.r - self.g) / (max - min)
         };
-        dbg!(partial, partial * 60.0, (partial * 60.0) as i16 + 360,
-          ((partial * 60.0) as i16 + 360) % 360  );
 
         (((partial * 60.0).round() as i16 + 360) % 360) as u16
+    }
+
+    pub fn saturation(&self) -> f32 {
+        if self.r == self.g && self.r == self.b {
+            return 0.0;
+        }
+
+        let max = self.value();
+        let min = [self.r, self.g, self.b]
+            .into_iter()
+            .map(|c| (c * 1000.) as i32)
+            .min()
+            .unwrap() as f32
+            / 1000.;
+
+        return (max - min) / max;
+    }
+
+    pub fn value(&self) -> f32 {
+        [self.r, self.g, self.b]
+            .into_iter()
+            .map(|c| (c * 1000.) as i32)
+            .max()
+            .unwrap() as f32
+            / 1000.
     }
 }
 
@@ -170,6 +193,14 @@ impl Color {
 
     pub fn hue(&self) -> u16 {
         ColorF32::from(*self).hue()
+    }
+
+    pub fn saturation(&self) -> f32 {
+        ColorF32::from(*self).saturation()
+    }
+
+    pub fn value(&self) -> f32 {
+        ColorF32::from(*self).value()
     }
 }
 
