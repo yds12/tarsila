@@ -48,6 +48,7 @@ impl Palette {
                 break;
             }
         }
+        palette.sort_by(|a, b| a.hue().cmp(&b.hue()));
 
         Self(palette)
     }
@@ -56,6 +57,7 @@ impl Palette {
         if !self.0.contains(&color) {
             self.0.push(color)
         }
+        self.0.sort_by(|a, b| a.hue().cmp(&b.hue()));
     }
 
     pub fn remove_color(&mut self, color: Color) {

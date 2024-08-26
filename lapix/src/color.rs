@@ -99,6 +99,33 @@ impl ColorF32 {
             + (self.a - other.a).powf(2.))
         .sqrt()
     }
+
+    pub fn hue(&self) -> u16 {
+        if self.r == self.g && self.r == self.b {
+            return 0;
+        }
+
+        let partial = if self.r >= self.g && self.r >= self.b {
+            let max = self.r;
+            let min = if self.g < self.b { self.g } else { self.b };
+
+            (self.g - self.b) / (max - min)
+        } else if self.g >= self.r && self.g >= self.b {
+            let max = self.g;
+            let min = if self.r < self.b { self.r } else { self.b };
+
+            2.0 + (self.b - self.r) / (max - min)
+        } else {
+            let max = self.b;
+            let min = if self.r < self.g { self.r } else { self.g };
+
+            4.0 + (self.r - self.g) / (max - min)
+        };
+        dbg!(partial, partial * 60.0, (partial * 60.0) as i16 + 360,
+          ((partial * 60.0) as i16 + 360) % 360  );
+
+        (((partial * 60.0).round() as i16 + 360) % 360) as u16
+    }
 }
 
 impl Color {
@@ -139,6 +166,10 @@ impl Color {
     /// letters and a leading `#` sign).
     pub fn hex(&self) -> String {
         format!("#{:02X}{:02X}{:02X}{:02X}", self.r, self.g, self.b, self.a)
+    }
+
+    pub fn hue(&self) -> u16 {
+        ColorF32::from(*self).hue()
     }
 }
 
@@ -197,5 +228,17 @@ mod tests {
     #[test_case((10, 170, 220, 199), "#0AAADCC7")]
     fn hex_val(color: impl Into<Color>, hex: &str) {
         assert_eq!(color.into().hex(), hex);
+    }
+
+    #[test_case((255, 0, 0, 255), 0)]
+    #[test_case((255, 255, 0, 255), 60)]
+    #[test_case((0, 255, 0, 255), 120)]
+    #[test_case((0, 255, 255, 255), 180)]
+    #[test_case((0, 0, 255, 255), 240)]
+    #[test_case((255, 0, 255, 255), 300)]
+    #[test_case((45, 100, 200, 255), 219)]
+    #[test_case((128, 210, 77, 255), 97)]
+    fn hue(color: impl Into<Color>, hue: u16) {
+        assert_eq!(color.into().hue(), hue);
     }
 }

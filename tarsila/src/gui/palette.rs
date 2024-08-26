@@ -1,6 +1,6 @@
 use crate::wrapped_image::WrappedImage;
 use crate::Effect;
-use lapix::{Bitmap, Event};
+use lapix::{Bitmap, Event, Color};
 use macroquad::prelude::Image as MqImage;
 
 const BTN_SIZE: i32 = 20;
@@ -69,8 +69,9 @@ impl Palette {
                             ui.ctx().load_texture("", image.clone(), Default::default())
                         });
                         let tooltip = format!(
-                            "Select color {:?} (right click to remove from palette",
-                            self.colors[i]
+                            "Select color {:?} (hue: {}) (right click to remove from palette)",
+                            self.colors[i],
+                            Color::from(self.colors[i]).hue()
                         );
 
                         let btn = egui::ImageButton::new(tex, tex.size_vec2());
