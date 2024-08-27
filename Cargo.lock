@@ -639,7 +639,7 @@ dependencies = [
 
 [[package]]
 name = "lapix"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "bincode",
  "image",
@@ -1301,7 +1301,7 @@ dependencies = [
 
 [[package]]
 name = "tarsila"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "egui",
  "egui-macroquad",

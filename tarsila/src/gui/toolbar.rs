@@ -5,7 +5,7 @@ use macroquad::prelude::*;
 use std::collections::HashMap;
 
 const TOOL_BTN_IMG_SIZE: Size<usize> = Size { x: 16, y: 16 };
-const TOOLS: [Tool; 8] = [
+const TOOLS: [Tool; 9] = [
     Tool::Brush,
     Tool::Bucket,
     Tool::Eraser,
@@ -14,6 +14,7 @@ const TOOLS: [Tool; 8] = [
     Tool::Selection,
     Tool::Move,
     Tool::Rectangle,
+    Tool::Ellipse,
 ];
 
 pub struct Toolbar {
@@ -147,6 +148,7 @@ impl ToolButton {
             Tool::Selection => "selection tool (S)",
             Tool::Move => "move tool (M)",
             Tool::Rectangle => "rectangle tool (R)",
+            Tool::Ellipse => "ellipse tool (O)",
         }
     }
 }

@@ -147,7 +147,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 )?;
                 self.end_action();
             }
-            Event::LineStart(_) | Event::RectStart(_) => (),
+            Event::LineStart(_) | Event::RectStart(_) | Event::EllipseStart(_) => (),
             Event::BrushStart | Event::EraseStart => self.start_action(),
             Event::BrushEnd | Event::EraseEnd => self.end_action(),
             Event::LineEnd(p) => {
@@ -169,6 +169,17 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
                 };
                 let color = self.main_color;
                 let reversals = self.canvas_mut().rectangle(p0, p, color);
+                self.single_pixels_action(reversals);
+                self.free_image = None;
+            }
+            Event::EllipseEnd(p) => {
+                let last_event = self.events.last();
+                let p0: Point<i32> = match last_event {
+                    Some(Event::EllipseStart(p0)) => *p0,
+                    _ => return Err(Error::DrawingNotStarted),
+                };
+                let color = self.main_color;
+                let reversals = self.canvas_mut().ellipse(p0, p, color);
                 self.single_pixels_action(reversals);
                 self.free_image = None;
             }
@@ -517,6 +528,7 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
             Some(Event::MoveStart(_)) => self.move_free_image(mouse_canvas)?,
             Some(Event::LineStart(p)) => self.update_line_preview(*p, mouse_canvas),
             Some(Event::RectStart(p)) => self.update_rect_preview(*p, mouse_canvas),
+            Some(Event::EllipseStart(p)) => self.update_ellipse_preview(*p, mouse_canvas),
             _ => (),
         }
 
@@ -551,6 +563,10 @@ impl<IMG: Bitmap + Serialize + for<'de> Deserialize<'de>> State<IMG> {
 
     fn update_rect_preview(&mut self, p0: Point<i32>, p: Point<i32>) {
         self.free_image = Some(FreeImage::rect_preview(p0, p, self.main_color()));
+    }
+
+    fn update_ellipse_preview(&mut self, p0: Point<i32>, p: Point<i32>) {
+        self.free_image = Some(FreeImage::ellipse_preview(p0, p, self.main_color()));
     }
 
     fn save_image(&self, path: &str) -> Result<()> {

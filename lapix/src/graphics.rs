@@ -1,7 +1,9 @@
 //! Functions to calculate graphics like lines, rectangles, etc. in a discrete
 //! 2D space
 
-use crate::Point;
+use std::collections::HashSet;
+
+use crate::{Point, Rect};
 
 /// Get the distance between two [`Point`]s
 pub fn distance(p1: Point<i32>, p2: Point<i32>) -> f32 {
@@ -40,6 +42,57 @@ pub fn rectangle(p1: Point<i32>, p2: Point<i32>) -> Vec<Point<i32>> {
     let l4 = line((p1.x, p2.y).into(), (p2.x, p2.y).into());
 
     vec![l1, l2, l3, l4].into_iter().flatten().collect()
+}
+
+/// Get the set of [`Point`]s needed to draw an ellipse between two points
+/// TODO there are still some imperfections here
+pub fn ellipse(p1: Point<i32>, p2: Point<i32>) -> Vec<Point<i32>> {
+    let a = (p1.x - p2.x).abs() as f32 / 2.0;
+    let b = (p1.y - p2.y).abs() as f32 / 2.0;
+
+    let low_x = std::cmp::min(p1.x, p2.x);
+    let low_y = std::cmp::min(p1.y, p2.y);
+    let high_x = std::cmp::max(p1.x, p2.x);
+    let high_y = std::cmp::max(p1.y, p2.y);
+    let bounds = Rect::new(low_x, low_y, high_x - low_x, high_y - low_y);
+    let xspan = ((p1.x - p2.x).abs() as f32 / 2.0).round() as i32;
+    let yspan = ((p1.y - p2.y).abs() as f32 / 2.0).round() as i32;
+
+    let mut points = HashSet::new();
+
+    let sampling_level = yspan;
+    let step = 1. / sampling_level as f32;
+
+    // For each x, we'll find the corresponding y values
+    for x in 0..(xspan) {
+        for delta in 0..sampling_level {
+            let x = x as f32 + (delta as f32 * step);
+            // Formula:
+            // sqrt(((a2-x2)*b2)/a2)
+            let inner = (a.powf(2.0) - x.powf(2.0)) * b.powf(2.0) / a.powf(2.0);
+            let root = inner.sqrt();
+
+            let ys = vec![root, -root];
+
+            for y in ys {
+                let xx = x.round() as i32 + low_x + xspan;
+                let yy = y.round() as i32 + low_y + yspan;
+
+                if bounds.contains(xx, yy) {
+                    points.insert(Point::new(xx, yy));
+                }
+
+                let xx = -x.round() as i32 + low_x + xspan;
+                let yy = y.round() as i32 + low_y + yspan;
+
+                if bounds.contains(xx, yy) {
+                    points.insert(Point::new(xx, yy));
+                }
+            }
+        }
+    }
+
+    points.into_iter().collect()
 }
 
 #[cfg(test)]

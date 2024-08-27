@@ -71,9 +71,9 @@ impl Palette {
 
     pub fn sort(&mut self) {
         fn sort_val(color: &Color) -> i32 {
-            (color.hue() as i32) * 1_000_000 +
-            (color.saturation() * 10_000.) as i32 +
-            (color.value() * 10_000.) as i32
+            (color.hue() as i32) * 1_000_000
+                + (color.saturation() * 10_000.) as i32
+                + (color.value() * 10_000.) as i32
         }
         self.0.sort_by(|a, b| sort_val(a).cmp(&sort_val(b)));
     }

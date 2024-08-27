@@ -131,23 +131,20 @@ impl ColorF32 {
         }
 
         let max = self.value();
-        let min = [self.r, self.g, self.b]
-            .into_iter()
-            .map(|c| (c * 1000.) as i32)
-            .min()
-            .unwrap() as f32
-            / 1000.;
+        let min = std::cmp::min(
+            std::cmp::min((self.r * 1000.0) as i32, (self.g * 1000.0) as i32),
+            (self.b * 1000.0) as i32,
+        ) as f32;
 
         return (max - min) / max;
     }
 
     pub fn value(&self) -> f32 {
-        [self.r, self.g, self.b]
-            .into_iter()
-            .map(|c| (c * 1000.) as i32)
-            .max()
-            .unwrap() as f32
-            / 1000.
+        std::cmp::max(
+            std::cmp::max((self.r * 1000.0) as i32, (self.g * 1000.0) as i32),
+            (self.b * 1000.0) as i32,
+        ) as f32
+            / 1000.0
     }
 }
 

@@ -78,6 +78,15 @@ impl<IMG: Bitmap> FreeImage<IMG> {
         FreeImage::from_pixels(span + Point::ONE, graphics::rectangle(p0, p), color, offset)
     }
 
+    /// Creates a free image with an ellipse between two points in a certain
+    /// color.
+    pub fn ellipse_preview(p0: Point<i32>, p: Point<i32>, color: Color) -> Self {
+        let span = p.abs_diff(p0);
+        let offset = p.rect_min_corner(p0);
+
+        FreeImage::from_pixels(span + Point::ONE, graphics::ellipse(p0, p), color, offset)
+    }
+
     /// Change the position of the free image considering that the passed point
     /// is the mouse position where it was released, and that the initial mouse
     /// position is defined by the pivot.

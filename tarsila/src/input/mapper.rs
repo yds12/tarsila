@@ -6,10 +6,6 @@ pub struct InputMapper;
 
 impl InputMapper {
     pub fn map(&self, key_bindings: &KeyBindings, input_events: Vec<InputEvent>) -> Vec<Effect> {
-        if !input_events.is_empty() {
-            //dbg!(&input_events);
-        }
-
         let mut fx = Vec::new();
 
         for (keys, action) in key_bindings.iter() {
@@ -19,9 +15,6 @@ impl InputMapper {
             }
         }
 
-        if !fx.is_empty() {
-            //dbg!(&fx);
-        }
         fx
     }
 }

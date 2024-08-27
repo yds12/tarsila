@@ -70,6 +70,11 @@ pub enum Event {
     /// Draw a rectangle with corners at this point and the point specified at
     /// `RectStart`
     RectEnd(Point<i32>),
+    /// Start drawing an ellipse at the specified point
+    EllipseStart(Point<i32>),
+    /// Draw an ellipse with corners at this point and the point specified at
+    /// `EllipseStart`
+    EllipseEnd(Point<i32>),
     /// Create a new layer above the current layer
     NewLayerAbove,
     /// Create a new layer below the current layer
@@ -138,6 +143,7 @@ impl Event {
             | Self::BrushStroke(_)
             | Self::LineEnd(_)
             | Self::RectEnd(_)
+            | Self::EllipseEnd(_)
             | Self::Bucket(_)
             | Self::MoveStart(_)
             | Self::MoveEnd(_)
@@ -177,7 +183,12 @@ impl Event {
     pub fn type_repeatable(&self) -> bool {
         !matches!(
             self,
-            Self::LineStart(_) | Self::LineEnd(_) | Self::RectStart(_) | Self::RectEnd(_)
+            Self::LineStart(_)
+                | Self::LineEnd(_)
+                | Self::RectStart(_)
+                | Self::RectEnd(_)
+                | Self::EllipseStart(_)
+                | Self::EllipseEnd(_)
         )
     }
 
@@ -200,6 +211,8 @@ impl Event {
                 | Self::LineEnd(_)
                 | Self::RectStart(_)
                 | Self::RectEnd(_)
+                | Self::EllipseStart(_)
+                | Self::EllipseEnd(_)
                 | Self::NewLayerAbove
                 | Self::NewLayerBelow
                 | Self::FlipHorizontal
@@ -231,6 +244,7 @@ impl Event {
                 | Self::SetTool(Tool::Eyedropper)
                 | Self::SetTool(Tool::Eraser)
                 | Self::SetTool(Tool::Rectangle)
+                | Self::SetTool(Tool::Ellipse)
                 | Self::SetTool(Tool::Line)
                 | Self::MoveLayerDown(_)
                 | Self::MoveLayerUp(_)
@@ -249,6 +263,7 @@ impl Event {
                 | Self::Copy
                 | Self::LineEnd(_)
                 | Self::RectEnd(_)
+                | Self::EllipseEnd(_)
                 | Self::FlipHorizontal
                 | Self::FlipVertical
                 | Self::DeleteSelection

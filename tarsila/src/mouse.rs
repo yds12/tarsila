@@ -66,6 +66,7 @@ impl CursorSet {
             (Tool::Selection, (0., 0.).into()),
             (Tool::Move, (-8., -8.).into()),
             (Tool::Rectangle, (0., -16.).into()),
+            (Tool::Ellipse, (0., -16.).into()),
         ];
 
         let mut hm: HashMap<_, _> = tools

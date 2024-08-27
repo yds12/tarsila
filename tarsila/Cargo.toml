@@ -1,7 +1,7 @@
 [package]
 name = "tarsila"
 authors = ["Y. D. Santos <yds12@protonmail.com>"]
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "GUI image editor for pixel art"
 homepage = "https://github.com/yds12/tarsila"
@@ -15,7 +15,7 @@ license = "MIT/Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-lapix = { path = "../lapix", version = "0.1.1" }
+lapix = { path = "../lapix", version = "0.1.2" }
 egui-macroquad = { version = "0.15.0", default-features = false }
 macroquad = "0.3.25"
 rfd = "0.10.0"

@@ -61,7 +61,7 @@ Features (+ means done, (-) means least important):
   - Shapes
     - Lines (+)
     - Rectangles (+)
-    - Ovals [v0.2]
+    - Ovals [v0.2] (+)
       - properties of recently created objects (lines, shapes)
   - Selection (+)
     - Rectangular (+)

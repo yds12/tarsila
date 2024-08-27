@@ -12,6 +12,7 @@ pub enum Tool {
     Selection,
     Move,
     Rectangle,
+    Ellipse,
 }
 
 impl Display for Tool {
@@ -25,6 +26,7 @@ impl Display for Tool {
             Self::Selection => "selection",
             Self::Move => "move",
             Self::Rectangle => "rectangle",
+            Self::Ellipse => "ellipse",
         };
 
         f.write_str(st)

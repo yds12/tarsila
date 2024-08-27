@@ -385,6 +385,7 @@ impl UiState {
                 (Tool::Eraser, false) => self.execute(Event::EraseStart)?,
                 (Tool::Line, false) => self.execute(Event::LineStart(p))?,
                 (Tool::Rectangle, false) => self.execute(Event::RectStart(p))?,
+                (Tool::Ellipse, false) => self.execute(Event::EllipseStart(p))?,
                 (Tool::Bucket, false) => self.execute(Event::Bucket(p))?,
                 (Tool::Selection, false) => self.execute(Event::StartSelection(p))?,
                 (Tool::Move, false) => self.execute(Event::MoveStart(p))?,
@@ -407,6 +408,7 @@ impl UiState {
                 (Tool::Eraser, false) => self.execute(Event::EraseEnd)?,
                 (Tool::Line, false) => self.execute(Event::LineEnd(p))?,
                 (Tool::Rectangle, false) => self.execute(Event::RectEnd(p))?,
+                (Tool::Ellipse, false) => self.execute(Event::EllipseEnd(p))?,
                 (Tool::Selection, false) => {
                     self.execute(Event::EndSelection(p))?;
                     self.execute(Event::SetTool(Tool::Move))?;

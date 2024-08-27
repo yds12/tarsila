@@ -159,6 +159,26 @@ impl<IMG: Bitmap> Canvas<IMG> {
         reversals
     }
 
+    /// Draw an ellipse (outline) between two points in the canvas with a
+    /// certain color. Returns a set of reversals (points and the colors they
+    /// need to be set to in order to reverse the action).
+    pub fn ellipse(
+        &mut self,
+        p1: Point<i32>,
+        p2: Point<i32>,
+        color: Color,
+    ) -> Vec<(Point<i32>, Color)> {
+        let rect = graphics::ellipse(p1, p2);
+        let mut reversals = Vec::new();
+
+        for p in rect {
+            if let Some(action) = self.set_pixel(p, color) {
+                reversals.push(action);
+            }
+        }
+        reversals
+    }
+
     /// Set an area of the canvas (determined by a rectangle) to a certain
     /// color. Returns a set of reversals (points and colors they need to be set
     /// to in order to reverse the action).

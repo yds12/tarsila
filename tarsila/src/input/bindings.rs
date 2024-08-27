@@ -138,6 +138,10 @@ impl KeyBindings {
                 Event::SetTool(Tool::Rectangle).into(),
             ),
             (
+                InputEvent::KeyPress(mq::KeyCode::O.into()).into(),
+                Event::SetTool(Tool::Ellipse).into(),
+            ),
+            (
                 InputEvent::KeyPress(mq::KeyCode::I.into()).into(),
                 Event::SetTool(Tool::Eyedropper).into(),
             ),
